@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --version:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "WebSearch",
+      "Bash(brew update:*)",
+      "Bash(brew reinstall:*)",
+      "Bash(brew upgrade:*)",
+      "Bash(brew link:*)"
+    ]
+  }
+}
