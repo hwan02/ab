@@ -8,7 +8,17 @@
       "Bash(brew update:*)",
       "Bash(brew reinstall:*)",
       "Bash(brew upgrade:*)",
-      "Bash(brew link:*)"
+      "Bash(brew link:*)",
+      "Bash(brew install:*)",
+      "Bash(supabase init:*)",
+      "Bash(curl:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(head:*)",
+      "Bash(cat:*)",
+      "Bash(open:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
