@@ -33,6 +33,12 @@ const translations = {
     ja: "ログイン中...",
     zh: "登录中...",
   },
+  "login.oauthNotice": {
+    ko: "Google 계정으로 안전하게 로그인됩니다. 비밀번호는 저장되지 않습니다.",
+    en: "Sign in securely with your Google account. No passwords are stored.",
+    ja: "Googleアカウントで安全にログインします。パスワードは保存されません。",
+    zh: "通过Google账号安全登录。不会存储任何密码。",
+  },
   "login.language": {
     ko: "언어 선택",
     en: "Select language",
@@ -1207,6 +1213,18 @@ const translations = {
     ja: "名",
     zh: "人",
   },
+  "message.phone": {
+    ko: "전화:",
+    en: "Phone:",
+    ja: "電話:",
+    zh: "电话：",
+  },
+  "message.viewMap": {
+    ko: "지도에서 보기",
+    en: "View on Map",
+    ja: "地図で見る",
+    zh: "在地图上查看",
+  },
 
   // Announcements
   "announcements.title": {
@@ -1586,6 +1604,224 @@ const translations = {
     en: "Add places to this category.",
     ja: "このカテゴリにスポットを追加してください。",
     zh: "为此类别添加地点。",
+  },
+
+  // Place Inquiry
+  "placeInquiry.title": {
+    ko: "장소 문의",
+    en: "Place Inquiry",
+    ja: "場所のお問い合わせ",
+    zh: "地点咨询",
+  },
+  "placeInquiry.askHost": {
+    ko: "호스트에게 물어보기",
+    en: "Ask Host",
+    ja: "ホストに聞く",
+    zh: "询问房东",
+  },
+  "placeInquiry.wantToVisit": {
+    ko: "이 곳을 방문하고 싶어요",
+    en: "I'd like to visit this place",
+    ja: "この場所を訪れたいです",
+    zh: "我想去这个地方",
+  },
+  "placeInquiry.wantToBook": {
+    ko: "예약해 주세요",
+    en: "Please make a reservation",
+    ja: "予約をお願いします",
+    zh: "请帮我预订",
+  },
+  "placeInquiry.wantToKnow": {
+    ko: "더 알고 싶어요",
+    en: "I'd like to know more",
+    ja: "もっと知りたいです",
+    zh: "我想了解更多",
+  },
+  "placeInquiry.custom": {
+    ko: "직접 입력",
+    en: "Write my own",
+    ja: "自分で入力",
+    zh: "自行输入",
+  },
+  "placeInquiry.customPlaceholder": {
+    ko: "호스트에게 전달할 메시지를 입력하세요",
+    en: "Enter a message for the host",
+    ja: "ホストへのメッセージを入力",
+    zh: "输入给房东的消息",
+  },
+  "placeInquiry.selectIntent": {
+    ko: "호스트에게 어떤 내용을 전달할까요?",
+    en: "What would you like to ask the host?",
+    ja: "ホストにどのような内容を伝えますか？",
+    zh: "您想向房东询问什么？",
+  },
+  "placeInquiry.sendToChat": {
+    ko: "채팅으로 보내기",
+    en: "Send via Chat",
+    ja: "チャットで送信",
+    zh: "通过聊天发送",
+  },
+  "placeInquiry.place": {
+    ko: "장소:",
+    en: "Place:",
+    ja: "場所:",
+    zh: "地点：",
+  },
+  "placeInquiry.category": {
+    ko: "카테고리:",
+    en: "Category:",
+    ja: "カテゴリ:",
+    zh: "类别：",
+  },
+  "placeInquiry.address": {
+    ko: "주소:",
+    en: "Address:",
+    ja: "住所:",
+    zh: "地址：",
+  },
+  "placeInquiry.request": {
+    ko: "요청:",
+    en: "Request:",
+    ja: "リクエスト:",
+    zh: "请求：",
+  },
+
+  // Browse / Stay Request
+  "browse.requestStay": {
+    ko: "숙박 신청",
+    en: "Request Stay",
+    ja: "宿泊申請",
+    zh: "申请入住",
+  },
+  "browse.checkIn": {
+    ko: "체크인 날짜",
+    en: "Check-in Date",
+    ja: "チェックイン日",
+    zh: "入住日期",
+  },
+  "browse.checkOut": {
+    ko: "체크아웃 날짜",
+    en: "Check-out Date",
+    ja: "チェックアウト日",
+    zh: "退房日期",
+  },
+  "browse.message": {
+    ko: "메시지 (선택)",
+    en: "Message (optional)",
+    ja: "メッセージ（任意）",
+    zh: "留言（可选）",
+  },
+  "browse.messagePlaceholder": {
+    ko: "호스트에게 전달할 메시지를 입력하세요",
+    en: "Enter a message for the host",
+    ja: "ホストへのメッセージを入力",
+    zh: "输入给房东的留言",
+  },
+  "browse.requestSent": {
+    ko: "숙박 신청이 완료되었습니다!",
+    en: "Stay request has been sent!",
+    ja: "宿泊申請が完了しました！",
+    zh: "入住申请已发送！",
+  },
+  "browse.alreadyRequested": {
+    ko: "이미 신청한 숙소입니다",
+    en: "You have already requested this property",
+    ja: "すでに申請済みの宿泊先です",
+    zh: "您已申请过此住宿",
+  },
+  "browse.requestPending": {
+    ko: "승인 대기 중",
+    en: "Pending Approval",
+    ja: "承認待ち",
+    zh: "等待批准",
+  },
+  "browse.propertyNotFound": {
+    ko: "숙소를 찾을 수 없습니다.",
+    en: "Property not found.",
+    ja: "宿泊先が見つかりません。",
+    zh: "找不到住宿。",
+  },
+  "browse.requestFailed": {
+    ko: "숙박 신청에 실패했습니다. 다시 시도해주세요.",
+    en: "Failed to submit stay request. Please try again.",
+    ja: "宿泊申請に失敗しました。もう一度お試しください。",
+    zh: "提交入住申请失败。请重试。",
+  },
+
+  // Guest Requests (host side)
+  "guest.pendingRequests": {
+    ko: "대기 중인 요청",
+    en: "Pending Requests",
+    ja: "保留中のリクエスト",
+    zh: "待处理的请求",
+  },
+  "guest.approve": {
+    ko: "승인",
+    en: "Approve",
+    ja: "承認",
+    zh: "批准",
+  },
+  "guest.reject": {
+    ko: "거절",
+    en: "Reject",
+    ja: "拒否",
+    zh: "拒绝",
+  },
+  "guest.requestFrom": {
+    ko: "님의 숙박 신청",
+    en: "'s stay request",
+    ja: "さんの宿泊申請",
+    zh: "的入住申请",
+  },
+  "guest.noRequests": {
+    ko: "대기 중인 요청이 없습니다",
+    en: "No pending requests",
+    ja: "保留中のリクエストはありません",
+    zh: "没有待处理的请求",
+  },
+  "guest.approved": {
+    ko: "승인됨",
+    en: "Approved",
+    ja: "承認済み",
+    zh: "已批准",
+  },
+  "guest.rejected": {
+    ko: "거절됨",
+    en: "Rejected",
+    ja: "拒否済み",
+    zh: "已拒绝",
+  },
+  "guest.approveFailed": {
+    ko: "승인에 실패했습니다.",
+    en: "Failed to approve.",
+    ja: "承認に失敗しました。",
+    zh: "批准失败。",
+  },
+  "guest.rejectFailed": {
+    ko: "거절에 실패했습니다.",
+    en: "Failed to reject.",
+    ja: "拒否に失敗しました。",
+    zh: "拒绝失败。",
+  },
+
+  // Map
+  "map.mapView": {
+    ko: "지도",
+    en: "Map",
+    ja: "地図",
+    zh: "地图",
+  },
+  "map.listView": {
+    ko: "목록",
+    en: "List",
+    ja: "リスト",
+    zh: "列表",
+  },
+  "map.noApiKey": {
+    ko: "지도를 표시하려면 Google Maps API 키가 필요합니다.",
+    en: "A Google Maps API key is required to display the map.",
+    ja: "地図を表示するにはGoogle Maps APIキーが必要です。",
+    zh: "需要Google Maps API密钥才能显示地图。",
   },
 
   // Photo Gallery

@@ -12,7 +12,7 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue>({
   locale: "ko",
   setLocale: () => {},
-  t: (key) => key,
+  t: (key) => translate(key, "ko"),
 });
 
 const STORAGE_KEY = "gc-locale";
@@ -29,6 +29,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setMounted(true);
   }, []);
 
+  // Sync <html lang> with current locale so native inputs (date, time) use the correct format
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
     localStorage.setItem(STORAGE_KEY, newLocale);
@@ -37,7 +42,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const t = (key: TranslationKey) => translate(key, locale);
 
   if (!mounted) {
-    return <>{children}</>;
+    return <div style={{ visibility: "hidden" }}>{children}</div>;
   }
 
   return (

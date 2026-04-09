@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useCallback, type FormEvent } from "react";
 import { useI18n } from "@/lib/i18n/context";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
+import PlaceAutocomplete from "@/components/maps/PlaceAutocomplete";
 import { nearbyPlaceFormSchema, getFieldErrors } from "@/lib/validations";
 import type { NearbyPlace } from "@/types/database";
 
@@ -18,6 +19,9 @@ interface NearbyPlaceFormProps {
     category: NearbyPlace["category"];
     phone: string;
     map_url: string;
+    latitude?: number;
+    longitude?: number;
+    google_place_id?: string;
   }) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
@@ -40,6 +44,15 @@ function NearbyPlaceForm({
   );
   const [phone, setPhone] = useState(initialData?.phone ?? "");
   const [mapUrl, setMapUrl] = useState(initialData?.map_url ?? "");
+  const [latitude, setLatitude] = useState<number | undefined>(
+    initialData?.latitude ?? undefined
+  );
+  const [longitude, setLongitude] = useState<number | undefined>(
+    initialData?.longitude ?? undefined
+  );
+  const [googlePlaceId, setGooglePlaceId] = useState(
+    initialData?.google_place_id ?? ""
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const categoryOptions = [
@@ -48,6 +61,27 @@ function NearbyPlaceForm({
     { value: "convenience", label: t("nearby.convenience") },
     { value: "experience", label: t("nearby.experience") },
   ];
+
+  const handlePlaceSelect = useCallback(
+    (result: {
+      name: string;
+      address: string;
+      latitude: number;
+      longitude: number;
+      phone: string;
+      mapUrl: string;
+      googlePlaceId: string;
+    }) => {
+      setName(result.name);
+      setAddress(result.address);
+      setLatitude(result.latitude);
+      setLongitude(result.longitude);
+      setPhone(result.phone);
+      setMapUrl(result.mapUrl);
+      setGooglePlaceId(result.googlePlaceId);
+    },
+    []
+  );
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -59,6 +93,9 @@ function NearbyPlaceForm({
       category,
       phone,
       map_url: mapUrl,
+      latitude,
+      longitude,
+      google_place_id: googlePlaceId,
     });
 
     if (!result.success) {
@@ -72,16 +109,22 @@ function NearbyPlaceForm({
     }
 
     setErrors({});
-    await onSubmit(result.data);
+    await onSubmit({
+      ...result.data,
+      latitude: result.data.latitude,
+      longitude: result.data.longitude,
+      google_place_id: result.data.google_place_id,
+    });
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Input
+      <PlaceAutocomplete
         label={t("nearbyForm.nameLabel")}
         placeholder={t("nearbyForm.namePlaceholder")}
         value={name}
-        onChange={(e) => setName(e.target.value)}
+        onChange={setName}
+        onPlaceSelect={handlePlaceSelect}
         error={errors.name}
         disabled={isLoading}
       />

@@ -109,6 +109,16 @@ export default function LoginPage() {
             </svg>
             {loading ? t("login.loading") : t("login.google")}
           </button>
+
+          {/* OAuth security notice */}
+          <div className="mt-4 flex items-start gap-2 rounded-xl bg-gray-50 px-3.5 py-3">
+            <svg className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+            <p className="text-xs leading-relaxed text-gray-500">
+              {t("login.oauthNotice")}
+            </p>
+          </div>
         </div>
 
         {/* Footer */}

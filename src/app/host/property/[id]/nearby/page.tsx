@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { NearbyPlaceForm } from "@/components/nearby/NearbyPlaceForm";
+import GoogleMapsProvider from "@/components/maps/GoogleMapsProvider";
 import { useI18n } from "@/lib/i18n/context";
 import type { NearbyPlace } from "@/types/database";
 
@@ -17,6 +18,15 @@ export default function NearbyPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: propertyId } = use(params);
+
+  return (
+    <GoogleMapsProvider>
+      <NearbyPageInner propertyId={propertyId} />
+    </GoogleMapsProvider>
+  );
+}
+
+function NearbyPageInner({ propertyId }: { propertyId: string }) {
   const supabase = createClient();
   const { t } = useI18n();
 
@@ -64,6 +74,9 @@ export default function NearbyPage({
     category: NearbyPlace["category"];
     phone: string;
     map_url: string;
+    latitude?: number;
+    longitude?: number;
+    google_place_id?: string;
   }) {
     setIsSubmitting(true);
     setError("");
@@ -78,6 +91,9 @@ export default function NearbyPage({
         category: data.category,
         phone: data.phone || null,
         map_url: data.map_url || null,
+        latitude: data.latitude ?? null,
+        longitude: data.longitude ?? null,
+        google_place_id: data.google_place_id || null,
       });
 
     if (insertError) {
@@ -97,6 +113,9 @@ export default function NearbyPage({
     category: NearbyPlace["category"];
     phone: string;
     map_url: string;
+    latitude?: number;
+    longitude?: number;
+    google_place_id?: string;
   }) {
     if (!editingPlace) return;
 
@@ -112,6 +131,9 @@ export default function NearbyPage({
         category: data.category,
         phone: data.phone || null,
         map_url: data.map_url || null,
+        latitude: data.latitude ?? null,
+        longitude: data.longitude ?? null,
+        google_place_id: data.google_place_id || null,
       })
       .eq("id", editingPlace.id);
 

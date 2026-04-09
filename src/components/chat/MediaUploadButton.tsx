@@ -10,6 +10,7 @@ import {
   isImageFile,
   type CompressedFile,
 } from "@/lib/imageCompression";
+import { notifySlack } from "@/lib/notifySlack";
 
 interface MediaUploadButtonProps {
   chatRoomId: string;
@@ -95,6 +96,7 @@ function MediaUploadButton({ chatRoomId, senderId, onUploaded }: MediaUploadButt
 
       if (msgError) throw msgError;
 
+      notifySlack({ messageType: isImage ? "image" : "file", content: messageContent });
       setSelectedFile(null);
       setPreview(null);
       onUploaded?.();

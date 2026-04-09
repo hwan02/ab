@@ -10,6 +10,7 @@ import type { TranslationKey } from "@/lib/i18n/translations";
 
 interface NearbyListProps {
   places: NearbyPlace[];
+  onPlaceInquiry?: (place: NearbyPlace) => void;
 }
 
 const CATEGORY_KEYS: { key: string; translationKey: TranslationKey }[] = [
@@ -22,7 +23,7 @@ const CATEGORY_KEYS: { key: string; translationKey: TranslationKey }[] = [
 
 type CategoryFilter = "all" | "attraction" | "restaurant" | "convenience" | "experience";
 
-export default function NearbyList({ places }: NearbyListProps) {
+export default function NearbyList({ places, onPlaceInquiry }: NearbyListProps) {
   const { t } = useI18n();
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
 
@@ -103,7 +104,12 @@ export default function NearbyList({ places }: NearbyListProps) {
           />
         ) : (
           filteredPlaces.map((place) => (
-            <PlaceCard key={place.id} place={place} getCategoryLabel={getCategoryLabel} />
+            <PlaceCard
+              key={place.id}
+              place={place}
+              getCategoryLabel={getCategoryLabel}
+              onPlaceInquiry={onPlaceInquiry}
+            />
           ))
         )}
       </div>
@@ -111,7 +117,15 @@ export default function NearbyList({ places }: NearbyListProps) {
   );
 }
 
-function PlaceCard({ place, getCategoryLabel }: { place: NearbyPlace; getCategoryLabel: (cat: string) => string }) {
+function PlaceCard({
+  place,
+  getCategoryLabel,
+  onPlaceInquiry,
+}: {
+  place: NearbyPlace;
+  getCategoryLabel: (cat: string) => string;
+  onPlaceInquiry?: (place: NearbyPlace) => void;
+}) {
   const { t } = useI18n();
   const categoryLabel = getCategoryLabel(place.category);
 
@@ -166,48 +180,68 @@ function PlaceCard({ place, getCategoryLabel }: { place: NearbyPlace; getCategor
       </div>
 
       {/* Action Buttons */}
-      {(place.map_url || place.phone) && (
-        <div className="mt-3 flex gap-2">
-          {place.map_url && (
-            <a
-              href={place.map_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+      <div className="mt-3 flex gap-2">
+        {place.map_url && (
+          <a
+            href={place.map_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              viewBox="0 0 20 20"
+              fill="currentColor"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              {t("nearby.viewMap")}
-            </a>
-          )}
-          {place.phone && (
-            <a
-              href={`tel:${place.phone}`}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+              <path
+                fillRule="evenodd"
+                d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z"
+                clipRule="evenodd"
+              />
+            </svg>
+            {t("nearby.viewMap")}
+          </a>
+        )}
+        {onPlaceInquiry && (
+          <button
+            onClick={() => onPlaceInquiry(place)}
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-100"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-              </svg>
-              {t("nearby.call")}
-            </a>
-          )}
-        </div>
-      )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"
+              />
+            </svg>
+            {t("placeInquiry.askHost")}
+          </button>
+        )}
+        {!onPlaceInquiry && place.phone && (
+          <a
+            href={`tel:${place.phone}`}
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+            </svg>
+            {t("nearby.call")}
+          </a>
+        )}
+      </div>
     </Card>
   );
 }

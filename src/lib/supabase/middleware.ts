@@ -41,5 +41,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Restrict /host routes to admin only
+  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  if (user && request.nextUrl.pathname.startsWith("/host") && user.email !== adminEmail) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
+
   return supabaseResponse;
 }

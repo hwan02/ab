@@ -13,6 +13,8 @@ export interface Property {
   name: string;
   description: string | null;
   address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   photos: string[] | null;
   wifi_ssid: string | null;
   wifi_password: string | null;
@@ -38,6 +40,9 @@ export interface NearbyPlace {
   name: string;
   description: string | null;
   address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  google_place_id: string | null;
   photo_url: string | null;
   map_url: string | null;
   phone: string | null;
@@ -58,7 +63,7 @@ export interface Message {
   chat_room_id: string;
   sender_id: string;
   content: string;
-  message_type: "text" | "image" | "file" | "item_request" | "reservation_request";
+  message_type: "text" | "image" | "file" | "item_request" | "reservation_request" | "place_inquiry";
   created_at: string;
 }
 
@@ -67,6 +72,17 @@ export interface Announcement {
   property_id: string;
   title: string;
   content: string;
+  created_at: string;
+}
+
+export interface GuestRequest {
+  id: string;
+  property_id: string;
+  guest_id: string;
+  check_in: string | null;
+  check_out: string | null;
+  message: string | null;
+  status: "pending" | "approved" | "rejected";
   created_at: string;
 }
 

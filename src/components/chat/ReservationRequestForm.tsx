@@ -1,17 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import GoogleMapsProvider from "@/components/maps/GoogleMapsProvider";
+import PlaceAutocomplete from "@/components/maps/PlaceAutocomplete";
+import { notifySlack } from "@/lib/notifySlack";
 import { reservationRequestSchema, getFieldErrors } from "@/lib/validations";
 
 interface ReservationRequestFormProps {
   chatRoomId: string;
   senderId: string;
   onSent: () => void;
+}
+
+interface PlaceInfo {
+  address: string;
+  phone: string;
+  mapUrl: string;
+  googlePlaceId: string;
 }
 
 function ReservationRequestForm({
@@ -25,11 +35,31 @@ function ReservationRequestForm({
   const [time, setTime] = useState("");
   const [partySize, setPartySize] = useState("2");
   const [specialRequests, setSpecialRequests] = useState("");
+  const [placeInfo, setPlaceInfo] = useState<PlaceInfo | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const supabase = createClient();
+
+  const handlePlaceSelect = useCallback(
+    (result: { name: string; address: string; phone: string; mapUrl: string; googlePlaceId: string }) => {
+      setRestaurantName(result.name);
+      setPlaceInfo({
+        address: result.address,
+        phone: result.phone,
+        mapUrl: result.mapUrl,
+        googlePlaceId: result.googlePlaceId,
+      });
+    },
+    []
+  );
+
+  const handleRestaurantNameChange = useCallback((value: string) => {
+    setRestaurantName(value);
+    // Clear place info when user manually edits the name
+    setPlaceInfo(null);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +70,10 @@ function ReservationRequestForm({
       time,
       partySize,
       specialRequests,
+      address: placeInfo?.address,
+      phone: placeInfo?.phone,
+      mapUrl: placeInfo?.mapUrl,
+      googlePlaceId: placeInfo?.googlePlaceId,
     });
 
     if (!result.success) {
@@ -71,25 +105,32 @@ function ReservationRequestForm({
       return;
     }
 
+    notifySlack({ messageType: "reservation_request", content });
     setRestaurantName("");
     setDate("");
     setTime("");
     setPartySize("2");
     setSpecialRequests("");
+    setPlaceInfo(null);
     setSubmitting(false);
     onSent();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <Input
-        label={t("reservationForm.restaurant")}
-        placeholder={t("reservationForm.restaurantPlaceholder")}
-        value={restaurantName}
-        onChange={(e) => setRestaurantName(e.target.value)}
-        error={fieldErrors.restaurantName}
-        required
-      />
+      <GoogleMapsProvider>
+        <PlaceAutocomplete
+          label={t("reservationForm.restaurant")}
+          placeholder={t("reservationForm.restaurantPlaceholder")}
+          value={restaurantName}
+          onChange={handleRestaurantNameChange}
+          onPlaceSelect={handlePlaceSelect}
+          error={fieldErrors.restaurantName}
+        />
+      </GoogleMapsProvider>
+      {placeInfo?.address && (
+        <p className="text-xs text-gray-500">{placeInfo.address}</p>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <Input
           label={t("reservationForm.date")}

@@ -43,15 +43,18 @@ export default async function HomePage() {
     (p) => !myProperties.some((mp) => mp.id === p.id)
   );
 
+  const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+
   return (
     <div className="min-h-dvh bg-gray-50">
       <HomeHeader
         userName={profile?.name ?? null}
         avatarUrl={user.user_metadata?.avatar_url ?? null}
+        isAdmin={isAdmin}
       />
 
       <HomeContent
-        isHost={profile?.role === "host"}
+        isHost={isAdmin}
         myProperties={myProperties}
         browseProperties={browseProperties}
       />

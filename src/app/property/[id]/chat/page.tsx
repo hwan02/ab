@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
 import type { ChatRoom as ChatRoomType } from "@/types/database";
 import { ChatRoom } from "@/components/chat/ChatRoom";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { notifySlack } from "@/lib/notifySlack";
 
 export default function GuestChatPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useI18n();
   const propertyId = params.id as string;
 
@@ -18,6 +20,7 @@ export default function GuestChatPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const placeInquirySent = useRef(false);
 
   useEffect(() => {
     async function initChat() {
@@ -51,34 +54,62 @@ export default function GuestChatPage() {
         return;
       }
 
+      let roomId: string;
+
       if (existingRooms && existingRooms.length > 0) {
-        setChatRoomId(existingRooms[0].id);
-        setLoading(false);
-        return;
+        roomId = existingRooms[0].id;
+      } else {
+        // No existing room found -- create one
+        const { data: newRoom, error: createError } = await supabase
+          .from("chat_rooms")
+          .insert({
+            property_id: propertyId,
+            guest_id: user.id,
+          })
+          .select()
+          .single();
+
+        if (createError || !newRoom) {
+          setError(t("chat.createFailed"));
+          setLoading(false);
+          return;
+        }
+        roomId = newRoom.id;
       }
 
-      // No existing room found -- create one
-      const { data: newRoom, error: createError } = await supabase
-        .from("chat_rooms")
-        .insert({
-          property_id: propertyId,
-          guest_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (createError || !newRoom) {
-        setError(t("chat.createFailed"));
-        setLoading(false);
-        return;
-      }
-
-      setChatRoomId(newRoom.id);
+      setChatRoomId(roomId);
       setLoading(false);
+
+      // Handle place inquiry auto-send
+      const placeInquiryParam = searchParams.get("placeInquiry");
+      if (placeInquiryParam && !placeInquirySent.current) {
+        placeInquirySent.current = true;
+
+        try {
+          const payload = JSON.parse(decodeURIComponent(placeInquiryParam));
+          const content = JSON.stringify(payload);
+
+          const { error: sendError } = await supabase.from("messages").insert({
+            chat_room_id: roomId,
+            sender_id: user.id,
+            content,
+            message_type: "place_inquiry",
+          });
+
+          if (!sendError) {
+            notifySlack({ messageType: "place_inquiry", content });
+          }
+        } catch {
+          // Invalid payload, ignore
+        }
+
+        // Clean up URL
+        router.replace(`/property/${propertyId}/chat`);
+      }
     }
 
     initChat();
-  }, [propertyId, t]);
+  }, [propertyId, t, searchParams, router]);
 
   if (loading) {
     return (

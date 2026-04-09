@@ -19,6 +19,11 @@ export default async function HostPage() {
     redirect("/login");
   }
 
+  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  if (user.email !== adminEmail) {
+    redirect("/");
+  }
+
   await supabase.from("profiles").update({ role: "host" }).eq("id", user.id);
 
   const { data: profile } = await supabase
@@ -38,6 +43,7 @@ export default async function HostPage() {
       <HomeHeader
         userName={profile?.name ?? null}
         avatarUrl={user.user_metadata?.avatar_url ?? null}
+        isAdmin
       />
 
       <HostDashboardContent properties={(properties ?? []) as Property[]} />

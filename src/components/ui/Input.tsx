@@ -1,7 +1,15 @@
 "use client";
 
-import { forwardRef, type InputHTMLAttributes } from "react";
+import { forwardRef, useId, type InputHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/context";
+
+const LANG_MAP: Record<string, string> = {
+  ko: "ko",
+  en: "en",
+  ja: "ja",
+  zh: "zh",
+};
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -9,8 +17,16 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, id, className, ...props }, ref) => {
-    const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
+  ({ label, error, id, className, type, ...props }, ref) => {
+    const autoId = useId();
+    const inputId = id || autoId;
+    const { locale } = useI18n();
+
+    // For date/time inputs, set lang so the browser uses the correct locale format
+    const langProp =
+      type === "date" || type === "time"
+        ? { lang: LANG_MAP[locale] || "en" }
+        : {};
 
     return (
       <div className="w-full">
@@ -25,6 +41,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           id={inputId}
+          type={type}
           className={cn(
             "block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500",
             error && "border-red-500 focus:border-red-500 focus:ring-red-500/20",
@@ -32,6 +49,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
           aria-invalid={error ? "true" : undefined}
           aria-describedby={error && inputId ? `${inputId}-error` : undefined}
+          {...langProp}
           {...props}
         />
         {error && (

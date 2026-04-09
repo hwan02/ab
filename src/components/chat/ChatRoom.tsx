@@ -11,6 +11,7 @@ import { MediaUploadButton } from "@/components/chat/MediaUploadButton";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { notifySlack } from "@/lib/notifySlack";
 
 const LOCALE_MAP: Record<string, string> = {
   ko: "ko-KR",
@@ -40,7 +41,10 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const lastTypingBroadcast = useRef(0);
-  const supabase = createClient();
+  const realtimeChannelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+  const channelIdRef = useRef(0);
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   // Update last_read_at when entering or receiving messages
   const updateLastRead = useCallback(async () => {
@@ -75,10 +79,18 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
     fetchMessages();
   }, [chatRoomId, updateLastRead]);
 
-  // Subscribe to realtime messages
+  // Subscribe to realtime messages + typing in a single channel
   useEffect(() => {
+    // Clean up any previous channel before creating a new one
+    if (realtimeChannelRef.current) {
+      supabase.removeChannel(realtimeChannelRef.current);
+      realtimeChannelRef.current = null;
+    }
+
+    channelIdRef.current += 1;
+    const currentChannelId = channelIdRef.current;
     const channel = supabase
-      .channel(`chat:${chatRoomId}`)
+      .channel(`chat:${chatRoomId}:${currentChannelId}`)
       .on(
         "postgres_changes",
         {
@@ -90,7 +102,6 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
         (payload) => {
           const newMsg = payload.new as Message;
           setMessages((prev) => {
-            // Avoid duplicates (from optimistic updates or double delivery)
             if (prev.some((m) => m.id === newMsg.id)) {
               return prev;
             }
@@ -100,17 +111,6 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
           onNewMessage?.();
         }
       )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [chatRoomId]);
-
-  // Typing indicator: broadcast & listen
-  useEffect(() => {
-    const channel = supabase
-      .channel(`typing:${chatRoomId}`)
       .on("broadcast", { event: "typing" }, (payload) => {
         if (payload.payload?.userId !== currentUserId) {
           setOtherTyping(true);
@@ -120,22 +120,28 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
       })
       .subscribe();
 
+    realtimeChannelRef.current = channel;
+
     return () => {
+      if (realtimeChannelRef.current === channel) {
+        realtimeChannelRef.current = null;
+      }
       supabase.removeChannel(channel);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
-  }, [chatRoomId, currentUserId]);
+  }, [chatRoomId, currentUserId, updateLastRead, onNewMessage]);
 
   const broadcastTyping = useCallback(() => {
     const now = Date.now();
     if (now - lastTypingBroadcast.current < 2000) return;
+    if (!realtimeChannelRef.current) return;
     lastTypingBroadcast.current = now;
-    supabase.channel(`typing:${chatRoomId}`).send({
+    realtimeChannelRef.current.send({
       type: "broadcast",
       event: "typing",
       payload: { userId: currentUserId },
     });
-  }, [chatRoomId, currentUserId, supabase]);
+  }, [currentUserId]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -160,6 +166,8 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
     if (error) {
       // Restore message on error
       setNewMessage(content);
+    } else if (role === "guest") {
+      notifySlack({ messageType: "text", content });
     }
     setSending(false);
   };

@@ -9,9 +9,13 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/context";
-import type { Profile, PropertyGuest } from "@/types/database";
+import type { Profile, PropertyGuest, GuestRequest } from "@/types/database";
 
 interface GuestWithProfile extends PropertyGuest {
+  profiles: Profile;
+}
+
+interface RequestWithProfile extends GuestRequest {
   profiles: Profile;
 }
 
@@ -34,9 +38,12 @@ export default function GuestsPage({
   const [searchError, setSearchError] = useState("");
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
+  const [pendingRequests, setPendingRequests] = useState<RequestWithProfile[]>([]);
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchGuests();
+    fetchPendingRequests();
   }, [propertyId]);
 
   async function fetchGuests() {
@@ -54,6 +61,67 @@ export default function GuestsPage({
       setGuests((data as GuestWithProfile[]) ?? []);
     }
     setIsFetching(false);
+  }
+
+  async function fetchPendingRequests() {
+    const { data } = await supabase
+      .from("guest_requests")
+      .select("*, profiles(*)")
+      .eq("property_id", propertyId)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    setPendingRequests((data as RequestWithProfile[]) ?? []);
+  }
+
+  async function handleApproveRequest(request: RequestWithProfile) {
+    setProcessingRequestId(request.id);
+    setError("");
+
+    const { error: insertError } = await supabase
+      .from("property_guests")
+      .insert({
+        property_id: propertyId,
+        guest_id: request.guest_id,
+        check_in: request.check_in,
+        check_out: request.check_out,
+      });
+
+    if (insertError) {
+      setError(t("guest.approveFailed"));
+      setProcessingRequestId(null);
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from("guest_requests")
+      .update({ status: "approved" })
+      .eq("id", request.id);
+
+    if (updateError) {
+      setError(t("guest.approveFailed"));
+    } else {
+      setPendingRequests((prev) => prev.filter((r) => r.id !== request.id));
+      await fetchGuests();
+    }
+    setProcessingRequestId(null);
+  }
+
+  async function handleRejectRequest(requestId: string) {
+    setProcessingRequestId(requestId);
+    setError("");
+
+    const { error: updateError } = await supabase
+      .from("guest_requests")
+      .update({ status: "rejected" })
+      .eq("id", requestId);
+
+    if (updateError) {
+      setError(t("guest.rejectFailed"));
+    } else {
+      setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
+    }
+    setProcessingRequestId(null);
   }
 
   async function handleSearchEmail() {
@@ -150,6 +218,70 @@ export default function GuestsPage({
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
+        </div>
+      )}
+
+      {/* Pending Requests */}
+      {pendingRequests.length > 0 && (
+        <div>
+          <h2 className="mb-4 text-lg font-semibold text-amber-700">
+            {t("guest.pendingRequests")} ({pendingRequests.length})
+          </h2>
+          <div className="space-y-3">
+            {pendingRequests.map((request) => (
+              <div
+                key={request.id}
+                className="rounded-lg border border-amber-200 bg-amber-50 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-200 text-amber-700">
+                      {request.profiles?.name?.[0]?.toUpperCase() || "?"}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {request.profiles?.name || t("common.noName")}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {request.profiles?.email}
+                      </p>
+                      <div className="mt-1 flex gap-3 text-xs text-gray-500">
+                        {request.check_in && (
+                          <span>{t("guest.checkInLabel")}: {formatDate(request.check_in)}</span>
+                        )}
+                        {request.check_out && (
+                          <span>{t("guest.checkOutLabel")}: {formatDate(request.check_out)}</span>
+                        )}
+                      </div>
+                      {request.message && (
+                        <p className="mt-1 text-sm text-gray-600">
+                          {request.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => handleApproveRequest(request)}
+                      loading={processingRequestId === request.id}
+                    >
+                      {t("guest.approve")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleRejectRequest(request.id)}
+                      loading={processingRequestId === request.id}
+                      className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                    >
+                      {t("guest.reject")}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

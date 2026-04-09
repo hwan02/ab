@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n/context";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { formatFileSize } from "@/lib/imageCompression";
 import { Card } from "@/components/ui/Card";
+import PlaceInquiryCard from "@/components/chat/PlaceInquiryCard";
 
 interface MessageBubbleProps {
   message: Message;
@@ -86,6 +87,9 @@ function ReservationRequestCard({ content, t }: { content: string; t: (key: Tran
             <span className="font-medium">{t("message.restaurant")}</span>{" "}
             {data.restaurantName}
           </p>
+          {data.address && (
+            <p className="text-xs text-gray-500">{data.address}</p>
+          )}
           <p>
             <span className="font-medium">{t("message.date")}</span> {data.date}
           </p>
@@ -95,11 +99,27 @@ function ReservationRequestCard({ content, t }: { content: string; t: (key: Tran
           <p>
             <span className="font-medium">{t("message.partySize")}</span> {data.partySize}{t("message.peopleSuffix")}
           </p>
+          {data.phone && (
+            <p>
+              <span className="font-medium">{t("message.phone")}</span>{" "}
+              <a href={`tel:${data.phone}`} className="text-blue-600 underline">{data.phone}</a>
+            </p>
+          )}
           {data.specialRequests && (
             <p>
               <span className="font-medium">{t("message.specialRequests")}</span>{" "}
               {data.specialRequests}
             </p>
+          )}
+          {data.mapUrl && (
+            <a
+              href={data.mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline"
+            >
+              📍 {t("message.viewMap")}
+            </a>
           )}
         </div>
       </Card>
@@ -236,6 +256,23 @@ function MessageBubble({ message, isOwn }: MessageBubbleProps) {
       >
         <div className="flex flex-col gap-1">
           <ReservationRequestCard content={message.content} t={t} />
+          <span
+            className={`text-xs text-gray-400 ${isOwn ? "text-right" : "text-left"}`}
+          >
+            {formatTime(message.created_at, dateLocale)}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (message.message_type === "place_inquiry") {
+    return (
+      <div
+        className={`flex ${isOwn ? "justify-end" : "justify-start"} mb-3 px-2`}
+      >
+        <div className="flex flex-col gap-1">
+          <PlaceInquiryCard content={message.content} t={t} />
           <span
             className={`text-xs text-gray-400 ${isOwn ? "text-right" : "text-left"}`}
           >

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { itemRequestSchema, getFieldErrors } from "@/lib/validations";
+import { notifySlack } from "@/lib/notifySlack";
 
 interface ItemRequestFormProps {
   chatRoomId: string;
@@ -66,6 +67,7 @@ function ItemRequestForm({ chatRoomId, senderId, onSent }: ItemRequestFormProps)
       return;
     }
 
+    notifySlack({ messageType: "item_request", content });
     setItemName("");
     setQuantity("1");
     setUrgency("보통");

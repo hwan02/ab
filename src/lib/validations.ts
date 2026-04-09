@@ -29,6 +29,10 @@ export const reservationRequestSchema = z.object({
   time: z.string().min(1, "reservationForm.timeRequired"),
   partySize: z.string().min(1),
   specialRequests: z.string().trim().optional().default(""),
+  address: z.string().trim().optional().default(""),
+  phone: z.string().trim().optional().default(""),
+  mapUrl: z.string().trim().optional().default(""),
+  googlePlaceId: z.string().trim().optional().default(""),
 });
 
 export type ReservationRequestData = z.infer<typeof reservationRequestSchema>;
@@ -47,6 +51,9 @@ export const nearbyPlaceFormSchema = z.object({
   category: z.enum(nearbyPlaceCategories),
   phone: z.string().trim().optional().default(""),
   map_url: z.string().trim().optional().default(""),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  google_place_id: z.string().trim().optional().default(""),
 });
 
 export type NearbyPlaceFormData = z.infer<typeof nearbyPlaceFormSchema>;

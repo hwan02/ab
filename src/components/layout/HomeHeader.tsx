@@ -10,9 +10,10 @@ import { LOCALES } from "@/lib/i18n/translations";
 interface HomeHeaderProps {
   userName: string | null;
   avatarUrl: string | null;
+  isAdmin?: boolean;
 }
 
-export default function HomeHeader({ userName, avatarUrl }: HomeHeaderProps) {
+export default function HomeHeader({ userName, avatarUrl, isAdmin }: HomeHeaderProps) {
   const router = useRouter();
   const { locale, setLocale, t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -108,16 +109,18 @@ export default function HomeHeader({ userName, avatarUrl }: HomeHeaderProps) {
                   </div>
                 </div>
 
-                <Link
-                  href="/host"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-gray-50"
-                >
-                  <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                  </svg>
-                  {t("home.hostMode")}
-                </Link>
+                {isAdmin && (
+                  <Link
+                    href="/host"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                  >
+                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                    </svg>
+                    {t("home.hostMode")}
+                  </Link>
+                )}
                 <button
                   onClick={handleLogout}
                   className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"

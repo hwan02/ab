@@ -79,7 +79,7 @@ export default function HomeContent({
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {browseProperties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
+              <PropertyCard key={property.id} property={property} isBrowse />
             ))}
           </div>
         </section>
@@ -88,11 +88,12 @@ export default function HomeContent({
   );
 }
 
-function PropertyCard({ property }: { property: Property }) {
+function PropertyCard({ property, isBrowse }: { property: Property; isBrowse?: boolean }) {
   const photoUrl = property.photos?.[0];
+  const href = isBrowse ? `/browse/${property.id}` : `/property/${property.id}`;
 
   return (
-    <Link href={`/property/${property.id}`}>
+    <Link href={href}>
       <Card className="overflow-hidden p-0 transition-all hover:shadow-md">
         <div className="relative h-40 w-full bg-gray-100">
           {photoUrl ? (
