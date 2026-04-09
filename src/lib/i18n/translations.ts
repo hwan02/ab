@@ -10,10 +10,10 @@ export const LOCALES: { code: Locale; label: string; flag: string }[] = [
 const translations = {
   // Login
   "login.title": {
-    ko: "Guest Concierge",
-    en: "Guest Concierge",
-    ja: "Guest Concierge",
-    zh: "Guest Concierge",
+    ko: "popo's stay",
+    en: "popo's stay",
+    ja: "popo's stay",
+    zh: "popo's stay",
   },
   "login.subtitle": {
     ko: "숙소 게스트를 위한 컨시어지 서비스",

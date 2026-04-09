@@ -123,7 +123,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-gray-400">
-          Guest Concierge &copy; {new Date().getFullYear()}
+          popo&apos;s stay &copy; {new Date().getFullYear()}
         </p>
       </div>
     </div>

@@ -10,7 +10,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Guest Concierge",
+  title: "popo's stay",
   description: "숙소 게스트를 위한 컨시어지 서비스",
 };
 

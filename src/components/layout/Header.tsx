@@ -50,7 +50,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Link href="/" className="text-lg font-bold text-rose-500">
-          Guest Concierge
+          popo's stay
         </Link>
 
         {user && (
