@@ -74,10 +74,6 @@ export default function ConciergePage() {
     setTimeout(() => setSuccessMessage(false), 3000);
   };
 
-  const handleTransportClick = () => {
-    router.push(`/property/${propertyId}/chat`);
-  };
-
   const services = [
     {
       id: "item" as const,
@@ -104,19 +100,6 @@ export default function ConciergePage() {
       color: "bg-rose-50 border-rose-200",
       iconColor: "text-rose-600 bg-rose-100",
       hoverBorder: "hover:border-rose-400",
-    },
-    {
-      id: "transport" as const,
-      icon: (
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-        </svg>
-      ),
-      title: t("concierge.transportTitle"),
-      description: t("concierge.transportDesc"),
-      color: "bg-sky-50 border-sky-200",
-      iconColor: "text-sky-600 bg-sky-100",
-      hoverBorder: "hover:border-sky-400",
     },
   ] as const;
 
@@ -166,18 +149,22 @@ export default function ConciergePage() {
           </p>
         </div>
 
+        {/* Delivery Notice */}
+        <div className="mb-6 flex items-start gap-2.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+          <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+          <p className="text-sm leading-relaxed text-blue-700">
+            {t("concierge.itemDeliveryNotice")}
+          </p>
+        </div>
+
         {/* Service Cards */}
         <div className="flex flex-col gap-3">
           {services.map((service) => (
             <button
               key={service.id}
-              onClick={() => {
-                if (service.id === "transport") {
-                  handleTransportClick();
-                } else {
-                  setActiveForm(service.id);
-                }
-              }}
+              onClick={() => setActiveForm(service.id)}
               className={`group w-full rounded-2xl border-2 p-5 text-left transition-all ${service.color} ${service.hoverBorder} hover:shadow-md active:scale-[0.98]`}
             >
               <div className="flex items-start gap-4">

@@ -359,6 +359,12 @@ const translations = {
     ja: "交通手段やピックアップサービスについて問い合わせ",
     zh: "咨询交通或接送服务",
   },
+  "concierge.itemDeliveryNotice": {
+    ko: "오후 7시 이전 주문 시 다음날 새벽 7시 이전에 도착합니다.",
+    en: "Orders placed before 7 PM will arrive by 7 AM the next day.",
+    ja: "午後7時までのご注文は翌朝7時までにお届けします。",
+    zh: "下午7点前下单，次日早上7点前送达。",
+  },
   "concierge.requestSent": {
     ko: "요청이 전송되었습니다!",
     en: "Request sent!",
