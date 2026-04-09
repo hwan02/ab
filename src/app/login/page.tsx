@@ -60,21 +60,11 @@ export default function LoginPage() {
         <div className="rounded-3xl bg-white/80 p-8 shadow-xl shadow-gray-200/50 ring-1 ring-gray-100 backdrop-blur-md">
           {/* Logo & Title */}
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-orange-400 shadow-lg shadow-rose-200/50">
-              <svg
-                className="h-10 w-10 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
-                />
-              </svg>
-            </div>
+            <img
+              src="/popo.png"
+              alt="popo"
+              className="mx-auto mb-5 h-28 w-28 object-contain"
+            />
             <h1 className="text-4xl font-bold tracking-tight text-gray-900">
               {t("login.title")}
             </h1>
