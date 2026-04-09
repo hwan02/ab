@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useI18n } from "@/lib/i18n/context";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -63,31 +64,37 @@ export default function HostDashboardContent({
               key={property.id}
               href={`/host/property/${property.id}/edit`}
             >
-              <Card className="transition-all hover:shadow-md">
-                {property.photos && property.photos.length > 0 ? (
-                  <img
-                    src={property.photos[0]}
-                    alt={property.name}
-                    className="mb-4 h-40 w-full rounded-xl object-cover"
-                  />
-                ) : (
-                  <div className="mb-4 flex h-40 w-full items-center justify-center rounded-xl bg-gray-100">
-                    <svg className="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
-                    </svg>
-                  </div>
-                )}
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {property.name}
-                </h3>
-                {property.address && (
-                  <p className="mt-1 text-sm text-gray-500">
-                    {property.address}
+              <Card className="overflow-hidden p-0 transition-all hover:shadow-md">
+                <div className="relative aspect-[4/3] w-full bg-gray-100">
+                  {property.photos && property.photos.length > 0 ? (
+                    <Image
+                      src={property.photos[0]}
+                      alt={property.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-gray-300">
+                      <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {property.name}
+                  </h3>
+                  {property.address && (
+                    <p className="mt-1 text-sm text-gray-500">
+                      {property.address}
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs text-gray-400">
+                    {formatDate(property.created_at)}
                   </p>
-                )}
-                <p className="mt-2 text-xs text-gray-400">
-                  {formatDate(property.created_at)}
-                </p>
+                </div>
               </Card>
             </Link>
           ))}

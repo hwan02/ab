@@ -95,7 +95,7 @@ function PropertyCard({ property, isBrowse }: { property: Property; isBrowse?: b
   return (
     <Link href={href}>
       <Card className="overflow-hidden p-0 transition-all hover:shadow-md">
-        <div className="relative h-40 w-full bg-gray-100">
+        <div className="relative aspect-[4/3] w-full bg-gray-100">
           {photoUrl ? (
             <Image
               src={photoUrl}

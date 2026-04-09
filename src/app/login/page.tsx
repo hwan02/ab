@@ -56,7 +56,7 @@ export default function LoginPage() {
       </div>
 
       {/* Main card */}
-      <div className="relative z-10 w-full max-w-sm px-6">
+      <div className="relative z-10 w-full max-w-md px-6">
         <div className="rounded-3xl bg-white/80 p-8 shadow-xl shadow-gray-200/50 ring-1 ring-gray-100 backdrop-blur-md">
           {/* Logo & Title */}
           <div className="mb-8 text-center">

@@ -22,7 +22,9 @@
       "Bash(python3 -c \"from PIL import Image; print\\('pillow ok'\\)\")",
       "Bash(pip3 install:*)",
       "Bash(python3:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(vercel:*)",
+      "Bash(find:*)"
     ]
   }
 }
