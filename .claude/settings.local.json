@@ -18,7 +18,11 @@
       "Bash(cat:*)",
       "Bash(open:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(python3 -c \"from PIL import Image; print\\('pillow ok'\\)\")",
+      "Bash(pip3 install:*)",
+      "Bash(python3:*)",
+      "Bash(git push:*)"
     ]
   }
 }
