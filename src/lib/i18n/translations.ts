@@ -10,16 +10,10 @@ export const LOCALES: { code: Locale; label: string; flag: string }[] = [
 const translations = {
   // Login
   "login.title": {
-    ko: "popo's stay",
+    ko: "포포스테이",
     en: "popo's stay",
     ja: "popo's stay",
     zh: "popo's stay",
-  },
-  "login.subtitle": {
-    ko: "숙소 게스트를 위한 컨시어지 서비스",
-    en: "Concierge service for accommodation guests",
-    ja: "宿泊ゲストのためのコンシェルジュサービス",
-    zh: "住宿客人的礼宾服务",
   },
   "login.google": {
     ko: "Google로 로그인",

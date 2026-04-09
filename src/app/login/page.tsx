@@ -60,9 +60,9 @@ export default function LoginPage() {
         <div className="rounded-3xl bg-white/80 p-8 shadow-xl shadow-gray-200/50 ring-1 ring-gray-100 backdrop-blur-md">
           {/* Logo & Title */}
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-orange-400 shadow-lg shadow-rose-200/50">
+            <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-orange-400 shadow-lg shadow-rose-200/50">
               <svg
-                className="h-8 w-8 text-white"
+                className="h-10 w-10 text-white"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
@@ -75,12 +75,9 @@ export default function LoginPage() {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
               {t("login.title")}
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-gray-500">
-              {t("login.subtitle")}
-            </p>
           </div>
 
           {/* Google Login Button */}
