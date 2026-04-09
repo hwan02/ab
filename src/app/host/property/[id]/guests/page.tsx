@@ -155,6 +155,11 @@ export default function GuestsPage({
   async function handleAddGuest() {
     if (!searchResult) return;
 
+    if (!checkIn || !checkOut) {
+      setError(t("guest.dateRequired"));
+      return;
+    }
+
     setIsAdding(true);
     setError("");
 
@@ -163,8 +168,8 @@ export default function GuestsPage({
       .insert({
         property_id: propertyId,
         guest_id: searchResult.id,
-        check_in: checkIn || null,
-        check_out: checkOut || null,
+        check_in: checkIn,
+        check_out: checkOut,
       });
 
     if (insertError) {

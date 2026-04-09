@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Modal } from "@/components/ui/Modal";
+import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n/context";
 
 interface PhotoGalleryProps {
@@ -83,77 +83,114 @@ export default function PhotoGallery({ photos }: PhotoGalleryProps) {
         </div>
       )}
 
-      {/* Full-size modal */}
-      <Modal
-        open={selectedIndex !== null}
-        onClose={() => setSelectedIndex(null)}
-        className="max-w-3xl"
-      >
-        {selectedIndex !== null && (
-          <div className="relative">
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg">
-              <Image
-                src={photos[selectedIndex]}
-                alt={`${t("photo.propertyPhoto")} ${selectedIndex + 1}`}
-                fill
-                className="object-contain"
-                sizes="(max-width: 768px) 100vw, 768px"
-              />
-            </div>
-
-            {/* Navigation */}
-            <div className="mt-4 flex items-center justify-between">
-              <button
-                onClick={() =>
-                  setSelectedIndex(
-                    selectedIndex > 0 ? selectedIndex - 1 : photos.length - 1
-                  )
-                }
-                className="rounded-lg bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-gray-200"
-                aria-label={t("photo.previousPhoto")}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-              <span className="text-sm text-gray-500">
-                {selectedIndex + 1} / {photos.length}
-              </span>
-              <button
-                onClick={() =>
-                  setSelectedIndex(
-                    selectedIndex < photos.length - 1 ? selectedIndex + 1 : 0
-                  )
-                }
-                className="rounded-lg bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-gray-200"
-                aria-label={t("photo.nextPhoto")}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      {/* Fullscreen photo viewer */}
+      {selectedIndex !== null && (
+        <FullscreenViewer
+          photos={photos}
+          currentIndex={selectedIndex}
+          onChangeIndex={setSelectedIndex}
+          onClose={() => setSelectedIndex(null)}
+        />
+      )}
     </>
+  );
+}
+
+function FullscreenViewer({
+  photos,
+  currentIndex,
+  onChangeIndex,
+  onClose,
+}: {
+  photos: string[];
+  currentIndex: number;
+  onChangeIndex: (i: number) => void;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+
+  const handlePrev = useCallback(() => {
+    onChangeIndex(currentIndex > 0 ? currentIndex - 1 : photos.length - 1);
+  }, [currentIndex, photos.length, onChangeIndex]);
+
+  const handleNext = useCallback(() => {
+    onChangeIndex(currentIndex < photos.length - 1 ? currentIndex + 1 : 0);
+  }, [currentIndex, photos.length, onChangeIndex]);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") handlePrev();
+      if (e.key === "ArrowRight") handleNext();
+    };
+    document.addEventListener("keydown", handleKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose, handlePrev, handleNext]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-black"
+      role="dialog"
+      aria-modal="true"
+    >
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-4 py-3">
+        <span className="text-sm font-medium text-white/70">
+          {currentIndex + 1} / {photos.length}
+        </span>
+        <button
+          onClick={onClose}
+          className="rounded-full p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          aria-label="Close"
+        >
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Image area */}
+      <div className="relative flex flex-1 items-center justify-center px-2">
+        <div className="relative h-full w-full">
+          <Image
+            src={photos[currentIndex]}
+            alt={`${t("photo.propertyPhoto")} ${currentIndex + 1}`}
+            fill
+            className="object-contain"
+            sizes="100vw"
+            priority
+          />
+        </div>
+
+        {/* Prev / Next overlays */}
+        {photos.length > 1 && (
+          <>
+            <button
+              onClick={handlePrev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2.5 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/60 hover:text-white"
+              aria-label={t("photo.previousPhoto")}
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+            <button
+              onClick={handleNext}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2.5 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/60 hover:text-white"
+              aria-label={t("photo.nextPhoto")}
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+          </>
+        )}
+      </div>
+    </div>,
+    document.body
   );
 }

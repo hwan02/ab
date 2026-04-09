@@ -16,7 +16,7 @@ interface ItemRequestFormProps {
   onSent: () => void;
 }
 
-function ItemRequestForm({ chatRoomId, senderId, onSent }: ItemRequestFormProps) {
+function ItemRequestForm({ chatRoomId, senderId }: ItemRequestFormProps) {
   const { t } = useI18n();
   const [itemName, setItemName] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -25,6 +25,7 @@ function ItemRequestForm({ chatRoomId, senderId, onSent }: ItemRequestFormProps)
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [sentCount, setSentCount] = useState(0);
 
   const supabase = createClient();
 
@@ -68,12 +69,12 @@ function ItemRequestForm({ chatRoomId, senderId, onSent }: ItemRequestFormProps)
     }
 
     notifySlack({ messageType: "item_request", content });
+    setSentCount((c) => c + 1);
     setItemName("");
     setQuantity("1");
     setUrgency("보통");
     setNotes("");
     setSubmitting(false);
-    onSent();
   };
 
   return (
@@ -118,7 +119,14 @@ function ItemRequestForm({ chatRoomId, senderId, onSent }: ItemRequestFormProps)
           {error}
         </p>
       )}
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        {sentCount > 0 ? (
+          <p className="text-xs text-green-600">
+            {`${t("itemForm.sent")} (${sentCount})`}
+          </p>
+        ) : (
+          <span />
+        )}
         <Button type="submit" loading={submitting} disabled={!itemName.trim()}>
           {t("itemForm.submit")}
         </Button>

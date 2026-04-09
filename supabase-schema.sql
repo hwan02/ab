@@ -84,6 +84,18 @@ CREATE TABLE announcements (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- 게스트 이용 요청
+CREATE TABLE guest_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  property_id UUID REFERENCES properties(id) ON DELETE CASCADE NOT NULL,
+  guest_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  check_in DATE,
+  check_out DATE,
+  message TEXT,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- 긴급 연락처
 CREATE TABLE emergency_contacts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -190,6 +202,19 @@ CREATE POLICY "ann_update" ON announcements FOR UPDATE
   USING (EXISTS (SELECT 1 FROM properties WHERE id = property_id AND host_id = auth.uid()));
 CREATE POLICY "ann_delete" ON announcements FOR DELETE
   USING (EXISTS (SELECT 1 FROM properties WHERE id = property_id AND host_id = auth.uid()));
+
+-- guest_requests
+ALTER TABLE guest_requests ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "gr_select" ON guest_requests FOR SELECT
+  USING (guest_id = auth.uid() OR EXISTS (
+    SELECT 1 FROM properties WHERE id = property_id AND host_id = auth.uid()
+  ));
+CREATE POLICY "gr_insert" ON guest_requests FOR INSERT
+  WITH CHECK (guest_id = auth.uid());
+CREATE POLICY "gr_update" ON guest_requests FOR UPDATE
+  USING (EXISTS (
+    SELECT 1 FROM properties WHERE id = property_id AND host_id = auth.uid()
+  ));
 
 -- emergency_contacts
 CREATE POLICY "ec_select" ON emergency_contacts FOR SELECT USING (true);

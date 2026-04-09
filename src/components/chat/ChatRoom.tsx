@@ -42,9 +42,9 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const lastTypingBroadcast = useRef(0);
   const realtimeChannelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
-  const channelIdRef = useRef(0);
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
+  const onNewMessageRef = useRef(onNewMessage);
 
   // Update last_read_at when entering or receiving messages
   const updateLastRead = useCallback(async () => {
@@ -79,6 +79,11 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
     fetchMessages();
   }, [chatRoomId, updateLastRead]);
 
+  // Keep callback ref in sync
+  useEffect(() => {
+    onNewMessageRef.current = onNewMessage;
+  }, [onNewMessage]);
+
   // Subscribe to realtime messages + typing in a single channel
   useEffect(() => {
     // Clean up any previous channel before creating a new one
@@ -87,38 +92,40 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
       realtimeChannelRef.current = null;
     }
 
-    channelIdRef.current += 1;
-    const currentChannelId = channelIdRef.current;
-    const channel = supabase
-      .channel(`chat:${chatRoomId}:${currentChannelId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `chat_room_id=eq.${chatRoomId}`,
-        },
-        (payload) => {
-          const newMsg = payload.new as Message;
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === newMsg.id)) {
-              return prev;
-            }
-            return [...prev, newMsg];
-          });
-          updateLastRead();
-          onNewMessage?.();
-        }
-      )
-      .on("broadcast", { event: "typing" }, (payload) => {
-        if (payload.payload?.userId !== currentUserId) {
-          setOtherTyping(true);
-          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-          typingTimeoutRef.current = setTimeout(() => setOtherTyping(false), 3000);
-        }
-      })
-      .subscribe();
+    // Use timestamp to guarantee unique channel name (survives HMR + StrictMode)
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const channel = supabase.channel(`chat:${chatRoomId}:${uniqueId}`);
+
+    channel.on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+        filter: `chat_room_id=eq.${chatRoomId}`,
+      },
+      (payload) => {
+        const newMsg = payload.new as Message;
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === newMsg.id)) {
+            return prev;
+          }
+          return [...prev, newMsg];
+        });
+        updateLastRead();
+        onNewMessageRef.current?.();
+      }
+    );
+
+    channel.on("broadcast", { event: "typing" }, (payload) => {
+      if (payload.payload?.userId !== currentUserId) {
+        setOtherTyping(true);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setOtherTyping(false), 3000);
+      }
+    });
+
+    channel.subscribe();
 
     realtimeChannelRef.current = channel;
 
@@ -129,7 +136,7 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
       supabase.removeChannel(channel);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
-  }, [chatRoomId, currentUserId, updateLastRead, onNewMessage]);
+  }, [chatRoomId, currentUserId, updateLastRead]);
 
   const broadcastTyping = useCallback(() => {
     const now = Date.now();
@@ -196,8 +203,9 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
       {/* Messages area */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-2 py-4"
+        className="flex-1 overflow-y-auto py-4"
       >
+      <div className="mx-auto max-w-2xl px-2">
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <p className="text-sm text-gray-400">
@@ -234,6 +242,7 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
         )}
         {otherTyping && <TypingIndicator label={t("chat.typing")} />}
         <div ref={messagesEndRef} />
+      </div>
       </div>
 
       {/* Special request forms */}
@@ -277,6 +286,7 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
 
       {/* Input area */}
       <div className="border-t border-gray-200 bg-white p-3">
+        <div className="mx-auto max-w-2xl">
         {/* Action buttons row (guest only) */}
         {activeForm === "none" && role === "guest" && (
           <div className="mb-2 flex gap-2">
@@ -318,6 +328,7 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
           >
             {t("chat.send")}
           </Button>
+        </div>
         </div>
       </div>
     </div>

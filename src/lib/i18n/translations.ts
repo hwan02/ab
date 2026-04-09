@@ -1077,6 +1077,12 @@ const translations = {
     ja: "リクエストを送信",
     zh: "发送请求",
   },
+  "itemForm.sent": {
+    ko: "요청 완료",
+    en: "Sent",
+    ja: "送信済み",
+    zh: "已发送",
+  },
 
   // Reservation Request Form
   "reservationForm.restaurantRequired": {
@@ -1808,6 +1814,62 @@ const translations = {
     en: "Failed to reject.",
     ja: "拒否に失敗しました。",
     zh: "拒绝失败。",
+  },
+  "guest.dateRequired": {
+    ko: "체크인/체크아웃 날짜를 입력해주세요.",
+    en: "Please enter check-in and check-out dates.",
+    ja: "チェックイン・チェックアウト日を入力してください。",
+    zh: "请输入入住和退房日期。",
+  },
+
+  // Access Restriction
+  "access.restricted": {
+    ko: "승인 대기 중",
+    en: "Pending Approval",
+    ja: "承認待ち",
+    zh: "待批准",
+  },
+  "access.restrictedDesc": {
+    ko: "호스트의 승인 후 상세 주소, 컨시어지, 채팅 등 모든 기능을 이용할 수 있습니다.",
+    en: "Once approved by the host, you can access the full address, concierge, chat, and all other features.",
+    ja: "ホストの承認後、詳細住所、コンシェルジュ、チャットなどすべての機能をご利用いただけます。",
+    zh: "获得房东批准后，您可以访问详细地址、礼宾服务、聊天等所有功能。",
+  },
+  "access.requestSent": {
+    ko: "이용 요청이 전송되었습니다",
+    en: "Your stay request has been sent",
+    ja: "利用リクエストが送信されました",
+    zh: "您的入住请求已发送",
+  },
+  "access.requestNotSent": {
+    ko: "아직 이용 요청을 보내지 않았습니다",
+    en: "You haven't sent a stay request yet",
+    ja: "まだ利用リクエストを送信していません",
+    zh: "您尚未发送入住请求",
+  },
+  "access.requestStay": {
+    ko: "이용 요청하기",
+    en: "Request Stay",
+    ja: "利用リクエスト",
+    zh: "申请入住",
+  },
+  "access.expired": {
+    ko: "숙박 기간이 만료되었습니다",
+    en: "Your stay period has expired",
+    ja: "宿泊期間が終了しました",
+    zh: "您的入住期限已过",
+  },
+  "access.expiredDesc": {
+    ko: "숙박 기간이 지나 이용이 제한됩니다. 다시 이용하려면 새로운 숙박 요청을 보내주세요.",
+    en: "Your stay period has ended. Please send a new stay request to regain access.",
+    ja: "宿泊期間が終了したため、利用が制限されています。再度利用するには新しいリクエストを送信してください。",
+    zh: "您的入住期限已过，访问受限。请发送新的入住请求以恢复访问。",
+  },
+  "access.approximateLocation": {
+    ko: "대략적인 위치",
+    en: "Approximate location",
+    ja: "おおよその位置",
+    zh: "大致位置",
   },
 
   // Map
