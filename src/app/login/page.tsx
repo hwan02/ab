@@ -110,7 +110,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-gray-400">
-          popo&apos;s stay &copy; {new Date().getFullYear()}
+          {t("login.title")} &copy; {new Date().getFullYear()}
         </p>
       </div>
     </div>

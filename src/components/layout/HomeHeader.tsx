@@ -40,7 +40,7 @@ export default function HomeHeader({ userName, avatarUrl, isAdmin }: HomeHeaderP
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2 text-xl font-bold text-rose-500">
           <img src="/popo.png" alt="popo" className="h-9 w-9 object-contain" />
-          popo&apos;s stay
+          {t("login.title")}
         </Link>
         <div className="flex items-center gap-2">
           {/* Language switcher (compact) */}
