@@ -5,7 +5,7 @@ import type { Property } from "@/types/database";
 
 const navItems = [
   {
-    label: "숙소 정보",
+    labelKey: "nav.propertyInfo",
     segment: "edit",
     icon: (
       <svg
@@ -24,7 +24,7 @@ const navItems = [
     ),
   },
   {
-    label: "게스트 관리",
+    labelKey: "guest.manage",
     segment: "guests",
     icon: (
       <svg
@@ -43,7 +43,7 @@ const navItems = [
     ),
   },
   {
-    label: "주변 장소",
+    labelKey: "nearby.hostTitle",
     segment: "nearby",
     icon: (
       <svg
@@ -67,7 +67,7 @@ const navItems = [
     ),
   },
   {
-    label: "공지사항",
+    labelKey: "nav.announcements",
     segment: "announcements",
     icon: (
       <svg
@@ -86,7 +86,7 @@ const navItems = [
     ),
   },
   {
-    label: "긴급연락처",
+    labelKey: "nav.emergency",
     segment: "emergency",
     icon: (
       <svg
@@ -105,7 +105,7 @@ const navItems = [
     ),
   },
   {
-    label: "채팅",
+    labelKey: "nav.chat",
     segment: "chat",
     icon: (
       <svg

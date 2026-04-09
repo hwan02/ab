@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { formatDate } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/context";
 import type { Announcement } from "@/types/database";
 
 export default function AnnouncementsPage({
@@ -18,6 +19,7 @@ export default function AnnouncementsPage({
 }) {
   const { id: propertyId } = use(params);
   const supabase = createClient();
+  const { t } = useI18n();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,7 +45,7 @@ export default function AnnouncementsPage({
       .order("created_at", { ascending: false });
 
     if (fetchError) {
-      setError("공지사항을 불러오는데 실패했습니다.");
+      setError(t("announcements.fetchFailed"));
       console.error("Fetch error:", fetchError);
     } else {
       setAnnouncements((data as Announcement[]) ?? []);
@@ -72,11 +74,11 @@ export default function AnnouncementsPage({
     setFormError("");
 
     if (!title.trim()) {
-      setFormError("제목을 입력해주세요.");
+      setFormError(t("announcements.titleRequired"));
       return;
     }
     if (!content.trim()) {
-      setFormError("내용을 입력해주세요.");
+      setFormError(t("announcements.contentRequired"));
       return;
     }
 
@@ -92,7 +94,7 @@ export default function AnnouncementsPage({
         .eq("id", editingAnnouncement.id);
 
       if (updateError) {
-        setFormError("공지사항 수정에 실패했습니다.");
+        setFormError(t("announcements.updateFailed"));
         console.error("Update error:", updateError);
       } else {
         resetForm();
@@ -108,7 +110,7 @@ export default function AnnouncementsPage({
         });
 
       if (insertError) {
-        setFormError("공지사항 등록에 실패했습니다.");
+        setFormError(t("announcements.createFailed"));
         console.error("Insert error:", insertError);
       } else {
         resetForm();
@@ -119,7 +121,7 @@ export default function AnnouncementsPage({
   }
 
   async function handleDelete(announcementId: string) {
-    if (!confirm("이 공지사항을 삭제하시겠습니까?")) return;
+    if (!confirm(t("announcements.deleteConfirm"))) return;
 
     setDeletingId(announcementId);
     setError("");
@@ -130,7 +132,7 @@ export default function AnnouncementsPage({
       .eq("id", announcementId);
 
     if (deleteError) {
-      setError("공지사항 삭제에 실패했습니다.");
+      setError(t("announcements.deleteFailed"));
       console.error("Delete error:", deleteError);
     } else {
       setAnnouncements((prev) =>
@@ -155,9 +157,9 @@ export default function AnnouncementsPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">공지사항</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t("announcements.title")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            게스트에게 전달할 공지사항을 관리하세요.
+            {t("announcements.hostSubtitle")}
           </p>
         </div>
         {!showForm && (
@@ -175,7 +177,7 @@ export default function AnnouncementsPage({
                 d="M12 4.5v15m7.5-7.5h-15"
               />
             </svg>
-            공지 작성
+            {t("announcements.write")}
           </Button>
         )}
       </div>
@@ -188,20 +190,20 @@ export default function AnnouncementsPage({
 
       {showForm && (
         <Card
-          title={editingAnnouncement ? "공지사항 수정" : "새 공지사항"}
+          title={editingAnnouncement ? t("announcements.editTitle") : t("announcements.newTitle")}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="제목"
-              placeholder="공지사항 제목을 입력하세요"
+              label={t("announcements.titleLabel")}
+              placeholder={t("announcements.titlePlaceholder")}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               disabled={isSubmitting}
             />
 
             <Textarea
-              label="내용"
-              placeholder="공지사항 내용을 입력하세요"
+              label={t("announcements.contentLabel")}
+              placeholder={t("announcements.contentPlaceholder")}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={5}
@@ -219,10 +221,10 @@ export default function AnnouncementsPage({
                 onClick={resetForm}
                 disabled={isSubmitting}
               >
-                취소
+                {t("common.cancel")}
               </Button>
               <Button type="submit" loading={isSubmitting}>
-                {editingAnnouncement ? "수정하기" : "등록하기"}
+                {editingAnnouncement ? t("common.update") : t("common.register")}
               </Button>
             </div>
           </form>
@@ -231,7 +233,7 @@ export default function AnnouncementsPage({
 
       <div>
         <h2 className="mb-4 text-lg font-semibold text-gray-900">
-          공지사항 목록 ({announcements.length})
+          {t("announcements.list")} ({announcements.length})
         </h2>
 
         {announcements.length === 0 ? (
@@ -251,12 +253,12 @@ export default function AnnouncementsPage({
                 />
               </svg>
             }
-            title="공지사항이 없습니다"
-            description="게스트에게 전달할 공지사항을 작성하세요."
+            title={t("announcements.noAnnouncements")}
+            description={t("announcements.noAnnouncementsHostDesc")}
             action={
               !showForm ? (
                 <Button onClick={() => setShowForm(true)} size="sm">
-                  공지 작성
+                  {t("announcements.write")}
                 </Button>
               ) : undefined
             }
@@ -283,7 +285,7 @@ export default function AnnouncementsPage({
                       size="sm"
                       onClick={() => startEdit(announcement)}
                     >
-                      수정
+                      {t("common.edit")}
                     </Button>
                     <Button
                       variant="ghost"
@@ -292,7 +294,7 @@ export default function AnnouncementsPage({
                       loading={deletingId === announcement.id}
                       className="text-red-500 hover:bg-red-50 hover:text-red-600"
                     >
-                      삭제
+                      {t("common.delete")}
                     </Button>
                   </div>
                 </div>

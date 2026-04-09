@@ -8,14 +8,8 @@ import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { NearbyPlaceForm } from "@/components/nearby/NearbyPlaceForm";
+import { useI18n } from "@/lib/i18n/context";
 import type { NearbyPlace } from "@/types/database";
-
-const categories = [
-  { key: "attraction" as const, label: "볼거리" },
-  { key: "restaurant" as const, label: "먹거리" },
-  { key: "convenience" as const, label: "편의시설" },
-  { key: "experience" as const, label: "체험" },
-];
 
 export default function NearbyPage({
   params,
@@ -24,6 +18,14 @@ export default function NearbyPage({
 }) {
   const { id: propertyId } = use(params);
   const supabase = createClient();
+  const { t } = useI18n();
+
+  const categories = [
+    { key: "attraction" as const, label: t("nearby.attraction") },
+    { key: "restaurant" as const, label: t("nearby.restaurant") },
+    { key: "convenience" as const, label: t("nearby.convenience") },
+    { key: "experience" as const, label: t("nearby.experience") },
+  ];
   const [places, setPlaces] = useState<NearbyPlace[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [activeCategory, setActiveCategory] =
@@ -47,7 +49,7 @@ export default function NearbyPage({
       .order("created_at", { ascending: false });
 
     if (fetchError) {
-      setError("주변 장소를 불러오는데 실패했습니다.");
+      setError(t("nearby.fetchFailed"));
       console.error("Fetch error:", fetchError);
     } else {
       setPlaces((data as NearbyPlace[]) ?? []);
@@ -79,7 +81,7 @@ export default function NearbyPage({
       });
 
     if (insertError) {
-      setError("장소 추가에 실패했습니다.");
+      setError(t("nearby.addFailed"));
       console.error("Insert error:", insertError);
     } else {
       setIsModalOpen(false);
@@ -114,7 +116,7 @@ export default function NearbyPage({
       .eq("id", editingPlace.id);
 
     if (updateError) {
-      setError("장소 수정에 실패했습니다.");
+      setError(t("nearby.editFailed"));
       console.error("Update error:", updateError);
     } else {
       setEditingPlace(null);
@@ -125,7 +127,7 @@ export default function NearbyPage({
   }
 
   async function handleDeletePlace(placeId: string) {
-    if (!confirm("이 장소를 삭제하시겠습니까?")) return;
+    if (!confirm(t("nearby.deleteConfirmPlace"))) return;
 
     setDeletingId(placeId);
     setError("");
@@ -136,7 +138,7 @@ export default function NearbyPage({
       .eq("id", placeId);
 
     if (deleteError) {
-      setError("장소 삭제에 실패했습니다.");
+      setError(t("nearby.deleteFailed"));
       console.error("Delete error:", deleteError);
     } else {
       setPlaces((prev) => prev.filter((p) => p.id !== placeId));
@@ -173,9 +175,9 @@ export default function NearbyPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">주변 장소</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t("nearby.hostTitle")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            게스트에게 추천할 주변 장소를 관리하세요.
+            {t("nearby.hostSubtitle")}
           </p>
         </div>
         <Button onClick={openAddModal}>
@@ -192,7 +194,7 @@ export default function NearbyPage({
               d="M12 4.5v15m7.5-7.5h-15"
             />
           </svg>
-          장소 추가
+          {t("nearby.addPlace")}
         </Button>
       </div>
 
@@ -248,11 +250,11 @@ export default function NearbyPage({
               />
             </svg>
           }
-          title="등록된 장소가 없습니다"
-          description="이 카테고리에 장소를 추가해보세요."
+          title={t("nearby.noPlaces")}
+          description={t("nearby.noPlacesHostDesc")}
           action={
             <Button onClick={openAddModal} size="sm">
-              장소 추가
+              {t("nearby.addPlace")}
             </Button>
           }
         />
@@ -333,7 +335,7 @@ export default function NearbyPage({
                         d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
                       />
                     </svg>
-                    지도 보기
+                    {t("nearby.viewMap")}
                   </a>
                 )}
               </div>
@@ -344,7 +346,7 @@ export default function NearbyPage({
                   size="sm"
                   onClick={() => openEditModal(place)}
                 >
-                  수정
+                  {t("common.edit")}
                 </Button>
                 <Button
                   variant="ghost"
@@ -353,7 +355,7 @@ export default function NearbyPage({
                   loading={deletingId === place.id}
                   className="text-red-500 hover:bg-red-50 hover:text-red-600"
                 >
-                  삭제
+                  {t("common.delete")}
                 </Button>
               </div>
             </Card>
@@ -364,7 +366,7 @@ export default function NearbyPage({
       <Modal
         open={isModalOpen}
         onClose={closeModal}
-        title={editingPlace ? "장소 수정" : "장소 추가"}
+        title={editingPlace ? t("nearby.editPlace") : t("nearby.addPlace")}
       >
         <NearbyPlaceForm
           initialData={editingPlace ?? undefined}

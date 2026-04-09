@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { reservationRequestSchema, getFieldErrors } from "@/lib/validations";
 
 interface ReservationRequestFormProps {
   chatRoomId: string;
@@ -17,6 +19,7 @@ function ReservationRequestForm({
   senderId,
   onSent,
 }: ReservationRequestFormProps) {
+  const { t } = useI18n();
   const [restaurantName, setRestaurantName] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -24,23 +27,36 @@ function ReservationRequestForm({
   const [specialRequests, setSpecialRequests] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!restaurantName.trim() || !date || !time) return;
 
-    setSubmitting(true);
-    setError(null);
-
-    const content = JSON.stringify({
-      restaurantName: restaurantName.trim(),
+    const result = reservationRequestSchema.safeParse({
+      restaurantName,
       date,
       time,
       partySize,
-      specialRequests: specialRequests.trim(),
+      specialRequests,
     });
+
+    if (!result.success) {
+      const errors = getFieldErrors(result.error);
+      const translated: Record<string, string> = {};
+      for (const [key, msg] of Object.entries(errors)) {
+        translated[key] = t(msg as Parameters<typeof t>[0]);
+      }
+      setFieldErrors(translated);
+      return;
+    }
+
+    setFieldErrors({});
+    setSubmitting(true);
+    setError(null);
+
+    const content = JSON.stringify(result.data);
 
     const { error: insertError } = await supabase.from("messages").insert({
       chat_room_id: chatRoomId,
@@ -50,7 +66,7 @@ function ReservationRequestForm({
     });
 
     if (insertError) {
-      setError("요청을 보내지 못했습니다. 다시 시도해주세요.");
+      setError(t("chat.sendFailed"));
       setSubmitting(false);
       return;
     }
@@ -67,30 +83,33 @@ function ReservationRequestForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <Input
-        label="레스토랑 이름"
-        placeholder="예: 스시 오마카세, 한우 맛집"
+        label={t("reservationForm.restaurant")}
+        placeholder={t("reservationForm.restaurantPlaceholder")}
         value={restaurantName}
         onChange={(e) => setRestaurantName(e.target.value)}
+        error={fieldErrors.restaurantName}
         required
       />
       <div className="grid grid-cols-2 gap-3">
         <Input
-          label="날짜"
+          label={t("reservationForm.date")}
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
+          error={fieldErrors.date}
           required
         />
         <Input
-          label="시간"
+          label={t("reservationForm.time")}
           type="time"
           value={time}
           onChange={(e) => setTime(e.target.value)}
+          error={fieldErrors.time}
           required
         />
       </div>
       <Input
-        label="인원"
+        label={t("reservationForm.partySize")}
         type="number"
         min="1"
         max="20"
@@ -99,8 +118,8 @@ function ReservationRequestForm({
         required
       />
       <Textarea
-        label="특별 요청사항 (선택)"
-        placeholder="알레르기, 좌석 선호도 등"
+        label={t("reservationForm.specialRequests")}
+        placeholder={t("reservationForm.specialRequestsPlaceholder")}
         value={specialRequests}
         onChange={(e) => setSpecialRequests(e.target.value)}
         rows={2}
@@ -117,7 +136,7 @@ function ReservationRequestForm({
           loading={submitting}
           disabled={!restaurantName.trim() || !date || !time}
         >
-          예약 요청 보내기
+          {t("reservationForm.submit")}
         </Button>
       </div>
     </form>

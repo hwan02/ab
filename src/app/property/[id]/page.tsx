@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PhotoGallery from "@/components/property/PhotoGallery";
 import PropertyInfo from "@/components/property/PropertyInfo";
+import { T } from "@/components/i18n/T";
 import type { Property } from "@/types/database";
 
 interface PropertyPageProps {
@@ -61,7 +62,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
       {/* Info Sections */}
       <div className="mt-6">
         <h3 className="mb-3 text-base font-bold text-gray-900">
-          숙소 안내
+          <T k="property.guide" />
         </h3>
         <PropertyInfo property={property} />
       </div>

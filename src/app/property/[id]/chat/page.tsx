@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n/context";
 import type { ChatRoom as ChatRoomType } from "@/types/database";
 import { ChatRoom } from "@/components/chat/ChatRoom";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -10,6 +11,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 export default function GuestChatPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useI18n();
   const propertyId = params.id as string;
 
   const [chatRoomId, setChatRoomId] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export default function GuestChatPage() {
       } = await supabase.auth.getUser();
 
       if (authError || !user) {
-        setError("로그인이 필요합니다.");
+        setError(t("common.loginRequired"));
         setLoading(false);
         return;
       }
@@ -44,7 +46,7 @@ export default function GuestChatPage() {
         .limit(1);
 
       if (fetchError) {
-        setError("채팅방을 불러오지 못했습니다.");
+        setError(t("chat.loadFailed"));
         setLoading(false);
         return;
       }
@@ -66,7 +68,7 @@ export default function GuestChatPage() {
         .single();
 
       if (createError || !newRoom) {
-        setError("채팅방을 생성하지 못했습니다.");
+        setError(t("chat.createFailed"));
         setLoading(false);
         return;
       }
@@ -76,14 +78,14 @@ export default function GuestChatPage() {
     }
 
     initChat();
-  }, [propertyId]);
+  }, [propertyId, t]);
 
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-3">
           <LoadingSpinner size="lg" />
-          <p className="text-sm text-gray-500">채팅방을 준비하고 있습니다...</p>
+          <p className="text-sm text-gray-500">{t("chat.preparingRoom")}</p>
         </div>
       </div>
     );
@@ -98,7 +100,7 @@ export default function GuestChatPage() {
             onClick={() => router.back()}
             className="mt-4 text-sm font-medium text-rose-500 hover:text-rose-600"
           >
-            뒤로 가기
+            {t("common.back")}
           </button>
         </div>
       </div>
@@ -116,7 +118,7 @@ export default function GuestChatPage() {
         <button
           onClick={() => router.back()}
           className="mr-3 text-gray-500 hover:text-gray-700"
-          aria-label="뒤로 가기"
+          aria-label={t("common.back")}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -133,7 +135,7 @@ export default function GuestChatPage() {
             />
           </svg>
         </button>
-        <h1 className="text-lg font-semibold text-gray-900">호스트와 대화</h1>
+        <h1 className="text-lg font-semibold text-gray-900">{t("chat.hostChat")}</h1>
       </header>
 
       {/* Chat room */}

@@ -3,12 +3,14 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Modal } from "@/components/ui/Modal";
+import { useI18n } from "@/lib/i18n/context";
 
 interface PhotoGalleryProps {
   photos: string[];
 }
 
 export default function PhotoGallery({ photos }: PhotoGalleryProps) {
+  const { t } = useI18n();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   if (!photos || photos.length === 0) {
@@ -29,7 +31,7 @@ export default function PhotoGallery({ photos }: PhotoGalleryProps) {
               d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
             />
           </svg>
-          <p className="mt-2 text-sm">등록된 사진이 없습니다</p>
+          <p className="mt-2 text-sm">{t("photo.noPhotos")}</p>
         </div>
       </div>
     );
@@ -44,7 +46,7 @@ export default function PhotoGallery({ photos }: PhotoGalleryProps) {
         >
           <Image
             src={photos[0]}
-            alt="숙소 사진"
+            alt={t("photo.propertyPhoto")}
             fill
             className="object-cover transition-transform hover:scale-105"
             sizes="(max-width: 640px) 100vw, 640px"
@@ -64,7 +66,7 @@ export default function PhotoGallery({ photos }: PhotoGalleryProps) {
             >
               <Image
                 src={photo}
-                alt={`숙소 사진 ${index + 1}`}
+                alt={`${t("photo.propertyPhoto")} ${index + 1}`}
                 fill
                 className="object-cover transition-transform hover:scale-105"
                 sizes="(max-width: 640px) 50vw, 320px"
@@ -92,7 +94,7 @@ export default function PhotoGallery({ photos }: PhotoGalleryProps) {
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg">
               <Image
                 src={photos[selectedIndex]}
-                alt={`숙소 사진 ${selectedIndex + 1}`}
+                alt={`${t("photo.propertyPhoto")} ${selectedIndex + 1}`}
                 fill
                 className="object-contain"
                 sizes="(max-width: 768px) 100vw, 768px"
@@ -108,7 +110,7 @@ export default function PhotoGallery({ photos }: PhotoGalleryProps) {
                   )
                 }
                 className="rounded-lg bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-gray-200"
-                aria-label="이전 사진"
+                aria-label={t("photo.previousPhoto")}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -133,7 +135,7 @@ export default function PhotoGallery({ photos }: PhotoGalleryProps) {
                   )
                 }
                 className="rounded-lg bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-gray-200"
-                aria-label="다음 사진"
+                aria-label={t("photo.nextPhoto")}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

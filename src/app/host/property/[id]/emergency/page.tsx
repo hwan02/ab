@@ -8,15 +8,8 @@ import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { useI18n } from "@/lib/i18n/context";
 import type { EmergencyContact } from "@/types/database";
-
-const CATEGORY_OPTIONS = [
-  { value: "hospital", label: "병원" },
-  { value: "police", label: "경찰" },
-  { value: "fire", label: "소방" },
-  { value: "host", label: "호스트" },
-  { value: "other", label: "기타" },
-];
 
 export default function EmergencyContactsPage({
   params,
@@ -25,6 +18,15 @@ export default function EmergencyContactsPage({
 }) {
   const { id: propertyId } = use(params);
   const supabase = createClient();
+  const { t } = useI18n();
+
+  const CATEGORY_OPTIONS = [
+    { value: "hospital", label: t("category.hospital") },
+    { value: "police", label: t("category.police") },
+    { value: "fire", label: t("category.fire") },
+    { value: "host", label: t("category.host") },
+    { value: "other", label: t("category.other") },
+  ];
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,7 +56,7 @@ export default function EmergencyContactsPage({
       .order("created_at", { ascending: false });
 
     if (fetchError) {
-      setError("긴급 연락처를 불러오는데 실패했습니다.");
+      setError(t("emergency.fetchFailed"));
       console.error("Fetch error:", fetchError);
     } else {
       setContacts((data as EmergencyContact[]) ?? []);
@@ -87,11 +89,11 @@ export default function EmergencyContactsPage({
     setFormError("");
 
     if (!name.trim()) {
-      setFormError("이름을 입력해주세요.");
+      setFormError(t("emergency.nameRequired"));
       return;
     }
     if (!phone.trim()) {
-      setFormError("전화번호를 입력해주세요.");
+      setFormError(t("emergency.phoneRequired"));
       return;
     }
 
@@ -109,7 +111,7 @@ export default function EmergencyContactsPage({
         .eq("id", editingContact.id);
 
       if (updateError) {
-        setFormError("연락처 수정에 실패했습니다.");
+        setFormError(t("emergency.updateFailed"));
         console.error("Update error:", updateError);
       } else {
         resetForm();
@@ -127,7 +129,7 @@ export default function EmergencyContactsPage({
         });
 
       if (insertError) {
-        setFormError("연락처 등록에 실패했습니다.");
+        setFormError(t("emergency.createFailed"));
         console.error("Insert error:", insertError);
       } else {
         resetForm();
@@ -138,7 +140,7 @@ export default function EmergencyContactsPage({
   }
 
   async function handleDelete(contactId: string) {
-    if (!confirm("이 연락처를 삭제하시겠습니까?")) return;
+    if (!confirm(t("emergency.deleteConfirm"))) return;
 
     setDeletingId(contactId);
     setError("");
@@ -149,7 +151,7 @@ export default function EmergencyContactsPage({
       .eq("id", contactId);
 
     if (deleteError) {
-      setError("연락처 삭제에 실패했습니다.");
+      setError(t("emergency.deleteFailed"));
       console.error("Delete error:", deleteError);
     } else {
       setContacts((prev) => prev.filter((c) => c.id !== contactId));
@@ -176,9 +178,9 @@ export default function EmergencyContactsPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">긴급 연락처</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t("emergency.title")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            게스트에게 제공할 긴급 연락처를 관리하세요.
+            {t("emergency.hostSubtitle")}
           </p>
         </div>
         {!showForm && (
@@ -196,7 +198,7 @@ export default function EmergencyContactsPage({
                 d="M12 4.5v15m7.5-7.5h-15"
               />
             </svg>
-            연락처 추가
+            {t("emergency.addContact")}
           </Button>
         )}
       </div>
@@ -208,18 +210,18 @@ export default function EmergencyContactsPage({
       )}
 
       {showForm && (
-        <Card title={editingContact ? "연락처 수정" : "새 긴급 연락처"}>
+        <Card title={editingContact ? t("emergency.editContact") : t("emergency.newContact")}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="이름 *"
-              placeholder="예: 세종병원, 강남경찰서"
+              label={t("emergency.nameLabel")}
+              placeholder={t("emergency.namePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={isSubmitting}
             />
 
             <Select
-              label="카테고리"
+              label={t("nearbyForm.categoryLabel")}
               value={category}
               onChange={(e) =>
                 setCategory(
@@ -231,16 +233,16 @@ export default function EmergencyContactsPage({
             />
 
             <Input
-              label="전화번호 *"
-              placeholder="예: 02-1234-5678"
+              label={t("emergency.phoneLabel")}
+              placeholder={t("emergency.phonePlaceholder")}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               disabled={isSubmitting}
             />
 
             <Input
-              label="주소"
-              placeholder="주소를 입력하세요 (선택)"
+              label={t("emergency.addressLabel")}
+              placeholder={t("emergency.addressPlaceholder")}
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               disabled={isSubmitting}
@@ -257,10 +259,10 @@ export default function EmergencyContactsPage({
                 onClick={resetForm}
                 disabled={isSubmitting}
               >
-                취소
+                {t("common.cancel")}
               </Button>
               <Button type="submit" loading={isSubmitting}>
-                {editingContact ? "수정하기" : "등록하기"}
+                {editingContact ? t("common.update") : t("common.register")}
               </Button>
             </div>
           </form>
@@ -269,7 +271,7 @@ export default function EmergencyContactsPage({
 
       <div>
         <h2 className="mb-4 text-lg font-semibold text-gray-900">
-          연락처 목록 ({contacts.length})
+          {t("emergency.contactList")} ({contacts.length})
         </h2>
 
         {contacts.length === 0 ? (
@@ -289,12 +291,12 @@ export default function EmergencyContactsPage({
                 />
               </svg>
             }
-            title="등록된 연락처가 없습니다"
-            description="긴급 연락처를 추가하여 게스트에게 제공하세요."
+            title={t("emergency.noContacts")}
+            description={t("emergency.noContactsHostDesc")}
             action={
               !showForm ? (
                 <Button onClick={() => setShowForm(true)} size="sm">
-                  연락처 추가
+                  {t("emergency.addContact")}
                 </Button>
               ) : undefined
             }
@@ -328,7 +330,7 @@ export default function EmergencyContactsPage({
                     size="sm"
                     onClick={() => startEdit(contact)}
                   >
-                    수정
+                    {t("common.edit")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -337,7 +339,7 @@ export default function EmergencyContactsPage({
                     loading={deletingId === contact.id}
                     className="text-red-500 hover:bg-red-50 hover:text-red-600"
                   >
-                    삭제
+                    {t("common.delete")}
                   </Button>
                 </div>
               </div>

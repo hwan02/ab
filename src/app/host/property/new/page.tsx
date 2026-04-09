@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PropertyForm } from "@/components/property/PropertyForm";
 import { Card } from "@/components/ui/Card";
+import { useI18n } from "@/lib/i18n/context";
 
 export default function NewPropertyPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,7 +34,7 @@ export default function NewPropertyPage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        setError("로그인이 필요합니다.");
+        setError(t("common.loginRequired"));
         return;
       }
 
@@ -78,7 +80,7 @@ export default function NewPropertyPage() {
         });
 
       if (insertError) {
-        setError("숙소 등록에 실패했습니다. 다시 시도해주세요.");
+        setError(t("host.registerFailed"));
         console.error("Insert error:", insertError);
         return;
       }
@@ -86,7 +88,7 @@ export default function NewPropertyPage() {
       router.push("/host");
     } catch (err) {
       console.error("Unexpected error:", err);
-      setError("예상치 못한 오류가 발생했습니다.");
+      setError(t("common.unexpectedError"));
     } finally {
       setIsLoading(false);
     }
@@ -95,9 +97,9 @@ export default function NewPropertyPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">새 숙소 등록</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("host.newProperty")}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          숙소 정보를 입력하고 등록하세요.
+          {t("host.newPropertyDesc")}
         </p>
       </div>
 

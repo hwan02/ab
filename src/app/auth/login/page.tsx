@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n/context";
 
 export default function LoginPage() {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
@@ -30,7 +32,7 @@ export default function LoginPage() {
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900">Guest Concierge</h1>
           <p className="mt-2 text-sm text-gray-500">
-            숙소 게스트를 위한 컨시어지 서비스
+            {t("login.subtitle")}
           </p>
         </div>
 
@@ -57,7 +59,7 @@ export default function LoginPage() {
               fill="#EA4335"
             />
           </svg>
-          {loading ? "로그인 중..." : "Google로 로그인"}
+          {loading ? t("login.loading") : t("login.google")}
         </button>
       </div>
     </div>

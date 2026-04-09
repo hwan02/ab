@@ -58,7 +58,7 @@ export interface Message {
   chat_room_id: string;
   sender_id: string;
   content: string;
-  message_type: "text" | "item_request" | "reservation_request";
+  message_type: "text" | "image" | "file" | "item_request" | "reservation_request";
   created_at: string;
 }
 

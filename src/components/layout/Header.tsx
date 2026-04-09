@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n/context";
 import type { User } from "@supabase/supabase-js";
 
 export default function Header() {
+  const { t } = useI18n();
   const router = useRouter();
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
@@ -81,13 +83,13 @@ export default function Header() {
                   onClick={() => setDropdownOpen(false)}
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
-                  호스트 모드
+                  {t("home.hostMode")}
                 </Link>
                 <button
                   onClick={handleLogout}
                   className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                 >
-                  로그아웃
+                  {t("common.logout")}
                 </button>
               </div>
             )}

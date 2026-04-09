@@ -3,9 +3,11 @@
 import { type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n/context";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   segment: string;
   icon: ReactNode;
 }
@@ -24,6 +26,7 @@ export default function HostLayoutShell({
   children,
 }: HostLayoutShellProps) {
   const pathname = usePathname();
+  const { t } = useI18n();
   const isChatPage = pathname.endsWith("/chat");
 
   // Chat page: full-screen without shell
@@ -55,7 +58,7 @@ export default function HostLayoutShell({
                 d="M15.75 19.5 8.25 12l7.5-7.5"
               />
             </svg>
-            내 숙소
+            {t("home.myProperties")}
           </Link>
           <span className="text-gray-300">/</span>
           <h1 className="truncate text-lg font-semibold text-gray-900">
@@ -81,7 +84,7 @@ export default function HostLayoutShell({
                   }`}
                 >
                   {item.icon}
-                  {item.label}
+                  {t(item.labelKey as TranslationKey)}
                 </Link>
               );
             })}
@@ -103,7 +106,7 @@ export default function HostLayoutShell({
                 }`}
               >
                 {item.icon}
-                <span>{item.label}</span>
+                <span>{t(item.labelKey as TranslationKey)}</span>
               </Link>
             );
           })}

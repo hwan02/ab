@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, type FormEvent, type ChangeEvent } from "react";
+import { useI18n } from "@/lib/i18n/context";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
+import { propertyFormSchema, getFieldErrors } from "@/lib/validations";
 import type { Property } from "@/types/database";
 
 interface PropertyFormProps {
@@ -23,6 +25,7 @@ interface PropertyFormProps {
 }
 
 function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
+  const { t } = useI18n();
   const [name, setName] = useState(initialData?.name ?? "");
   const [description, setDescription] = useState(
     initialData?.description ?? ""
@@ -42,7 +45,7 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
     initialData?.house_rules ?? ""
   );
   const [photos, setPhotos] = useState<File[]>([]);
-  const [nameError, setNameError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   function handlePhotoChange(e: ChangeEvent<HTMLInputElement>) {
     if (e.target.files) {
@@ -52,40 +55,46 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setNameError("");
 
-    if (!name.trim()) {
-      setNameError("숙소 이름을 입력해주세요.");
+    const result = propertyFormSchema.safeParse({
+      name,
+      description,
+      address,
+      wifi_ssid: wifiSsid,
+      wifi_password: wifiPassword,
+      checkin_guide: checkinGuide,
+      checkout_guide: checkoutGuide,
+      house_rules: houseRules,
+    });
+
+    if (!result.success) {
+      const fieldErrors = getFieldErrors(result.error);
+      const translated: Record<string, string> = {};
+      for (const [key, msg] of Object.entries(fieldErrors)) {
+        translated[key] = t(msg as Parameters<typeof t>[0]);
+      }
+      setErrors(translated);
       return;
     }
 
-    await onSubmit({
-      name: name.trim(),
-      description: description.trim(),
-      address: address.trim(),
-      wifi_ssid: wifiSsid.trim(),
-      wifi_password: wifiPassword.trim(),
-      checkin_guide: checkinGuide.trim(),
-      checkout_guide: checkoutGuide.trim(),
-      house_rules: houseRules.trim(),
-      photos,
-    });
+    setErrors({});
+    await onSubmit({ ...result.data, photos });
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Input
-        label="숙소 이름 *"
-        placeholder="숙소 이름을 입력하세요"
+        label={t("propertyForm.nameLabel")}
+        placeholder={t("propertyForm.namePlaceholder")}
         value={name}
         onChange={(e) => setName(e.target.value)}
-        error={nameError}
+        error={errors.name}
         disabled={isLoading}
       />
 
       <Textarea
-        label="숙소 설명"
-        placeholder="숙소에 대한 설명을 입력하세요"
+        label={t("propertyForm.descLabel")}
+        placeholder={t("propertyForm.descPlaceholder")}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         rows={4}
@@ -93,8 +102,8 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
       />
 
       <Input
-        label="주소"
-        placeholder="숙소 주소를 입력하세요"
+        label={t("propertyForm.addressLabel")}
+        placeholder={t("propertyForm.addressPlaceholder")}
         value={address}
         onChange={(e) => setAddress(e.target.value)}
         disabled={isLoading}
@@ -103,14 +112,14 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
           label="Wi-Fi SSID"
-          placeholder="Wi-Fi 네트워크 이름"
+          placeholder={t("propertyForm.wifiSsidPlaceholder")}
           value={wifiSsid}
           onChange={(e) => setWifiSsid(e.target.value)}
           disabled={isLoading}
         />
         <Input
-          label="Wi-Fi 비밀번호"
-          placeholder="Wi-Fi 비밀번호"
+          label={t("propertyForm.wifiPasswordLabel")}
+          placeholder={t("propertyForm.wifiPasswordLabel")}
           value={wifiPassword}
           onChange={(e) => setWifiPassword(e.target.value)}
           disabled={isLoading}
@@ -118,8 +127,8 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
       </div>
 
       <Textarea
-        label="체크인 안내"
-        placeholder="체크인 방법을 안내해주세요"
+        label={t("propertyForm.checkinLabel")}
+        placeholder={t("propertyForm.checkinPlaceholder")}
         value={checkinGuide}
         onChange={(e) => setCheckinGuide(e.target.value)}
         rows={3}
@@ -127,8 +136,8 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
       />
 
       <Textarea
-        label="체크아웃 안내"
-        placeholder="체크아웃 방법을 안내해주세요"
+        label={t("propertyForm.checkoutLabel")}
+        placeholder={t("propertyForm.checkoutPlaceholder")}
         value={checkoutGuide}
         onChange={(e) => setCheckoutGuide(e.target.value)}
         rows={3}
@@ -136,8 +145,8 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
       />
 
       <Textarea
-        label="하우스 룰"
-        placeholder="숙소 이용 규칙을 입력하세요"
+        label={t("propertyForm.rulesLabel")}
+        placeholder={t("propertyForm.rulesPlaceholder")}
         value={houseRules}
         onChange={(e) => setHouseRules(e.target.value)}
         rows={4}
@@ -146,7 +155,7 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
 
       <div className="w-full">
         <label className="mb-1.5 block text-sm font-medium text-gray-700">
-          숙소 사진
+          {t("propertyForm.photosLabel")}
         </label>
         {initialData?.photos && initialData.photos.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
@@ -154,7 +163,7 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
               <img
                 key={i}
                 src={url}
-                alt={`숙소 사진 ${i + 1}`}
+                alt={`${t("propertyForm.photoAlt")} ${i + 1}`}
                 className="h-20 w-20 rounded-lg object-cover border border-gray-200"
               />
             ))}
@@ -170,14 +179,14 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
         />
         {photos.length > 0 && (
           <p className="mt-1.5 text-sm text-gray-500">
-            {photos.length}개 파일 선택됨
+            {photos.length}{t("common.filesSelected")}
           </p>
         )}
       </div>
 
       <div className="flex justify-end pt-4">
         <Button type="submit" loading={isLoading}>
-          {initialData ? "저장하기" : "등록하기"}
+          {initialData ? t("common.save") : t("common.register")}
         </Button>
       </div>
     </form>

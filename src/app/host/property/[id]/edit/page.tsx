@@ -7,6 +7,7 @@ import { PropertyForm } from "@/components/property/PropertyForm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { useI18n } from "@/lib/i18n/context";
 import type { Property } from "@/types/database";
 
 export default function EditPropertyPage({
@@ -17,6 +18,7 @@ export default function EditPropertyPage({
   const { id } = use(params);
   const router = useRouter();
   const supabase = createClient();
+  const { t } = useI18n();
   const [property, setProperty] = useState<Property | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -34,7 +36,7 @@ export default function EditPropertyPage({
         .single();
 
       if (fetchError || !data) {
-        setError("숙소를 찾을 수 없습니다.");
+        setError(t("host.propertyNotFound"));
       } else {
         setProperty(data as Property);
       }
@@ -64,7 +66,7 @@ export default function EditPropertyPage({
       } = await supabase.auth.getUser();
 
       if (!user) {
-        setError("로그인이 필요합니다.");
+        setError(t("common.loginRequired"));
         return;
       }
 
@@ -112,7 +114,7 @@ export default function EditPropertyPage({
         .eq("id", id);
 
       if (updateError) {
-        setError("숙소 수정에 실패했습니다. 다시 시도해주세요.");
+        setError(t("host.updateFailed"));
         console.error("Update error:", updateError);
         return;
       }
@@ -120,7 +122,7 @@ export default function EditPropertyPage({
       router.push("/host");
     } catch (err) {
       console.error("Unexpected error:", err);
-      setError("예상치 못한 오류가 발생했습니다.");
+      setError(t("common.unexpectedError"));
     } finally {
       setIsLoading(false);
     }
@@ -137,7 +139,7 @@ export default function EditPropertyPage({
         .eq("id", id);
 
       if (deleteError) {
-        setError("숙소 삭제에 실패했습니다. 다시 시도해주세요.");
+        setError(t("host.deleteFailed"));
         console.error("Delete error:", deleteError);
         setIsDeleting(false);
         return;
@@ -146,7 +148,7 @@ export default function EditPropertyPage({
       router.push("/host");
     } catch (err) {
       console.error("Unexpected error:", err);
-      setError("예상치 못한 오류가 발생했습니다.");
+      setError(t("common.unexpectedError"));
       setIsDeleting(false);
     }
   }
@@ -163,7 +165,7 @@ export default function EditPropertyPage({
     return (
       <div className="mx-auto max-w-2xl px-4 py-8">
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error || "숙소를 찾을 수 없습니다."}
+          {error || t("host.propertyNotFound")}
         </div>
       </div>
     );
@@ -172,9 +174,9 @@ export default function EditPropertyPage({
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">숙소 정보 수정</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("host.editProperty")}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          숙소 정보를 수정하세요.
+          {t("host.editPropertyDesc")}
         </p>
       </div>
 
@@ -193,15 +195,15 @@ export default function EditPropertyPage({
       </Card>
 
       <div className="mt-8 border-t border-gray-200 pt-8">
-        <h2 className="text-lg font-semibold text-red-600">위험 영역</h2>
+        <h2 className="text-lg font-semibold text-red-600">{t("host.dangerZone")}</h2>
         <p className="mt-1 text-sm text-gray-500">
-          이 작업은 되돌릴 수 없습니다. 모든 관련 데이터가 함께 삭제됩니다.
+          {t("host.deleteWarning")}
         </p>
 
         {showDeleteConfirm ? (
           <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
             <p className="text-sm font-medium text-red-800">
-              정말로 이 숙소를 삭제하시겠습니까?
+              {t("host.deleteConfirm")}
             </p>
             <div className="mt-3 flex gap-3">
               <Button
@@ -210,7 +212,7 @@ export default function EditPropertyPage({
                 onClick={handleDelete}
                 loading={isDeleting}
               >
-                삭제하기
+                {t("host.confirmDelete")}
               </Button>
               <Button
                 variant="secondary"
@@ -218,7 +220,7 @@ export default function EditPropertyPage({
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
               >
-                취소
+                {t("common.cancel")}
               </Button>
             </div>
           </div>
@@ -228,7 +230,7 @@ export default function EditPropertyPage({
             className="mt-4"
             onClick={() => setShowDeleteConfirm(true)}
           >
-            숙소 삭제
+            {t("host.deleteProperty")}
           </Button>
         )}
       </div>

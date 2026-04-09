@@ -7,6 +7,7 @@ import type { ChatRoom as ChatRoomType, Profile, Message } from "@/types/databas
 import { ChatRoom } from "@/components/chat/ChatRoom";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/context";
 
 interface GuestChatRoom extends ChatRoomType {
   profiles: Pick<Profile, "id" | "name" | "email" | "avatar_url"> | null;
@@ -14,9 +15,18 @@ interface GuestChatRoom extends ChatRoomType {
   unreadCount: number;
 }
 
+const LOCALE_MAP: Record<string, string> = {
+  ko: "ko-KR",
+  en: "en-US",
+  ja: "ja-JP",
+  zh: "zh-CN",
+};
+
 export default function HostChatPage() {
   const params = useParams();
   const router = useRouter();
+  const { t, locale } = useI18n();
+  const dateLocale = LOCALE_MAP[locale] || "ko-KR";
   const propertyId = params.id as string;
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -35,7 +45,7 @@ export default function HostChatPage() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      setError("로그인이 필요합니다.");
+      setError(t("common.loginRequired"));
       setLoading(false);
       return;
     }
@@ -60,7 +70,7 @@ export default function HostChatPage() {
       .order("created_at", { ascending: false });
 
     if (fetchError) {
-      setError("채팅 목록을 불러오지 못했습니다.");
+      setError(t("chat.loadListFailed"));
       setLoading(false);
       return;
     }
@@ -134,7 +144,7 @@ export default function HostChatPage() {
       <div className="flex h-full items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-3">
           <LoadingSpinner size="lg" />
-          <p className="text-sm text-gray-500">채팅 목록을 불러오고 있습니다...</p>
+          <p className="text-sm text-gray-500">{t("chat.loadingList")}</p>
         </div>
       </div>
     );
@@ -149,7 +159,7 @@ export default function HostChatPage() {
             onClick={() => router.back()}
             className="mt-4 text-sm font-medium text-rose-500 hover:text-rose-600"
           >
-            뒤로 가기
+            {t("common.back")}
           </button>
         </div>
       </div>
@@ -165,7 +175,7 @@ export default function HostChatPage() {
   function getGuestDisplayName(room: GuestChatRoom): string {
     if (room.profiles?.name) return room.profiles.name;
     if (room.profiles?.email) return room.profiles.email;
-    return "게스트";
+    return t("chat.guest");
   }
 
   function getGuestInitial(room: GuestChatRoom): string {
@@ -174,9 +184,9 @@ export default function HostChatPage() {
   }
 
   function getLastMessagePreview(room: GuestChatRoom): string {
-    if (!room.lastMessage) return "대화를 시작해보세요";
-    if (room.lastMessage.message_type === "item_request") return "📦 물품 요청";
-    if (room.lastMessage.message_type === "reservation_request") return "🍽️ 예약 요청";
+    if (!room.lastMessage) return t("chat.startConversation");
+    if (room.lastMessage.message_type === "item_request") return `📦 ${t("chat.itemRequestBtn")}`;
+    if (room.lastMessage.message_type === "reservation_request") return `🍽️ ${t("chat.reservationRequestBtn")}`;
     return room.lastMessage.content.length > 30
       ? room.lastMessage.content.slice(0, 30) + "..."
       : room.lastMessage.content;
@@ -189,16 +199,16 @@ export default function HostChatPage() {
     const isToday = date.toDateString() === now.toDateString();
 
     if (isToday) {
-      return date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+      return date.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" });
     }
 
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
     if (date.toDateString() === yesterday.toDateString()) {
-      return "어제";
+      return t("chat.yesterday");
     }
 
-    return date.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+    return date.toLocaleDateString(dateLocale, { month: "short", day: "numeric" });
   }
 
   // Guest list sidebar component
@@ -207,8 +217,8 @@ export default function HostChatPage() {
       {chatRooms.length === 0 ? (
         <div className="p-4">
           <EmptyState
-            title="아직 메시지가 없습니다"
-            description="게스트가 메시지를 보내면 여기에 표시됩니다."
+            title={t("chat.noRooms")}
+            description={t("chat.noRoomsDesc")}
           />
         </div>
       ) : (
@@ -285,7 +295,7 @@ export default function HostChatPage() {
     />
   ) : (
     <div className="flex flex-1 items-center justify-center">
-      <p className="text-sm text-gray-400">게스트를 선택하여 대화를 시작하세요</p>
+      <p className="text-sm text-gray-400">{t("chat.selectGuest")}</p>
     </div>
   );
 
@@ -296,7 +306,7 @@ export default function HostChatPage() {
         <button
           onClick={() => router.back()}
           className="mr-3 text-gray-500 hover:text-gray-700"
-          aria-label="뒤로 가기"
+          aria-label={t("common.back")}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -309,7 +319,7 @@ export default function HostChatPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="text-lg font-semibold text-gray-900">게스트 메시지</h1>
+        <h1 className="text-lg font-semibold text-gray-900">{t("chat.guestMessages")}</h1>
         <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
           {chatRooms.length}
         </span>
@@ -330,7 +340,7 @@ export default function HostChatPage() {
               <button
                 onClick={handleBackToList}
                 className="shrink-0 text-gray-500 hover:text-gray-700"
-                aria-label="목록으로"
+                aria-label={t("common.backToList")}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

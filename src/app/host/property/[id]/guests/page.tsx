@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { formatDate } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/context";
 import type { Profile, PropertyGuest } from "@/types/database";
 
 interface GuestWithProfile extends PropertyGuest {
@@ -21,6 +22,7 @@ export default function GuestsPage({
 }) {
   const { id: propertyId } = use(params);
   const supabase = createClient();
+  const { t } = useI18n();
   const [guests, setGuests] = useState<GuestWithProfile[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [email, setEmail] = useState("");
@@ -47,7 +49,7 @@ export default function GuestsPage({
 
     if (fetchError) {
       console.error("Fetch guests error:", fetchError);
-      setError("게스트 목록을 불러오는데 실패했습니다.");
+      setError(t("guest.fetchFailed"));
     } else {
       setGuests((data as GuestWithProfile[]) ?? []);
     }
@@ -68,13 +70,13 @@ export default function GuestsPage({
       .single();
 
     if (searchErr || !data) {
-      setSearchError("해당 이메일의 사용자를 찾을 수 없습니다.");
+      setSearchError(t("guest.notFound"));
     } else {
       const alreadyAdded = guests.some(
         (g) => g.guest_id === (data as Profile).id
       );
       if (alreadyAdded) {
-        setSearchError("이미 등록된 게스트입니다.");
+        setSearchError(t("guest.alreadyAdded"));
       } else {
         setSearchResult(data as Profile);
       }
@@ -98,7 +100,7 @@ export default function GuestsPage({
       });
 
     if (insertError) {
-      setError("게스트 추가에 실패했습니다.");
+      setError(t("guest.addFailed"));
       console.error("Insert error:", insertError);
     } else {
       setEmail("");
@@ -120,7 +122,7 @@ export default function GuestsPage({
       .eq("id", guestRecordId);
 
     if (deleteError) {
-      setError("게스트 제거에 실패했습니다.");
+      setError(t("guest.removeFailed"));
       console.error("Delete error:", deleteError);
     } else {
       setGuests((prev) => prev.filter((g) => g.id !== guestRecordId));
@@ -139,9 +141,9 @@ export default function GuestsPage({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">게스트 관리</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("guest.manage")}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          이 숙소의 게스트를 추가하거나 제거하세요.
+          {t("guest.manageDesc")}
         </p>
       </div>
 
@@ -151,12 +153,12 @@ export default function GuestsPage({
         </div>
       )}
 
-      <Card title="게스트 추가">
+      <Card title={t("guest.addGuest")}>
         <div className="space-y-4">
           <div className="flex gap-3">
             <div className="flex-1">
               <Input
-                placeholder="게스트 이메일을 입력하세요"
+                placeholder={t("guest.emailPlaceholder")}
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -176,7 +178,7 @@ export default function GuestsPage({
               loading={isSearching}
               variant="secondary"
             >
-              검색
+              {t("common.search")}
             </Button>
           </div>
 
@@ -189,7 +191,7 @@ export default function GuestsPage({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-gray-900">
-                    {searchResult.name || "이름 없음"}
+                    {searchResult.name || t("common.noName")}
                   </p>
                   <p className="text-sm text-gray-500">{searchResult.email}</p>
                 </div>
@@ -197,13 +199,13 @@ export default function GuestsPage({
 
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Input
-                  label="체크인 날짜"
+                  label={t("guest.checkIn")}
                   type="date"
                   value={checkIn}
                   onChange={(e) => setCheckIn(e.target.value)}
                 />
                 <Input
-                  label="체크아웃 날짜"
+                  label={t("guest.checkOut")}
                   type="date"
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
@@ -212,7 +214,7 @@ export default function GuestsPage({
 
               <div className="mt-4">
                 <Button onClick={handleAddGuest} loading={isAdding} size="sm">
-                  게스트 추가
+                  {t("guest.addGuest")}
                 </Button>
               </div>
             </div>
@@ -222,7 +224,7 @@ export default function GuestsPage({
 
       <div>
         <h2 className="mb-4 text-lg font-semibold text-gray-900">
-          등록된 게스트 ({guests.length})
+          {t("guest.registered")} ({guests.length})
         </h2>
 
         {guests.length === 0 ? (
@@ -242,8 +244,8 @@ export default function GuestsPage({
                 />
               </svg>
             }
-            title="등록된 게스트가 없습니다"
-            description="이메일로 게스트를 검색하여 추가하세요."
+            title={t("guest.noGuests")}
+            description={t("guest.noGuestsDesc")}
           />
         ) : (
           <div className="space-y-3">
@@ -258,17 +260,17 @@ export default function GuestsPage({
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">
-                      {guest.profiles?.name || "이름 없음"}
+                      {guest.profiles?.name || t("common.noName")}
                     </p>
                     <p className="text-sm text-gray-500">
                       {guest.profiles?.email}
                     </p>
                     <div className="mt-1 flex gap-3 text-xs text-gray-400">
                       {guest.check_in && (
-                        <span>체크인: {formatDate(guest.check_in)}</span>
+                        <span>{t("guest.checkInLabel")}: {formatDate(guest.check_in)}</span>
                       )}
                       {guest.check_out && (
-                        <span>체크아웃: {formatDate(guest.check_out)}</span>
+                        <span>{t("guest.checkOutLabel")}: {formatDate(guest.check_out)}</span>
                       )}
                     </div>
                   </div>
@@ -280,7 +282,7 @@ export default function GuestsPage({
                   loading={removingId === guest.id}
                   className="text-red-500 hover:bg-red-50 hover:text-red-600"
                 >
-                  제거
+                  {t("common.remove")}
                 </Button>
               </div>
             ))}

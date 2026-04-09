@@ -2,12 +2,22 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n/context";
 import type { Message } from "@/types/database";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ItemRequestForm } from "@/components/chat/ItemRequestForm";
 import { ReservationRequestForm } from "@/components/chat/ReservationRequestForm";
+import { MediaUploadButton } from "@/components/chat/MediaUploadButton";
+import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+
+const LOCALE_MAP: Record<string, string> = {
+  ko: "ko-KR",
+  en: "en-US",
+  ja: "ja-JP",
+  zh: "zh-CN",
+};
 
 interface ChatRoomProps {
   chatRoomId: string;
@@ -19,13 +29,17 @@ interface ChatRoomProps {
 type ActiveForm = "none" | "item_request" | "reservation_request";
 
 function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: ChatRoomProps) {
+  const { t, locale } = useI18n();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [activeForm, setActiveForm] = useState<ActiveForm>("none");
+  const [otherTyping, setOtherTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const lastTypingBroadcast = useRef(0);
   const supabase = createClient();
 
   // Update last_read_at when entering or receiving messages
@@ -93,6 +107,36 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
     };
   }, [chatRoomId]);
 
+  // Typing indicator: broadcast & listen
+  useEffect(() => {
+    const channel = supabase
+      .channel(`typing:${chatRoomId}`)
+      .on("broadcast", { event: "typing" }, (payload) => {
+        if (payload.payload?.userId !== currentUserId) {
+          setOtherTyping(true);
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => setOtherTyping(false), 3000);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, [chatRoomId, currentUserId]);
+
+  const broadcastTyping = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTypingBroadcast.current < 2000) return;
+    lastTypingBroadcast.current = now;
+    supabase.channel(`typing:${chatRoomId}`).send({
+      type: "broadcast",
+      event: "typing",
+      payload: { userId: currentUserId },
+    });
+  }, [chatRoomId, currentUserId, supabase]);
+
   // Auto-scroll on new messages
   useEffect(() => {
     scrollToBottom();
@@ -104,6 +148,7 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
 
     setSending(true);
     setNewMessage("");
+    setOtherTyping(false);
 
     const { error } = await supabase.from("messages").insert({
       chat_room_id: chatRoomId,
@@ -148,7 +193,7 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <p className="text-sm text-gray-400">
-              메시지가 없습니다. 대화를 시작해보세요!
+              {t("chat.noMessages")}
             </p>
           </div>
         ) : (
@@ -164,7 +209,7 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
                     <div className="h-px flex-1 bg-gray-200" />
                     <span className="shrink-0 text-xs font-medium text-gray-400">
                       {new Date(message.created_at).toLocaleDateString(
-                        "ko-KR",
+                        LOCALE_MAP[locale] || "ko-KR",
                         { year: "numeric", month: "long", day: "numeric", weekday: "short" }
                       )}
                     </span>
@@ -179,6 +224,7 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
             );
           })
         )}
+        {otherTyping && <TypingIndicator label={t("chat.typing")} />}
         <div ref={messagesEndRef} />
       </div>
 
@@ -186,12 +232,12 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
       {activeForm === "item_request" && (
         <div className="border-t border-gray-200 bg-gray-50 p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-gray-700">물품 요청</h4>
+            <h4 className="text-sm font-semibold text-gray-700">{t("chat.itemRequest")}</h4>
             <button
               onClick={() => setActiveForm("none")}
               className="text-sm text-gray-400 hover:text-gray-600"
             >
-              닫기
+              {t("common.close")}
             </button>
           </div>
           <ItemRequestForm
@@ -205,12 +251,12 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
       {activeForm === "reservation_request" && (
         <div className="border-t border-gray-200 bg-gray-50 p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-gray-700">예약 요청</h4>
+            <h4 className="text-sm font-semibold text-gray-700">{t("chat.reservationRequest")}</h4>
             <button
               onClick={() => setActiveForm("none")}
               className="text-sm text-gray-400 hover:text-gray-600"
             >
-              닫기
+              {t("common.close")}
             </button>
           </div>
           <ReservationRequestForm
@@ -230,24 +276,28 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
               onClick={() => setActiveForm("item_request")}
               className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
             >
-              📦 물품 요청
+              {`📦 ${t("chat.itemRequestBtn")}`}
             </button>
             <button
               onClick={() => setActiveForm("reservation_request")}
               className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
             >
-              🍽️ 예약 요청
+              {`🍽️ ${t("chat.reservationRequestBtn")}`}
             </button>
           </div>
         )}
 
         {/* Text input row */}
         <div className="flex items-end gap-2">
+          <MediaUploadButton
+            chatRoomId={chatRoomId}
+            senderId={currentUserId}
+          />
           <textarea
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }}
             onKeyDown={handleKeyDown}
-            placeholder="메시지를 입력하세요..."
+            placeholder={t("chat.placeholder")}
             rows={1}
             className="max-h-32 min-h-[40px] flex-1 resize-none rounded-2xl border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-rose-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20"
           />
@@ -258,7 +308,7 @@ function ChatRoom({ chatRoomId, currentUserId, role = "guest", onNewMessage }: C
             size="md"
             className="shrink-0 rounded-full px-4"
           >
-            전송
+            {t("chat.send")}
           </Button>
         </div>
       </div>

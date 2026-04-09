@@ -2,26 +2,28 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useI18n } from "@/lib/i18n/context";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { NearbyPlace } from "@/types/database";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
 interface NearbyListProps {
   places: NearbyPlace[];
 }
 
-const CATEGORIES = [
-  { key: "all", label: "전체" },
-  { key: "attraction", label: "볼거리" },
-  { key: "restaurant", label: "먹거리" },
-  { key: "convenience", label: "편의시설" },
-  { key: "experience", label: "체험" },
-] as const;
+const CATEGORY_KEYS: { key: string; translationKey: TranslationKey }[] = [
+  { key: "all", translationKey: "nearby.all" },
+  { key: "attraction", translationKey: "nearby.attraction" },
+  { key: "restaurant", translationKey: "nearby.restaurant" },
+  { key: "convenience", translationKey: "nearby.convenience" },
+  { key: "experience", translationKey: "nearby.experience" },
+];
 
-type CategoryFilter = (typeof CATEGORIES)[number]["key"];
+type CategoryFilter = "all" | "attraction" | "restaurant" | "convenience" | "experience";
 
 export default function NearbyList({ places }: NearbyListProps) {
+  const { t } = useI18n();
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
 
   const filteredPlaces =
@@ -29,11 +31,16 @@ export default function NearbyList({ places }: NearbyListProps) {
       ? places
       : places.filter((p) => p.category === activeCategory);
 
+  function getCategoryLabel(category: string): string {
+    const found = CATEGORY_KEYS.find((c) => c.key === category);
+    return found ? t(found.translationKey) : category;
+  }
+
   return (
     <div>
       {/* Category Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {CATEGORIES.map((cat) => {
+        {CATEGORY_KEYS.map((cat) => {
           const count =
             cat.key === "all"
               ? places.length
@@ -42,14 +49,14 @@ export default function NearbyList({ places }: NearbyListProps) {
           return (
             <button
               key={cat.key}
-              onClick={() => setActiveCategory(cat.key)}
+              onClick={() => setActiveCategory(cat.key as CategoryFilter)}
               className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                 activeCategory === cat.key
                   ? "bg-rose-500 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
-              {cat.label}
+              {t(cat.translationKey)}
               {count > 0 && (
                 <span
                   className={`ml-1.5 ${
@@ -70,8 +77,8 @@ export default function NearbyList({ places }: NearbyListProps) {
       <div className="mt-4 space-y-3">
         {filteredPlaces.length === 0 ? (
           <EmptyState
-            title="등록된 장소가 없습니다"
-            description="이 카테고리에 등록된 장소가 아직 없습니다."
+            title={t("nearby.noPlaces")}
+            description={t("nearby.noPlacesFilterDesc")}
             icon={
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -96,7 +103,7 @@ export default function NearbyList({ places }: NearbyListProps) {
           />
         ) : (
           filteredPlaces.map((place) => (
-            <PlaceCard key={place.id} place={place} />
+            <PlaceCard key={place.id} place={place} getCategoryLabel={getCategoryLabel} />
           ))
         )}
       </div>
@@ -104,8 +111,9 @@ export default function NearbyList({ places }: NearbyListProps) {
   );
 }
 
-function PlaceCard({ place }: { place: NearbyPlace }) {
-  const categoryLabel = CATEGORIES.find((c) => c.key === place.category)?.label;
+function PlaceCard({ place, getCategoryLabel }: { place: NearbyPlace; getCategoryLabel: (cat: string) => string }) {
+  const { t } = useI18n();
+  const categoryLabel = getCategoryLabel(place.category);
 
   return (
     <Card className="p-4">
@@ -179,7 +187,7 @@ function PlaceCard({ place }: { place: NearbyPlace }) {
                   clipRule="evenodd"
                 />
               </svg>
-              지도 보기
+              {t("nearby.viewMap")}
             </a>
           )}
           {place.phone && (
@@ -195,7 +203,7 @@ function PlaceCard({ place }: { place: NearbyPlace }) {
               >
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
               </svg>
-              전화하기
+              {t("nearby.call")}
             </a>
           )}
         </div>

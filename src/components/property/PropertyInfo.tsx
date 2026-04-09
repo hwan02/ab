@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n/context";
 import { Card } from "@/components/ui/Card";
 import type { Property } from "@/types/database";
 
@@ -9,6 +10,8 @@ interface PropertyInfoProps {
 }
 
 export default function PropertyInfo({ property }: PropertyInfoProps) {
+  const { t } = useI18n();
+
   return (
     <div className="space-y-4">
       {/* WiFi Info */}
@@ -33,10 +36,10 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
           </div>
           <div className="space-y-2">
             {property.wifi_ssid && (
-              <WifiField label="네트워크 이름" value={property.wifi_ssid} />
+              <WifiField label={t("property.wifiNetwork")} value={property.wifi_ssid} copyLabel={t("property.copyLabel")} copiedLabel={t("property.copied")} />
             )}
             {property.wifi_password && (
-              <WifiField label="비밀번호" value={property.wifi_password} />
+              <WifiField label={t("property.wifiPassword")} value={property.wifi_password} copyLabel={t("property.copyLabel")} copiedLabel={t("property.copied")} />
             )}
           </div>
         </Card>
@@ -45,7 +48,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
       {/* Check-in Guide */}
       {property.checkin_guide && (
         <InfoCard
-          title="체크인 가이드"
+          title={t("property.checkinGuide")}
           content={property.checkin_guide}
           iconBgColor="bg-green-50"
           iconColor="text-green-500"
@@ -62,7 +65,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
       {/* Check-out Guide */}
       {property.checkout_guide && (
         <InfoCard
-          title="체크아웃 가이드"
+          title={t("property.checkoutGuide")}
           content={property.checkout_guide}
           iconBgColor="bg-orange-50"
           iconColor="text-orange-500"
@@ -79,7 +82,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
       {/* House Rules */}
       {property.house_rules && (
         <InfoCard
-          title="하우스 룰"
+          title={t("property.houseRules")}
           content={property.house_rules}
           iconBgColor="bg-rose-50"
           iconColor="text-rose-500"
@@ -96,7 +99,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
   );
 }
 
-function WifiField({ label, value }: { label: string; value: string }) {
+function WifiField({ label, value, copyLabel, copiedLabel }: { label: string; value: string; copyLabel: string; copiedLabel: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -118,10 +121,10 @@ function WifiField({ label, value }: { label: string; value: string }) {
       <button
         onClick={handleCopy}
         className="rounded-md px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-200"
-        aria-label={`${label} 복사`}
+        aria-label={`${label} ${copyLabel}`}
       >
         {copied ? (
-          <span className="text-green-600">복사됨</span>
+          <span className="text-green-600">{copiedLabel}</span>
         ) : (
           <svg
             xmlns="http://www.w3.org/2000/svg"
