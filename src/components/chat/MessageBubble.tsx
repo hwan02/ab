@@ -31,21 +31,27 @@ function formatTime(dateString: string, dateLocale: string): string {
 function ItemRequestCard({ content, t }: { content: string; t: (key: TranslationKey) => string }) {
   try {
     const data = JSON.parse(content);
+
+    // Support both new format (items array) and legacy (single item)
+    const items: { itemName: string; quantity: string }[] = data.items
+      ? data.items
+      : [{ itemName: data.itemName, quantity: data.quantity }];
+
     return (
       <Card className="max-w-xs border-amber-200 bg-amber-50 p-4">
         <div className="mb-2 flex items-center gap-2">
           <span className="text-lg">📦</span>
           <span className="text-sm font-semibold text-amber-800">
-            {t("message.itemRequest")}
+            {t("message.itemRequest")} ({items.length})
           </span>
         </div>
         <div className="space-y-1 text-sm text-gray-700">
-          <p>
-            <span className="font-medium">{t("message.item")}</span> {data.itemName}
-          </p>
-          <p>
-            <span className="font-medium">{t("message.quantity")}</span> {data.quantity}
-          </p>
+          {items.map((item, idx) => (
+            <p key={idx}>
+              <span className="font-medium">{item.itemName}</span>{" "}
+              <span className="text-gray-500">x{item.quantity}</span>
+            </p>
+          ))}
           <p>
             <span className="font-medium">{t("message.urgency")}</span>{" "}
             <span

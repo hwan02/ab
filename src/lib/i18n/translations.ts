@@ -1078,6 +1078,31 @@ const translations = {
     zh: "已发送",
   },
 
+  "itemForm.addItem": {
+    ko: "물품 추가",
+    en: "Add item",
+    ja: "物品を追加",
+    zh: "添加物品",
+  },
+  "itemForm.itemList": {
+    ko: "요청 물품 목록",
+    en: "Requested items",
+    ja: "リクエスト物品リスト",
+    zh: "请求物品列表",
+  },
+  "itemForm.noItems": {
+    ko: "물품을 추가해 주세요",
+    en: "Please add items",
+    ja: "物品を追加してください",
+    zh: "请添加物品",
+  },
+  "itemForm.itemCount": {
+    ko: "개",
+    en: "ea",
+    ja: "個",
+    zh: "个",
+  },
+
   // Reservation Request Form
   "reservationForm.restaurantRequired": {
     ko: "레스토랑 이름을 입력해주세요.",

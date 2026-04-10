@@ -7,8 +7,12 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { itemRequestSchema, getFieldErrors } from "@/lib/validations";
 import { notifySlack } from "@/lib/notifySlack";
+
+interface ItemEntry {
+  itemName: string;
+  quantity: string;
+}
 
 interface ItemRequestFormProps {
   chatRoomId: string;
@@ -20,40 +24,45 @@ function ItemRequestForm({ chatRoomId, senderId }: ItemRequestFormProps) {
   const { t } = useI18n();
   const [itemName, setItemName] = useState("");
   const [quantity, setQuantity] = useState("1");
+  const [items, setItems] = useState<ItemEntry[]>([]);
   const [urgency, setUrgency] = useState("보통");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [sentCount, setSentCount] = useState(0);
 
   const supabase = createClient();
 
+  const handleAddItem = () => {
+    if (!itemName.trim()) return;
+    setItems((prev) => [...prev, { itemName: itemName.trim(), quantity }]);
+    setItemName("");
+    setQuantity("1");
+  };
+
+  const handleRemoveItem = (idx: number) => {
+    setItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const result = itemRequestSchema.safeParse({
-      itemName,
-      quantity,
-      urgency,
-      notes,
-    });
-
-    if (!result.success) {
-      const errors = getFieldErrors(result.error);
-      const translated: Record<string, string> = {};
-      for (const [key, msg] of Object.entries(errors)) {
-        translated[key] = t(msg as Parameters<typeof t>[0]);
-      }
-      setFieldErrors(translated);
-      return;
+    // If there's text in the input, add it first
+    const finalItems = [...items];
+    if (itemName.trim()) {
+      finalItems.push({ itemName: itemName.trim(), quantity });
     }
 
-    setFieldErrors({});
+    if (finalItems.length === 0) return;
+
     setSubmitting(true);
     setError(null);
 
-    const content = JSON.stringify(result.data);
+    const content = JSON.stringify({
+      items: finalItems,
+      urgency,
+      notes,
+    });
 
     const { error: insertError } = await supabase.from("messages").insert({
       chat_room_id: chatRoomId,
@@ -70,6 +79,7 @@ function ItemRequestForm({ chatRoomId, senderId }: ItemRequestFormProps) {
 
     notifySlack({ messageType: "item_request", content });
     setSentCount((c) => c + 1);
+    setItems([]);
     setItemName("");
     setQuantity("1");
     setUrgency("보통");
@@ -77,26 +87,81 @@ function ItemRequestForm({ chatRoomId, senderId }: ItemRequestFormProps) {
     setSubmitting(false);
   };
 
+  const totalItems = items.length + (itemName.trim() ? 1 : 0);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <Input
-          label={t("itemForm.itemName")}
-          placeholder={t("itemForm.itemPlaceholder")}
-          value={itemName}
-          onChange={(e) => setItemName(e.target.value)}
-          error={fieldErrors.itemName}
-          required
-        />
-        <Input
-          label={t("itemForm.quantity")}
-          type="number"
-          min="1"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          required
-        />
+      {/* Item input row */}
+      <div className="flex items-end gap-2">
+        <div className="flex-1">
+          <Input
+            label={t("itemForm.itemName")}
+            placeholder={t("itemForm.itemPlaceholder")}
+            value={itemName}
+            onChange={(e) => setItemName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddItem();
+              }
+            }}
+          />
+        </div>
+        <div className="w-20">
+          <Input
+            label={t("itemForm.quantity")}
+            type="number"
+            min="1"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleAddItem}
+          disabled={!itemName.trim()}
+          className="mb-[2px] flex h-10 items-center gap-1 rounded-xl bg-gray-100 px-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-40"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          {t("itemForm.addItem")}
+        </button>
       </div>
+
+      {/* Item list */}
+      {items.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+          <p className="mb-2 text-xs font-semibold text-gray-500">
+            {t("itemForm.itemList")} ({items.length})
+          </p>
+          <div className="space-y-1.5">
+            {items.map((item, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm shadow-sm"
+              >
+                <span className="text-gray-900">
+                  {item.itemName}{" "}
+                  <span className="text-gray-400">
+                    x{item.quantity}{t("itemForm.itemCount")}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveItem(idx)}
+                  className="rounded p-1 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <Select
         label={t("itemForm.urgency")}
         value={urgency}
@@ -127,8 +192,8 @@ function ItemRequestForm({ chatRoomId, senderId }: ItemRequestFormProps) {
         ) : (
           <span />
         )}
-        <Button type="submit" loading={submitting} disabled={!itemName.trim()}>
-          {t("itemForm.submit")}
+        <Button type="submit" loading={submitting} disabled={totalItems === 0}>
+          {t("itemForm.submit")} {totalItems > 0 && `(${totalItems})`}
         </Button>
       </div>
     </form>
