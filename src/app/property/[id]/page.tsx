@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PhotoGallery from "@/components/property/PhotoGallery";
 import PropertyInfo from "@/components/property/PropertyInfo";
+import WeatherWidget from "@/components/property/WeatherWidget";
 import { T } from "@/components/i18n/T";
 import type { Property } from "@/types/database";
 
@@ -58,6 +59,11 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
           </p>
         </div>
       )}
+
+      {/* Weather */}
+      <div className="mt-4">
+        <WeatherWidget latitude={property.latitude} longitude={property.longitude} />
+      </div>
 
       {/* Info Sections */}
       <div className="mt-6">

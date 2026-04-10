@@ -4,9 +4,11 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n/context";
 import NearbyList from "@/components/nearby/NearbyList";
+import PlaceRecommendForm from "@/components/nearby/PlaceRecommendForm";
 import GoogleMapsProvider, { hasGoogleMapsKey } from "@/components/maps/GoogleMapsProvider";
 import NearbyMap from "@/components/maps/NearbyMap";
 import { Modal } from "@/components/ui/Modal";
+import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { NearbyPlace } from "@/types/database";
@@ -35,6 +37,7 @@ export default function NearbyPageContent({
   const { t } = useI18n();
   const router = useRouter();
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
+  const [showRecommendForm, setShowRecommendForm] = useState(false);
   const [inquiryPlace, setInquiryPlace] = useState<NearbyPlace | null>(null);
   const [customMessage, setCustomMessage] = useState("");
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -140,6 +143,36 @@ export default function NearbyPageContent({
         ) : (
           <NearbyList places={places} onPlaceInquiry={handlePlaceInquiry} />
         )}
+
+        {/* Recommend a place */}
+        <div className="mt-6">
+          {showRecommendForm ? (
+            <Card>
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-base font-semibold text-gray-900">{t("recommend.title")}</h3>
+                <button
+                  onClick={() => setShowRecommendForm(false)}
+                  className="rounded-lg p-1 text-gray-400 hover:bg-gray-100"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <PlaceRecommendForm propertyId={propertyId} onClose={() => setShowRecommendForm(false)} />
+            </Card>
+          ) : (
+            <button
+              onClick={() => setShowRecommendForm(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-300 py-4 text-sm font-medium text-gray-500 transition-colors hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              {t("recommend.title")}
+            </button>
+          )}
+        </div>
 
         {/* Intent Selection Modal */}
         <Modal

@@ -4,6 +4,7 @@ export interface Profile {
   name: string | null;
   avatar_url: string | null;
   role: "host" | "guest";
+  email_notifications: boolean;
   created_at: string;
 }
 
@@ -93,6 +94,32 @@ export interface EmergencyContact {
   category: "hospital" | "police" | "fire" | "host" | "other";
   phone: string;
   address: string | null;
+  created_at: string;
+}
+
+export interface PlaceRecommendation {
+  id: string;
+  property_id: string;
+  guest_id: string;
+  name: string;
+  category: "attraction" | "restaurant" | "convenience" | "experience";
+  description: string | null;
+  address: string | null;
+  map_url: string | null;
+  show_recommender: boolean;
+  recommender_name: string | null;
+  recommender_avatar: string | null;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+}
+
+export interface MarketOrder {
+  id: string;
+  property_id: string;
+  guest_id: string;
+  items: { itemName: string; quantity: string }[];
+  status: "pending" | "ordered" | "delivered";
+  image_url: string | null;
   created_at: string;
 }
 

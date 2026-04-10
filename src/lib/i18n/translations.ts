@@ -1948,6 +1948,138 @@ const translations = {
     ja: "次の写真",
     zh: "下一张照片",
   },
+  // Settings
+  "settings.emailNotifications": {
+    ko: "이메일 알림 받기",
+    en: "Email notifications",
+    ja: "メール通知を受け取る",
+    zh: "接收邮件通知",
+  },
+  "settings.emailNotificationsDesc": {
+    ko: "채팅 메시지, 포포마켓 주문 등 주요 알림을 이메일로 받습니다",
+    en: "Receive email notifications for chat messages, Popo Market orders, etc.",
+    ja: "チャットメッセージ、ポポマーケット注文などの通知をメールで受け取ります",
+    zh: "通过邮件接收聊天消息、Popo Market订单等通知",
+  },
+
+  // Market Orders
+  "market.orderHistory": {
+    ko: "구매 내역",
+    en: "Order History",
+    ja: "購入履歴",
+    zh: "购买记录",
+  },
+  "market.noOrders": {
+    ko: "구매 내역이 없습니다",
+    en: "No orders yet",
+    ja: "購入履歴がありません",
+    zh: "暂无购买记录",
+  },
+  "market.noOrdersDesc": {
+    ko: "포포마켓에서 물품을 요청해 보세요!",
+    en: "Try ordering from Popo Market!",
+    ja: "ポポマーケットで注文してみましょう！",
+    zh: "试试在Popo Market下单吧！",
+  },
+  "market.pending": {
+    ko: "접수됨",
+    en: "Pending",
+    ja: "受付済み",
+    zh: "已接收",
+  },
+  "market.ordered": {
+    ko: "주문완료",
+    en: "Ordered",
+    ja: "注文済み",
+    zh: "已下单",
+  },
+  "market.delivered": {
+    ko: "배송완료",
+    en: "Delivered",
+    ja: "配達済み",
+    zh: "已送达",
+  },
+
+  // Place Recommendations
+  "recommend.title": {
+    ko: "장소 추천하기",
+    en: "Recommend a place",
+    ja: "場所をおすすめ",
+    zh: "推荐地点",
+  },
+  "recommend.nameLabel": {
+    ko: "장소 이름",
+    en: "Place name",
+    ja: "場所の名前",
+    zh: "地点名称",
+  },
+  "recommend.namePlaceholder": {
+    ko: "추천하고 싶은 장소 이름",
+    en: "Name of the place you'd like to recommend",
+    ja: "おすすめしたい場所の名前",
+    zh: "您想推荐的地点名称",
+  },
+  "recommend.categoryLabel": {
+    ko: "카테고리",
+    en: "Category",
+    ja: "カテゴリー",
+    zh: "分类",
+  },
+  "recommend.descPlaceholder": {
+    ko: "어떤 점이 좋았나요?",
+    en: "What did you like about it?",
+    ja: "どんなところが良かったですか？",
+    zh: "您觉得好在哪里？",
+  },
+  "recommend.addressPlaceholder": {
+    ko: "주소 (선택)",
+    en: "Address (optional)",
+    ja: "住所（任意）",
+    zh: "地址（可选）",
+  },
+  "recommend.showProfile": {
+    ko: "추천자로 공개하시겠습니까?",
+    en: "Show your profile as recommender?",
+    ja: "おすすめ者として公開しますか？",
+    zh: "是否公开您的推荐者身份？",
+  },
+  "recommend.showProfileDesc": {
+    ko: "이름과 프로필 사진이 다른 게스트에게 표시됩니다",
+    en: "Your name and photo will be visible to other guests",
+    ja: "名前とプロフィール写真が他のゲストに表示されます",
+    zh: "您的姓名和头像将对其他客人可见",
+  },
+  "recommend.submit": {
+    ko: "추천 보내기",
+    en: "Submit recommendation",
+    ja: "おすすめを送信",
+    zh: "提交推荐",
+  },
+  "recommend.sent": {
+    ko: "추천이 전송되었습니다! 호스트 승인 후 게시됩니다.",
+    en: "Recommendation sent! It will be published after host approval.",
+    ja: "おすすめが送信されました！ホスト承認後に公開されます。",
+    zh: "推荐已发送！经房东批准后将发布。",
+  },
+  "recommend.failed": {
+    ko: "추천 전송에 실패했습니다",
+    en: "Failed to send recommendation",
+    ja: "おすすめの送信に失敗しました",
+    zh: "推荐发送失败",
+  },
+  "recommend.pending": {
+    ko: "승인 대기",
+    en: "Pending",
+    ja: "承認待ち",
+    zh: "等待审批",
+  },
+  "recommend.recommendedBy": {
+    ko: "추천",
+    en: "Recommended by",
+    ja: "おすすめ",
+    zh: "推荐者",
+  },
+
   // Navigation
   "nav.faq": {
     ko: "자주 묻는 질문",

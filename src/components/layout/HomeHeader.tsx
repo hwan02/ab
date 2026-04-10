@@ -17,6 +17,7 @@ export default function HomeHeader({ userName, avatarUrl, isAdmin }: HomeHeaderP
   const router = useRouter();
   const { locale, setLocale, t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [emailNotif, setEmailNotif] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,6 +29,28 @@ export default function HomeHeader({ userName, avatarUrl, isAdmin }: HomeHeaderP
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  // Load email notification preference
+  useEffect(() => {
+    const loadNotif = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("profiles").select("email_notifications").eq("id", user.id).single();
+      if (data) setEmailNotif(data.email_notifications ?? false);
+    };
+    loadNotif();
+  }, []);
+
+  const toggleEmailNotif = async () => {
+    const newVal = !emailNotif;
+    setEmailNotif(newVal);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("profiles").update({ email_notifications: newVal }).eq("id", user.id);
+    }
+  };
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -162,6 +185,24 @@ export default function HomeHeader({ userName, avatarUrl, isAdmin }: HomeHeaderP
                     {t("home.hostMode")}
                   </Link>
                 )}
+                {/* Email notification toggle */}
+                <div className="border-b border-gray-100 px-4 py-2.5">
+                  <button
+                    onClick={toggleEmailNotif}
+                    className="flex w-full items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                      </svg>
+                      <span className="text-sm text-gray-700">{t("settings.emailNotifications")}</span>
+                    </div>
+                    <div className={`relative h-5 w-9 rounded-full transition-colors ${emailNotif ? "bg-rose-500" : "bg-gray-300"}`}>
+                      <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${emailNotif ? "translate-x-4" : "translate-x-0.5"}`} />
+                    </div>
+                  </button>
+                </div>
+
                 <button
                   onClick={handleLogout}
                   className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
