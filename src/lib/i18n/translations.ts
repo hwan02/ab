@@ -148,10 +148,10 @@ const translations = {
     zh: "发送",
   },
   "chat.itemRequest": {
-    ko: "물품 요청",
-    en: "Item Request",
-    ja: "物品リクエスト",
-    zh: "物品请求",
+    ko: "포포마켓",
+    en: "Popo Market",
+    ja: "ポポマーケット",
+    zh: "Popo Market",
   },
   "chat.reservationRequest": {
     ko: "예약 요청",
@@ -160,10 +160,10 @@ const translations = {
     zh: "预订请求",
   },
   "chat.itemRequestBtn": {
-    ko: "물품 요청",
-    en: "Item Request",
-    ja: "物品リクエスト",
-    zh: "物品请求",
+    ko: "포포마켓",
+    en: "Popo Market",
+    ja: "ポポマーケット",
+    zh: "Popo Market",
   },
   "chat.reservationRequestBtn": {
     ko: "예약 요청",
@@ -318,16 +318,16 @@ const translations = {
     zh: "请选择您需要的服务。房东将尽快为您提供帮助。",
   },
   "concierge.itemTitle": {
-    ko: "물품 요청",
-    en: "Item Request",
-    ja: "物品リクエスト",
-    zh: "物品请求",
+    ko: "포포마켓",
+    en: "Popo Market",
+    ja: "ポポマーケット",
+    zh: "Popo Market",
   },
   "concierge.itemDesc": {
-    ko: "숙소 기본 제공(타월, 바디워시 등) 외에 필요한 물품을 요청하세요. 돗자리, 헤어핀, 롤헤어, 전자제품 등 무엇이든 가능합니다. 최종 물품 정보는 이메일로 안내됩니다.",
-    en: "Request anything beyond basics (towels, body wash, etc.). Picnic mats, hair pins, hair rollers, electronics — anything you need. Final item details will be sent via email.",
-    ja: "基本アメニティ（タオル、ボディソープ等）以外に必要なものをリクエストしてください。レジャーシート、ヘアピン、ヘアローラー、電子機器など何でもOK。最終情報はメールでお届けします。",
-    zh: "除基本用品（毛巾、沐浴露等）外，您可以请求任何物品：野餐垫、发夹、卷发器、电子产品等。最终物品信息将通过邮件发送。",
+    ko: "한국의 빠른 배송 서비스를 경험해 보세요! 온라인으로 살 수 있는 것이라면 무엇이든 가능합니다. 돗자리, 헤어핀, 롤헤어, 전자제품 등 필요한 물품을 요청해 주세요. 단, 일부 구매할 수 없는 물건이 있을 수 있고 새벽 배송이 불가능할 수 있습니다. 최종 정보는 이메일로 전달됩니다.",
+    en: "Experience Korea's fast delivery service! Anything available online can be delivered — picnic mats, hair pins, hair rollers, electronics, and more. Note: some items may be unavailable, and early morning delivery may not be possible. Final details will be sent via email.",
+    ja: "韓国の速い配送サービスを体験してください！オンラインで購入できるものなら何でもOK。レジャーシート、ヘアピン、ヘアローラー、電子機器など。一部購入できない商品や早朝配送ができない場合があります。最終情報はメールでお届けします。",
+    zh: "体验韩国的快速配送服务！在线可购买的任何商品都可以配送——野餐垫、发夹、卷发器、电子产品等。部分商品可能无法购买，凌晨配送可能不可用。最终信息将通过邮件发送。",
   },
   "concierge.reservationTitle": {
     ko: "식당 예약",
@@ -1173,10 +1173,10 @@ const translations = {
 
   // Message Bubble
   "message.itemRequest": {
-    ko: "물품 요청",
-    en: "Item Request",
-    ja: "物品リクエスト",
-    zh: "物品请求",
+    ko: "포포마켓",
+    en: "Popo Market",
+    ja: "ポポマーケット",
+    zh: "Popo Market",
   },
   "message.item": {
     ko: "물품:",
