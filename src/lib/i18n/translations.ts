@@ -324,10 +324,10 @@ const translations = {
     zh: "物品请求",
   },
   "concierge.itemDesc": {
-    ko: "필요한 물품을 호스트에게 요청하세요",
-    en: "Request items from your host",
-    ja: "必要な物品をホストにリクエスト",
-    zh: "向房东请求物品",
+    ko: "숙소 기본 제공(타월, 바디워시 등) 외에 필요한 물품을 요청하세요. 돗자리, 헤어핀, 롤헤어, 전자제품 등 무엇이든 가능합니다. 최종 물품 정보는 이메일로 안내됩니다.",
+    en: "Request anything beyond basics (towels, body wash, etc.). Picnic mats, hair pins, hair rollers, electronics — anything you need. Final item details will be sent via email.",
+    ja: "基本アメニティ（タオル、ボディソープ等）以外に必要なものをリクエストしてください。レジャーシート、ヘアピン、ヘアローラー、電子機器など何でもOK。最終情報はメールでお届けします。",
+    zh: "除基本用品（毛巾、沐浴露等）外，您可以请求任何物品：野餐垫、发夹、卷发器、电子产品等。最终物品信息将通过邮件发送。",
   },
   "concierge.reservationTitle": {
     ko: "식당 예약",
