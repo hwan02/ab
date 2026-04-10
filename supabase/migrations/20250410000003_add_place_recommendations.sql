@@ -11,6 +11,7 @@ CREATE TABLE place_recommendations (
   show_recommender BOOLEAN DEFAULT false,
   recommender_name TEXT,
   recommender_avatar TEXT,
+  recommender_country TEXT,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   created_at TIMESTAMPTZ DEFAULT now()
 );

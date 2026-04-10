@@ -5,11 +5,12 @@ import Image from "next/image";
 import { useI18n } from "@/lib/i18n/context";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { NearbyPlace } from "@/types/database";
+import type { NearbyPlace, PlaceRecommendation } from "@/types/database";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
 interface NearbyListProps {
   places: NearbyPlace[];
+  recommendations?: PlaceRecommendation[] | null;
   onPlaceInquiry?: (place: NearbyPlace) => void;
 }
 
@@ -23,7 +24,7 @@ const CATEGORY_KEYS: { key: string; translationKey: TranslationKey }[] = [
 
 type CategoryFilter = "all" | "attraction" | "restaurant" | "convenience" | "experience";
 
-export default function NearbyList({ places, onPlaceInquiry }: NearbyListProps) {
+export default function NearbyList({ places, recommendations, onPlaceInquiry }: NearbyListProps) {
   const { t } = useI18n();
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
 
@@ -103,14 +104,22 @@ export default function NearbyList({ places, onPlaceInquiry }: NearbyListProps) 
             }
           />
         ) : (
-          filteredPlaces.map((place) => (
-            <PlaceCard
-              key={place.id}
-              place={place}
-              getCategoryLabel={getCategoryLabel}
-              onPlaceInquiry={onPlaceInquiry}
-            />
-          ))
+          <>
+            {filteredPlaces.map((place) => (
+              <PlaceCard
+                key={place.id}
+                place={place}
+                getCategoryLabel={getCategoryLabel}
+                onPlaceInquiry={onPlaceInquiry}
+              />
+            ))}
+            {/* Guest recommended places */}
+            {recommendations && recommendations
+              .filter((r) => activeCategory === "all" || r.category === activeCategory)
+              .map((rec) => (
+                <RecommendedPlaceCard key={rec.id} rec={rec} getCategoryLabel={getCategoryLabel} />
+              ))}
+          </>
         )}
       </div>
     </div>
@@ -273,5 +282,86 @@ function AddressRow({ address, name }: { address: string; name: string }) {
         )}
       </button>
     </div>
+  );
+}
+
+function RecommendedPlaceCard({
+  rec,
+  getCategoryLabel,
+}: {
+  rec: PlaceRecommendation;
+  getCategoryLabel: (cat: string) => string;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <Card className="border-rose-100 bg-rose-50/30 p-4">
+      <div className="min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="truncate text-sm font-semibold text-gray-900">
+            {rec.name}
+          </h3>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-600">
+              {t("recommend.guestPick")}
+            </span>
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+              {getCategoryLabel(rec.category)}
+            </span>
+          </div>
+        </div>
+        {rec.description && (
+          <p className="mt-1 line-clamp-2 text-sm text-gray-500">
+            {rec.description}
+          </p>
+        )}
+        {rec.address && (
+          <AddressRow address={rec.address} name={rec.name} />
+        )}
+
+        {/* Recommender info */}
+        {rec.show_recommender && rec.recommender_name && (
+          <div className="mt-2 flex items-center gap-2">
+            {rec.recommender_avatar ? (
+              <img
+                src={rec.recommender_avatar}
+                alt=""
+                className="h-5 w-5 rounded-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-200 text-[10px] font-semibold text-rose-600">
+                {rec.recommender_name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <span className="text-xs text-gray-500">
+              {rec.recommender_name}
+            </span>
+            {rec.recommender_country && (
+              <span className="text-xs text-gray-400">
+                {rec.recommender_country}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Map button */}
+      {rec.address && (
+        <div className="mt-3">
+          <a
+            href={rec.map_url || `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(rec.address)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z" clipRule="evenodd" />
+            </svg>
+            {t("nearby.viewMap")}
+          </a>
+        </div>
+      )}
+    </Card>
   );
 }

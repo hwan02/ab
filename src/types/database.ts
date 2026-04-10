@@ -109,6 +109,7 @@ export interface PlaceRecommendation {
   show_recommender: boolean;
   recommender_name: string | null;
   recommender_avatar: string | null;
+  recommender_country: string | null;
   status: "pending" | "approved" | "rejected";
   created_at: string;
 }

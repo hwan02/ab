@@ -1964,10 +1964,10 @@ const translations = {
 
   // Market Orders
   "market.orderHistory": {
-    ko: "구매 내역",
-    en: "Order History",
-    ja: "購入履歴",
-    zh: "购买记录",
+    ko: "요청 내역",
+    en: "Request History",
+    ja: "リクエスト履歴",
+    zh: "请求记录",
   },
   "market.noOrders": {
     ko: "구매 내역이 없습니다",
@@ -2048,6 +2048,24 @@ const translations = {
     en: "Your name and photo will be visible to other guests",
     ja: "名前とプロフィール写真が他のゲストに表示されます",
     zh: "您的姓名和头像将对其他客人可见",
+  },
+  "recommend.countryLabel": {
+    ko: "국적",
+    en: "Country",
+    ja: "国籍",
+    zh: "国籍",
+  },
+  "recommend.countrySelect": {
+    ko: "국적을 선택해 주세요",
+    en: "Select your country",
+    ja: "国籍を選択してください",
+    zh: "请选择国籍",
+  },
+  "recommend.guestPick": {
+    ko: "게스트 추천",
+    en: "Guest Pick",
+    ja: "ゲストおすすめ",
+    zh: "客人推荐",
   },
   "recommend.submit": {
     ko: "추천 보내기",

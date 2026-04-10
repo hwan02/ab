@@ -22,6 +22,7 @@ export default function PlaceRecommendForm({ propertyId, onClose }: PlaceRecomme
   const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
   const [showRecommender, setShowRecommender] = useState(false);
+  const [country, setCountry] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -50,6 +51,7 @@ export default function PlaceRecommendForm({ propertyId, onClose }: PlaceRecomme
       show_recommender: showRecommender,
       recommender_name: showRecommender ? (profile?.name ?? null) : null,
       recommender_avatar: showRecommender ? (profile?.avatar_url ?? null) : null,
+      recommender_country: showRecommender && country ? country : null,
     });
 
     setSubmitting(false);
@@ -125,6 +127,36 @@ export default function PlaceRecommendForm({ propertyId, onClose }: PlaceRecomme
             <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${showRecommender ? "translate-x-4" : "translate-x-0.5"}`} />
           </div>
         </button>
+        {showRecommender && (
+          <div className="mt-2">
+            <Select
+              label={t("recommend.countryLabel")}
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              options={[
+                { value: "", label: t("recommend.countrySelect") },
+                { value: "🇰🇷 한국", label: "🇰🇷 한국" },
+                { value: "🇺🇸 USA", label: "🇺🇸 USA" },
+                { value: "🇯🇵 日本", label: "🇯🇵 日本" },
+                { value: "🇨🇳 中国", label: "🇨🇳 中国" },
+                { value: "🇬🇧 UK", label: "🇬🇧 UK" },
+                { value: "🇫🇷 France", label: "🇫🇷 France" },
+                { value: "🇩🇪 Deutschland", label: "🇩🇪 Deutschland" },
+                { value: "🇪🇸 España", label: "🇪🇸 España" },
+                { value: "🇮🇹 Italia", label: "🇮🇹 Italia" },
+                { value: "🇹🇭 ไทย", label: "🇹🇭 ไทย" },
+                { value: "🇻🇳 Việt Nam", label: "🇻🇳 Việt Nam" },
+                { value: "🇮🇩 Indonesia", label: "🇮🇩 Indonesia" },
+                { value: "🇵🇭 Philippines", label: "🇵🇭 Philippines" },
+                { value: "🇦🇺 Australia", label: "🇦🇺 Australia" },
+                { value: "🇨🇦 Canada", label: "🇨🇦 Canada" },
+                { value: "🇧🇷 Brasil", label: "🇧🇷 Brasil" },
+                { value: "🇮🇳 India", label: "🇮🇳 India" },
+                { value: "🌍 Other", label: "🌍 Other" },
+              ]}
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end gap-2">

@@ -11,7 +11,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { NearbyPlace } from "@/types/database";
+import type { NearbyPlace, PlaceRecommendation } from "@/types/database";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
 const CATEGORY_TRANSLATION_KEYS: Record<string, TranslationKey> = {
@@ -23,6 +23,7 @@ const CATEGORY_TRANSLATION_KEYS: Record<string, TranslationKey> = {
 
 interface NearbyPageContentProps {
   places: NearbyPlace[] | null;
+  recommendations?: PlaceRecommendation[] | null;
   propertyId: string;
   propertyLat?: number | null;
   propertyLng?: number | null;
@@ -30,6 +31,7 @@ interface NearbyPageContentProps {
 
 export default function NearbyPageContent({
   places,
+  recommendations,
   propertyId,
   propertyLat,
   propertyLng,
@@ -141,7 +143,7 @@ export default function NearbyPageContent({
             />
           </div>
         ) : (
-          <NearbyList places={places} onPlaceInquiry={handlePlaceInquiry} />
+          <NearbyList places={places} recommendations={recommendations} onPlaceInquiry={handlePlaceInquiry} />
         )}
 
         {/* Recommend a place */}
