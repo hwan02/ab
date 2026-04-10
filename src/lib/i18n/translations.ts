@@ -324,10 +324,10 @@ const translations = {
     zh: "Popo Market",
   },
   "concierge.itemDesc": {
-    ko: "한국의 빠른 배송 서비스를 경험해 보세요! 온라인으로 살 수 있는 것이라면 무엇이든 가능합니다. 돗자리, 헤어핀, 롤헤어, 전자제품 등 필요한 물품을 요청해 주세요. 단, 일부 구매할 수 없는 물건이 있을 수 있고 새벽 배송이 불가능할 수 있습니다. 최종 정보는 이메일로 전달됩니다.",
-    en: "Experience Korea's fast delivery service! Anything available online can be delivered — picnic mats, hair pins, hair rollers, electronics, and more. Note: some items may be unavailable, and early morning delivery may not be possible. Final details will be sent via email.",
-    ja: "韓国の速い配送サービスを体験してください！オンラインで購入できるものなら何でもOK。レジャーシート、ヘアピン、ヘアローラー、電子機器など。一部購入できない商品や早朝配送ができない場合があります。最終情報はメールでお届けします。",
-    zh: "体验韩国的快速配送服务！在线可购买的任何商品都可以配送——野餐垫、发夹、卷发器、电子产品等。部分商品可能无法购买，凌晨配送可能不可用。最终信息将通过邮件发送。",
+    ko: "한국의 빠른 배송 서비스를 경험해 보세요! 온라인으로 살 수 있는 것이라면 무엇이든 가능합니다. 오후 7시 이전 주문 시 다음날 새벽 7시 이전에 도착합니다. 단, 일부 구매할 수 없는 물건이 있을 수 있고 새벽 배송이 불가능할 수 있습니다. 최종 정보는 이메일로 전달됩니다.",
+    en: "Experience Korea's fast delivery service! Anything available online can be delivered. Orders placed before 7 PM arrive by 7 AM the next day. Note: some items may be unavailable, and dawn delivery may not always be possible. Final details will be sent via email.",
+    ja: "韓国の速い配送サービスを体験してください！オンラインで購入できるものなら何でもOK。午後7時までの注文で翌朝7時前に届きます。一部購入できない商品や早朝配送ができない場合があります。最終情報はメールでお届けします。",
+    zh: "体验韩国的快速配送服务！在线可购买的任何商品都可以配送。下午7点前下单，次日凌晨7点前送达。部分商品可能无法购买，凌晨配送可能不可用。最终信息将通过邮件发送。",
   },
   "concierge.reservationTitle": {
     ko: "식당 예약",
@@ -336,10 +336,10 @@ const translations = {
     zh: "餐厅预订",
   },
   "concierge.reservationDesc": {
-    ko: "맛집 예약을 호스트에게 요청하세요",
-    en: "Ask your host to book a restaurant",
-    ja: "おすすめレストランの予約をリクエスト",
-    zh: "请房东帮忙预订餐厅",
+    ko: "맛집 예약을 호스트에게 요청하세요. 식당 사정에 따라 예약이 불가능할 수 있습니다. 최종 예약 정보는 이메일로 전달됩니다.",
+    en: "Ask your host to book a restaurant. Reservations may not be available depending on the restaurant. Final booking details will be sent via email.",
+    ja: "おすすめレストランの予約をリクエスト。レストランの状況により予約ができない場合があります。最終予約情報はメールでお届けします。",
+    zh: "请房东帮忙预订餐厅。视餐厅情况，预订可能无法成功。最终预订信息将通过邮件发送。",
   },
   "concierge.transportTitle": {
     ko: "교통/픽업 문의",
