@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, type TextareaHTMLAttributes } from "react";
+import { forwardRef, useEffect, useRef, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -9,8 +9,31 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 }
 
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, error, id, className, ...props }, ref) => {
+  ({ label, error, id, className, onChange, ...props }, ref) => {
     const textareaId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
+    const internalRef = useRef<HTMLTextAreaElement | null>(null);
+
+    const setRefs = (el: HTMLTextAreaElement | null) => {
+      internalRef.current = el;
+      if (typeof ref === "function") ref(el);
+      else if (ref) ref.current = el;
+    };
+
+    const autoResize = () => {
+      const el = internalRef.current;
+      if (!el) return;
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+    };
+
+    useEffect(() => {
+      autoResize();
+    }, [props.value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      onChange?.(e);
+      autoResize();
+    };
 
     return (
       <div className="w-full">
@@ -23,16 +46,17 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           </label>
         )}
         <textarea
-          ref={ref}
+          ref={setRefs}
           id={textareaId}
           className={cn(
             "block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500",
-            "min-h-[80px] resize-y",
+            "min-h-[80px] resize-none overflow-hidden",
             error && "border-red-500 focus:border-red-500 focus:ring-red-500/20",
             className
           )}
           aria-invalid={error ? "true" : undefined}
           aria-describedby={error && textareaId ? `${textareaId}-error` : undefined}
+          onChange={handleChange}
           {...props}
         />
         {error && (
