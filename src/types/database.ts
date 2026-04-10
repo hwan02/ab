@@ -95,3 +95,12 @@ export interface EmergencyContact {
   address: string | null;
   created_at: string;
 }
+
+export interface Review {
+  id: string;
+  user_id: string;
+  content: string;
+  rating: number;
+  created_at: string;
+  profiles?: Pick<Profile, "name" | "avatar_url">;
+}

@@ -1911,6 +1911,173 @@ const translations = {
     ja: "次の写真",
     zh: "下一张照片",
   },
+  // Navigation
+  "nav.faq": {
+    ko: "자주 묻는 질문",
+    en: "FAQ",
+    ja: "よくある質問",
+    zh: "常见问题",
+  },
+  "nav.reviews": {
+    ko: "후기 & 팁",
+    en: "Reviews & Tips",
+    ja: "レビュー＆ヒント",
+    zh: "评价与建议",
+  },
+
+  // FAQ
+  "faq.title": {
+    ko: "자주 묻는 질문",
+    en: "Frequently Asked Questions",
+    ja: "よくある質問",
+    zh: "常见问题",
+  },
+  "faq.subtitle": {
+    ko: "궁금한 점이 있으시면 아래를 확인해 주세요",
+    en: "Check below for answers to common questions",
+    ja: "よくある質問をご確認ください",
+    zh: "请查看以下常见问题",
+  },
+  "faq.q1": {
+    ko: "체크인은 어떻게 하나요?",
+    en: "How do I check in?",
+    ja: "チェックインはどうすればいいですか？",
+    zh: "如何办理入住？",
+  },
+  "faq.a1": {
+    ko: "숙소 페이지에서 체크인 가이드를 확인하세요. 비밀번호나 키 수령 방법이 안내되어 있습니다.",
+    en: "Check the check-in guide on the property page. It includes password or key pickup instructions.",
+    ja: "宿泊先ページのチェックインガイドをご確認ください。パスワードや鍵の受け取り方法が記載されています。",
+    zh: "请查看住宿页面的入住指南，其中包含密码或钥匙领取说明。",
+  },
+  "faq.q2": {
+    ko: "Wi-Fi는 어떻게 연결하나요?",
+    en: "How do I connect to Wi-Fi?",
+    ja: "Wi-Fiにはどう接続しますか？",
+    zh: "如何连接Wi-Fi？",
+  },
+  "faq.a2": {
+    ko: "숙소 상세 페이지에서 Wi-Fi 이름과 비밀번호를 확인할 수 있습니다. 복사 버튼으로 쉽게 복사하세요.",
+    en: "You can find the Wi-Fi name and password on the property detail page. Use the copy button for easy access.",
+    ja: "宿泊先の詳細ページでWi-Fi名とパスワードを確認できます。コピーボタンで簡単にコピーできます。",
+    zh: "您可以在住宿详情页面找到Wi-Fi名称和密码，使用复制按钮轻松复制。",
+  },
+  "faq.q3": {
+    ko: "호스트에게 어떻게 연락하나요?",
+    en: "How do I contact the host?",
+    ja: "ホストにはどう連絡しますか？",
+    zh: "如何联系房东？",
+  },
+  "faq.a3": {
+    ko: "숙소 페이지의 채팅 기능을 이용하세요. 물품 요청이나 예약 요청도 채팅으로 보낼 수 있습니다.",
+    en: "Use the chat feature on the property page. You can also send item requests or reservation requests through chat.",
+    ja: "宿泊先ページのチャット機能をご利用ください。物品リクエストや予約リクエストもチャットで送れます。",
+    zh: "请使用住宿页面的聊天功能。您也可以通过聊天发送物品请求或预约请求。",
+  },
+  "faq.q4": {
+    ko: "체크아웃 시 주의사항이 있나요?",
+    en: "Are there any checkout guidelines?",
+    ja: "チェックアウト時の注意事項はありますか？",
+    zh: "退房时有什么注意事项吗？",
+  },
+  "faq.a4": {
+    ko: "숙소 페이지의 체크아웃 가이드를 확인해 주세요. 쓰레기 분리수거, 문 잠금 등 안내가 있습니다.",
+    en: "Please check the checkout guide on the property page. It includes instructions for trash disposal, locking up, etc.",
+    ja: "宿泊先ページのチェックアウトガイドをご確認ください。ゴミの分別、施錠などの案内があります。",
+    zh: "请查看住宿页面的退房指南，其中包含垃圾分类、锁门等说明。",
+  },
+  "faq.q5": {
+    ko: "주변에 맛집이나 관광지 정보를 볼 수 있나요?",
+    en: "Can I find nearby restaurants or attractions?",
+    ja: "周辺のレストランや観光地情報を見れますか？",
+    zh: "可以查看附近的餐厅或景点信息吗？",
+  },
+  "faq.a5": {
+    ko: "숙소 페이지의 '주변 정보' 탭에서 호스트가 추천하는 맛집, 관광지, 편의시설 등을 확인할 수 있습니다.",
+    en: "Check the 'Nearby' tab on the property page to find host-recommended restaurants, attractions, and conveniences.",
+    ja: "宿泊先ページの「周辺情報」タブでホストおすすめのレストラン、観光地、施設を確認できます。",
+    zh: "在住宿页面的「周边信息」标签中，可以查看房东推荐的餐厅、景点和便利设施。",
+  },
+  "faq.q6": {
+    ko: "긴급 상황이 발생하면 어떻게 하나요?",
+    en: "What should I do in an emergency?",
+    ja: "緊急時はどうすればいいですか？",
+    zh: "遇到紧急情况怎么办？",
+  },
+  "faq.a6": {
+    ko: "숙소 페이지의 '긴급 연락처' 탭에서 병원, 경찰서, 소방서 등의 연락처를 확인하고 바로 전화할 수 있습니다.",
+    en: "Check the 'Emergency' tab on the property page to find and call hospitals, police, fire stations, etc.",
+    ja: "宿泊先ページの「緊急連絡先」タブで病院、警察、消防署などの連絡先を確認し、すぐに電話できます。",
+    zh: "在住宿页面的「紧急联系人」标签中，可以查看并拨打医院、警察局、消防站等的电话。",
+  },
+
+  // Reviews
+  "reviews.title": {
+    ko: "후기 & 팁",
+    en: "Reviews & Tips",
+    ja: "レビュー＆ヒント",
+    zh: "评价与建议",
+  },
+  "reviews.subtitle": {
+    ko: "게스트들의 경험과 유용한 팁을 공유해 주세요",
+    en: "Share your experience and helpful tips",
+    ja: "ゲストの経験や役立つヒントを共有してください",
+    zh: "分享您的体验和实用建议",
+  },
+  "reviews.write": {
+    ko: "후기 작성",
+    en: "Write a review",
+    ja: "レビューを書く",
+    zh: "写评价",
+  },
+  "reviews.placeholder": {
+    ko: "숙소 경험이나 다른 게스트에게 도움이 될 팁을 남겨주세요...",
+    en: "Share your stay experience or tips that might help other guests...",
+    ja: "宿泊体験や他のゲストに役立つヒントを残してください...",
+    zh: "分享您的住宿体验或对其他客人有帮助的建议...",
+  },
+  "reviews.submit": {
+    ko: "등록",
+    en: "Submit",
+    ja: "投稿",
+    zh: "提交",
+  },
+  "reviews.noReviews": {
+    ko: "아직 후기가 없습니다",
+    en: "No reviews yet",
+    ja: "まだレビューがありません",
+    zh: "暂无评价",
+  },
+  "reviews.noReviewsDesc": {
+    ko: "첫 번째 후기를 남겨보세요!",
+    en: "Be the first to leave a review!",
+    ja: "最初のレビューを投稿しましょう！",
+    zh: "成为第一个留下评价的人！",
+  },
+  "reviews.anonymous": {
+    ko: "익명",
+    en: "Anonymous",
+    ja: "匿名",
+    zh: "匿名",
+  },
+  "reviews.deleteConfirm": {
+    ko: "이 후기를 삭제하시겠습니까?",
+    en: "Are you sure you want to delete this review?",
+    ja: "このレビューを削除しますか？",
+    zh: "确定要删除这条评价吗？",
+  },
+  "reviews.writeFailed": {
+    ko: "후기 등록에 실패했습니다",
+    en: "Failed to submit review",
+    ja: "レビューの投稿に失敗しました",
+    zh: "提交评价失败",
+  },
+  "reviews.deleteFailed": {
+    ko: "후기 삭제에 실패했습니다",
+    en: "Failed to delete review",
+    ja: "レビューの削除に失敗しました",
+    zh: "删除评价失败",
+  },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
