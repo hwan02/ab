@@ -54,7 +54,6 @@ export default function PropertyLayoutShell({
           checkOut={checkOut}
           propertyId={propertyId}
           onClose={() => router.back()}
-          t={t}
         />
       );
     }
@@ -70,7 +69,6 @@ export default function PropertyLayoutShell({
           checkOut={checkOut}
           propertyId={propertyId}
           onClose={() => router.back()}
-          t={t}
         />
       );
     }
@@ -118,27 +116,30 @@ export default function PropertyLayoutShell({
           checkOut={checkOut}
           propertyId={propertyId}
           onClose={() => setShowStayModal(false)}
-          t={t}
         />
       )}
     </div>
   );
 }
 
+const LOCALE_MAP: Record<string, string> = {
+  ko: "ko-KR", en: "en-US", ja: "ja-JP", zh: "zh-CN",
+};
+
 function StayRequiredModal({
   checkIn,
   checkOut,
   propertyId,
   onClose,
-  t,
 }: {
   checkIn: string | null;
   checkOut: string | null;
   propertyId: string;
   onClose: () => void;
-  t: (key: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string;
 }) {
   const router = useRouter();
+  const { t, locale } = useI18n();
+  const dateLocale = LOCALE_MAP[locale] || "ko-KR";
   const [ciDate, setCiDate] = useState(checkIn ?? "");
   const [coDate, setCoDate] = useState(checkOut ?? "");
   const [submitting, setSubmitting] = useState(false);
@@ -164,7 +165,7 @@ function StayRequiredModal({
   };
 
   const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+    new Date(d).toLocaleDateString(dateLocale, { year: "numeric", month: "long", day: "numeric" });
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">

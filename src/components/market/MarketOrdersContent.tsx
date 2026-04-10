@@ -18,11 +18,12 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function MarketOrdersContent({ orders }: MarketOrdersContentProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const loc = locale === "ja" ? "ja-JP" : locale === "zh" ? "zh-CN" : locale === "en" ? "en-US" : "ko-KR";
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleDateString(loc, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   };
 
   return (

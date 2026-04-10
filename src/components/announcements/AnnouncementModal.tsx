@@ -10,7 +10,7 @@ interface AnnouncementModalProps {
 }
 
 export default function AnnouncementModal({ propertyId }: AnnouncementModalProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [visible, setVisible] = useState(false);
 
@@ -55,7 +55,8 @@ export default function AnnouncementModal({ propertyId }: AnnouncementModalProps
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+    const loc = locale === "ja" ? "ja-JP" : locale === "zh" ? "zh-CN" : locale === "en" ? "en-US" : "ko-KR";
+    return d.toLocaleDateString(loc, { month: "short", day: "numeric" });
   };
 
   return (
