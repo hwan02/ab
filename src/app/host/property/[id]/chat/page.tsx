@@ -13,6 +13,8 @@ interface GuestChatRoom extends ChatRoomType {
   profiles: Pick<Profile, "id" | "name" | "email" | "avatar_url"> | null;
   lastMessage: Message | null;
   unreadCount: number;
+  stayCheckIn: string | null;
+  stayCheckOut: string | null;
 }
 
 const LOCALE_MAP: Record<string, string> = {
@@ -104,10 +106,20 @@ export default function HostChatPage() {
           unreadCount = count || 0;
         }
 
+        // Get stay dates
+        const { data: guestStay } = await supabase
+          .from("property_guests")
+          .select("check_in, check_out")
+          .eq("property_id", propertyId)
+          .eq("guest_id", room.guest_id)
+          .maybeSingle();
+
         return {
           ...room,
           lastMessage: (lastMsgData as Message) || null,
           unreadCount,
+          stayCheckIn: guestStay?.check_in ?? null,
+          stayCheckOut: guestStay?.check_out ?? null,
         };
       })
     );
@@ -182,6 +194,11 @@ export default function HostChatPage() {
   function getGuestInitial(room: GuestChatRoom): string {
     const name = getGuestDisplayName(room);
     return name.charAt(0).toUpperCase();
+  }
+
+  function formatStayDate(dateStr: string): string {
+    const d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString(dateLocale, { month: "short", day: "numeric" });
   }
 
   function getLastMessagePreview(room: GuestChatRoom): string {
@@ -268,6 +285,13 @@ export default function HostChatPage() {
                         {getLastMessageTime(room)}
                       </span>
                     </div>
+                    {(room.stayCheckIn || room.stayCheckOut) && (
+                      <p className="mt-0.5 text-[10px] text-blue-500">
+                        {room.stayCheckIn && formatStayDate(room.stayCheckIn)}
+                        {room.stayCheckIn && room.stayCheckOut && " ~ "}
+                        {room.stayCheckOut && formatStayDate(room.stayCheckOut)}
+                      </p>
+                    )}
                     <p
                       className={`mt-0.5 truncate text-xs ${
                         room.unreadCount > 0 ? "font-medium text-gray-700" : "text-gray-400"
@@ -367,9 +391,18 @@ export default function HostChatPage() {
                       {getGuestInitial(selectedRoom)}
                     </div>
                   )}
-                  <span className="text-sm font-medium text-gray-900">
-                    {getGuestDisplayName(selectedRoom)}
-                  </span>
+                  <div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {getGuestDisplayName(selectedRoom)}
+                    </span>
+                    {(selectedRoom.stayCheckIn || selectedRoom.stayCheckOut) && (
+                      <p className="text-[10px] text-blue-500">
+                        {selectedRoom.stayCheckIn && formatStayDate(selectedRoom.stayCheckIn)}
+                        {selectedRoom.stayCheckIn && selectedRoom.stayCheckOut && " ~ "}
+                        {selectedRoom.stayCheckOut && formatStayDate(selectedRoom.stayCheckOut)}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

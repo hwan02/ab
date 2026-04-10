@@ -1896,6 +1896,18 @@ const translations = {
     ja: "宿泊期間が終了したため、利用が制限されています。再度利用するには新しいリクエストを送信してください。",
     zh: "您的入住期限已过，访问受限。请发送新的入住请求以恢复访问。",
   },
+  "access.stayPeriodRequired": {
+    ko: "숙박 기간이 아닙니다",
+    en: "Outside stay period",
+    ja: "宿泊期間外です",
+    zh: "不在住宿期间内",
+  },
+  "access.stayPeriodDesc": {
+    ko: "채팅과 컨시어지 서비스는 숙박 기간에만 이용하실 수 있습니다.",
+    en: "Chat and concierge services are only available during your stay period.",
+    ja: "チャットとコンシェルジュサービスは宿泊期間中のみご利用いただけます。",
+    zh: "聊天和礼宾服务仅在住宿期间可用。",
+  },
   "access.approximateLocation": {
     ko: "대략적인 위치",
     en: "Approximate location",

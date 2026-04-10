@@ -74,9 +74,8 @@ export default async function PropertyLayout({
   const isApproved = isAdmin || (!!guestRecord && isWithinStayPeriod);
   const isExpired = !!guestRecord && !isWithinStayPeriod;
 
-  // If not approved, show restricted view instead of children
-  if (!isApproved) {
-    // Check if there's a pending request
+  // If no guest record at all and not admin, show restricted view
+  if (!isAdmin && !guestRecord) {
     const { data: pendingRequest } = await supabase
       .from("guest_requests")
       .select("id, status")
@@ -90,13 +89,20 @@ export default async function PropertyLayout({
       <RestrictedPropertyView
         property={property}
         hasPendingRequest={pendingRequest?.status === "pending"}
-        isExpired={isExpired}
+        isExpired={false}
       />
     );
   }
 
+  // Show property to all approved/expired guests, but pass stay period info
   return (
-    <PropertyLayoutShell propertyId={property.id} propertyName={property.name}>
+    <PropertyLayoutShell
+      propertyId={property.id}
+      propertyName={property.name}
+      checkIn={guestRecord?.check_in ?? null}
+      checkOut={guestRecord?.check_out ?? null}
+      isWithinStayPeriod={isApproved}
+    >
       {children}
     </PropertyLayoutShell>
   );

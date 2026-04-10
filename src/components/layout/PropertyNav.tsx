@@ -6,9 +6,10 @@ import { useI18n } from "@/lib/i18n/context";
 
 interface PropertyNavProps {
   propertyId: string;
+  onNavClick?: (href: string) => boolean;
 }
 
-export default function PropertyNav({ propertyId }: PropertyNavProps) {
+export default function PropertyNav({ propertyId, onNavClick }: PropertyNavProps) {
   const pathname = usePathname();
   const { t } = useI18n();
 
@@ -68,6 +69,11 @@ export default function PropertyNav({ propertyId }: PropertyNavProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={(e) => {
+                if (onNavClick?.(item.href)) {
+                  e.preventDefault();
+                }
+              }}
               className={`flex flex-col items-center gap-0.5 px-3 py-1.5 text-[11px] transition-colors ${
                 active
                   ? "font-semibold text-rose-500"
