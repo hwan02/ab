@@ -9,14 +9,12 @@ import type { Property } from "@/types/database";
 
 interface HomeContentProps {
   isHost: boolean;
-  myProperties: Property[];
-  browseProperties: Property[];
+  properties: Property[];
 }
 
 export default function HomeContent({
   isHost,
-  myProperties,
-  browseProperties,
+  properties,
 }: HomeContentProps) {
   const { t } = useI18n();
 
@@ -47,12 +45,9 @@ export default function HomeContent({
         </Link>
       )}
 
-      {/* My Properties Section */}
+      {/* All Properties */}
       <section className="mt-6">
-        <h2 className="mb-3 text-lg font-bold text-gray-900">
-          {t("home.myProperties")}
-        </h2>
-        {myProperties.length === 0 ? (
+        {properties.length === 0 ? (
           <EmptyState
             title={t("home.noProperties")}
             description={t("home.noPropertiesDesc")}
@@ -64,36 +59,21 @@ export default function HomeContent({
           />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {myProperties.map((property) => (
+            {properties.map((property) => (
               <PropertyCard key={property.id} property={property} />
             ))}
           </div>
         )}
       </section>
-
-      {/* Browse Properties Section */}
-      {browseProperties.length > 0 && (
-        <section className="mt-8">
-          <h2 className="mb-3 text-lg font-bold text-gray-900">
-            {t("home.browse")}
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {browseProperties.map((property) => (
-              <PropertyCard key={property.id} property={property} isBrowse />
-            ))}
-          </div>
-        </section>
-      )}
     </main>
   );
 }
 
-function PropertyCard({ property, isBrowse }: { property: Property; isBrowse?: boolean }) {
+function PropertyCard({ property }: { property: Property }) {
   const photoUrl = property.photos?.[0];
-  const href = isBrowse ? `/browse/${property.id}` : `/property/${property.id}`;
 
   return (
-    <Link href={href}>
+    <Link href={`/property/${property.id}`}>
       <Card className="overflow-hidden p-0 transition-all hover:shadow-md">
         <div className="relative aspect-[4/3] w-full bg-gray-100">
           {photoUrl ? (

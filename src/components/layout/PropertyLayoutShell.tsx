@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import PropertyNav from "@/components/layout/PropertyNav";
 import AnnouncementModal from "@/components/announcements/AnnouncementModal";
 import { useI18n } from "@/lib/i18n/context";
@@ -51,6 +52,7 @@ export default function PropertyLayoutShell({
         <StayRequiredModal
           checkIn={checkIn}
           checkOut={checkOut}
+          propertyId={propertyId}
           onClose={() => router.back()}
           t={t}
         />
@@ -66,6 +68,7 @@ export default function PropertyLayoutShell({
         <StayRequiredModal
           checkIn={checkIn}
           checkOut={checkOut}
+          propertyId={propertyId}
           onClose={() => router.back()}
           t={t}
         />
@@ -113,6 +116,7 @@ export default function PropertyLayoutShell({
         <StayRequiredModal
           checkIn={checkIn}
           checkOut={checkOut}
+          propertyId={propertyId}
           onClose={() => setShowStayModal(false)}
           t={t}
         />
@@ -124,14 +128,41 @@ export default function PropertyLayoutShell({
 function StayRequiredModal({
   checkIn,
   checkOut,
+  propertyId,
   onClose,
   t,
 }: {
   checkIn: string | null;
   checkOut: string | null;
+  propertyId: string;
   onClose: () => void;
   t: (key: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string;
 }) {
+  const router = useRouter();
+  const [ciDate, setCiDate] = useState(checkIn ?? "");
+  const [coDate, setCoDate] = useState(checkOut ?? "");
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
+  const hasExistingDates = !!(checkIn || checkOut);
+
+  const handleSubmit = async () => {
+    if (!ciDate || !coDate) return;
+    setSubmitting(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from("guest_requests").insert({
+      property_id: propertyId,
+      guest_id: user.id,
+      check_in: ciDate,
+      check_out: coDate,
+    });
+
+    setSubmitting(false);
+    setSent(true);
+  };
+
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
 
@@ -144,27 +175,65 @@ function StayRequiredModal({
               <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-gray-900">
-            {t("access.stayPeriodRequired")}
-          </h3>
-          <p className="mt-2 text-sm text-gray-500">
-            {t("access.stayPeriodDesc")}
-          </p>
-          {(checkIn || checkOut) && (
-            <div className="mt-3 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-700">
-              {checkIn && <span>{formatDate(checkIn)}</span>}
-              {checkIn && checkOut && <span> ~ </span>}
-              {checkOut && <span>{formatDate(checkOut)}</span>}
-            </div>
+
+          {sent ? (
+            <>
+              <h3 className="text-lg font-bold text-gray-900">{t("browse.requestSent")}</h3>
+              <p className="mt-2 text-sm text-gray-500">{t("access.stayRequestSentDesc")}</p>
+            </>
+          ) : hasExistingDates ? (
+            <>
+              <h3 className="text-lg font-bold text-gray-900">{t("access.stayPeriodRequired")}</h3>
+              <p className="mt-2 text-sm text-gray-500">{t("access.stayPeriodDesc")}</p>
+              <div className="mt-3 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-700">
+                {checkIn && <span>{formatDate(checkIn)}</span>}
+                {checkIn && checkOut && <span> ~ </span>}
+                {checkOut && <span>{formatDate(checkOut)}</span>}
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 className="text-lg font-bold text-gray-900">{t("access.stayDateInput")}</h3>
+              <p className="mt-2 text-sm text-gray-500">{t("access.stayDateInputDesc")}</p>
+              <div className="mt-4 space-y-3 text-left">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">{t("browse.checkIn")}</label>
+                  <input
+                    type="date"
+                    value={ciDate}
+                    onChange={(e) => setCiDate(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">{t("browse.checkOut")}</label>
+                  <input
+                    type="date"
+                    value={coDate}
+                    onChange={(e) => setCoDate(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                  />
+                </div>
+              </div>
+            </>
           )}
         </div>
-        <div className="border-t border-gray-100 px-6 py-3">
+        <div className="flex gap-2 border-t border-gray-100 px-6 py-3">
           <button
-            onClick={onClose}
-            className="w-full rounded-xl bg-rose-500 py-2.5 text-sm font-medium text-white transition-all hover:bg-rose-600"
+            onClick={sent ? () => { onClose(); router.refresh(); } : onClose}
+            className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50"
           >
             {t("common.close")}
           </button>
+          {!sent && !hasExistingDates && (
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || !ciDate || !coDate}
+              className="flex-1 rounded-xl bg-rose-500 py-2.5 text-sm font-medium text-white transition-all hover:bg-rose-600 disabled:opacity-50"
+            >
+              {submitting ? "..." : t("access.requestStay")}
+            </button>
+          )}
         </div>
       </div>
     </div>

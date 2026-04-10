@@ -1908,6 +1908,24 @@ const translations = {
     ja: "チャットとコンシェルジュサービスは宿泊期間中のみご利用いただけます。",
     zh: "聊天和礼宾服务仅在住宿期间可用。",
   },
+  "access.stayDateInput": {
+    ko: "숙박 일정을 알려주세요",
+    en: "When are you staying?",
+    ja: "宿泊日程を教えてください",
+    zh: "请告诉我们您的住宿日期",
+  },
+  "access.stayDateInputDesc": {
+    ko: "채팅과 컨시어지를 이용하려면 숙박 날짜를 입력해 주세요. 호스트가 확인 후 승인합니다.",
+    en: "Please enter your stay dates to use chat and concierge. The host will review and approve.",
+    ja: "チャットとコンシェルジュを利用するには宿泊日を入力してください。ホストが確認後に承認します。",
+    zh: "请输入住宿日期以使用聊天和礼宾服务。房东将审核并批准。",
+  },
+  "access.stayRequestSentDesc": {
+    ko: "호스트가 확인 후 승인하면 채팅과 컨시어지를 이용하실 수 있습니다.",
+    en: "You'll be able to use chat and concierge once the host approves.",
+    ja: "ホストが承認後、チャットとコンシェルジュをご利用いただけます。",
+    zh: "房东批准后，您即可使用聊天和礼宾服务。",
+  },
   "access.approximateLocation": {
     ko: "대략적인 위치",
     en: "Approximate location",
