@@ -89,8 +89,37 @@ function ItemRequestForm({ chatRoomId, senderId }: ItemRequestFormProps) {
 
   const totalItems = items.length + (itemName.trim() ? 1 : 0);
 
+  const popularItems = [
+    { ko: "생수", en: "Water" },
+    { ko: "컵라면", en: "Cup noodle" },
+    { ko: "돗자리", en: "Picnic mat" },
+    { ko: "헤어핀", en: "Hair pin" },
+    { ko: "롤헤어", en: "Hair roller" },
+    { ko: "칫솔", en: "Toothbrush" },
+    { ko: "충전기", en: "Charger" },
+    { ko: "우산", en: "Umbrella" },
+  ];
+
+  const handleQuickAdd = (name: string) => {
+    setItems((prev) => [...prev, { itemName: name, quantity: "1" }]);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
+      {/* Popular items */}
+      <div className="flex flex-wrap gap-1.5">
+        {popularItems.map((item) => (
+          <button
+            key={item.ko}
+            type="button"
+            onClick={() => handleQuickAdd(item.ko)}
+            className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 transition-colors hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
+          >
+            + {item.ko}
+          </button>
+        ))}
+      </div>
+
       {/* Item input row */}
       <div className="flex items-end gap-2">
         <div className="flex-1">

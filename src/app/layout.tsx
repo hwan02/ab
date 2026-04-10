@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { I18nProvider } from "@/lib/i18n/context";
 import DevToolbar from "@/components/dev/DevToolbar";
+import TopLoader from "@/components/layout/TopLoader";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,6 +31,7 @@ export default function RootLayout({
     <html lang="ko" className={`${geistSans.variable} h-full antialiased`}>
       <body className="min-h-full bg-gray-50 font-sans text-gray-900">
         <I18nProvider>
+          <TopLoader />
           {children}
           {process.env.NODE_ENV === "development" && <DevToolbar />}
         </I18nProvider>

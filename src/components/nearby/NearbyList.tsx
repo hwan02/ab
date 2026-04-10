@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Image from "next/image";
 import { useI18n } from "@/lib/i18n/context";
 import { Card } from "@/components/ui/Card";
@@ -160,30 +160,16 @@ function PlaceCard({
             </p>
           )}
           {place.address && (
-            <p className="mt-1 flex items-center gap-1 text-xs text-gray-400">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-3 w-3"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              {place.address}
-            </p>
+            <AddressRow address={place.address} name={place.name} />
           )}
         </div>
       </div>
 
       {/* Action Buttons */}
       <div className="mt-3 flex gap-2">
-        {place.map_url && (
+        {(place.map_url || place.address) && (
           <a
-            href={place.map_url}
+            href={place.map_url || `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(place.address || place.name)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
@@ -243,5 +229,49 @@ function PlaceCard({
         )}
       </div>
     </Card>
+  );
+}
+
+function AddressRow({ address, name }: { address: string; name: string }) {
+  const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  }, [address]);
+
+  return (
+    <div className="mt-1 flex items-center gap-1">
+      <a
+        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1 text-xs text-gray-400 hover:text-rose-500 transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+        </svg>
+        <span className="underline-offset-2 hover:underline">{address}</span>
+      </a>
+      <button
+        onClick={handleCopy}
+        className="shrink-0 rounded p-0.5 text-gray-300 transition-colors hover:text-gray-500"
+        title={t("property.copyLabel")}
+      >
+        {copied ? (
+          <svg className="h-3 w-3 text-green-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+          </svg>
+        ) : (
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9.75a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
+          </svg>
+        )}
+      </button>
+    </div>
   );
 }

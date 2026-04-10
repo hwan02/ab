@@ -25,6 +25,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem(STORAGE_KEY) as Locale | null;
     if (saved && ["ko", "en", "ja", "zh"].includes(saved)) {
       setLocaleState(saved);
+    } else {
+      // Auto-detect from browser language
+      const browserLang = navigator.language.toLowerCase();
+      if (browserLang.startsWith("ja")) setLocaleState("ja");
+      else if (browserLang.startsWith("zh")) setLocaleState("zh");
+      else if (browserLang.startsWith("en")) setLocaleState("en");
+      // else default "ko"
     }
     setMounted(true);
   }, []);
