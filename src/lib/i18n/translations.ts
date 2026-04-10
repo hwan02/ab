@@ -2253,6 +2253,12 @@ const translations = {
     ja: "ポポステイでの思い出を残してください",
     zh: "在Popo's Stay留下您的回忆",
   },
+  "reviews.tooltip": {
+    ko: "다른 게스트들이 남긴 방명록을 확인해 보세요!",
+    en: "Check out messages from other guests!",
+    ja: "他のゲストが残したメッセージをチェック！",
+    zh: "查看其他客人留下的留言！",
+  },
   "reviews.write": {
     ko: "글쓰기",
     en: "Write",
