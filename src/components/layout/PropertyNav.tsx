@@ -74,7 +74,6 @@ export default function PropertyNav({ propertyId }: PropertyNavProps) {
 
   const moreItems = [
     { label: t("nav.announcements"), href: `${basePath}/announcements` },
-    { label: t("nav.emergency"), href: `${basePath}/emergency` },
   ];
 
   const isMoreActive = moreItems.some((item) => pathname.startsWith(item.href));
