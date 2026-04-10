@@ -97,6 +97,14 @@ export interface EmergencyContact {
   created_at: string;
 }
 
+export interface Faq {
+  id: string;
+  question: string;
+  answer: string;
+  sort_order: number;
+  created_at: string;
+}
+
 export interface PlaceRecommendation {
   id: string;
   property_id: string;
@@ -128,6 +136,7 @@ export interface Review {
   id: string;
   user_id: string;
   content: string;
+  image_url: string | null;
   rating: number;
   created_at: string;
   profiles?: Pick<Profile, "name" | "avatar_url">;

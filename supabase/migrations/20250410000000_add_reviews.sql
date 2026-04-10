@@ -3,6 +3,7 @@ CREATE TABLE reviews (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   content TEXT NOT NULL,
+  image_url TEXT,
   rating INTEGER CHECK (rating >= 1 AND rating <= 5) DEFAULT 5,
   created_at TIMESTAMPTZ DEFAULT now()
 );

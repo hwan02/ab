@@ -3,19 +3,29 @@
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n/context";
 import type { TranslationKey } from "@/lib/i18n/translations";
+import type { Faq } from "@/types/database";
 
-const FAQ_ITEMS: { q: TranslationKey; a: TranslationKey }[] = [
+const DEFAULT_FAQ_ITEMS: { q: TranslationKey; a: TranslationKey }[] = [
   { q: "faq.q1", a: "faq.a1" },
   { q: "faq.q2", a: "faq.a2" },
   { q: "faq.q3", a: "faq.a3" },
   { q: "faq.q4", a: "faq.a4" },
   { q: "faq.q5", a: "faq.a5" },
-  { q: "faq.q6", a: "faq.a6" },
 ];
 
-export default function FaqContent() {
+interface FaqContentProps {
+  customFaqs?: Faq[];
+}
+
+export default function FaqContent({ customFaqs }: FaqContentProps) {
   const { t } = useI18n();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  // Merge: custom DB FAQs first, then defaults
+  const allItems: { question: string; answer: string }[] = [
+    ...(customFaqs ?? []).map((f) => ({ question: f.question, answer: f.answer })),
+    ...DEFAULT_FAQ_ITEMS.map((item) => ({ question: t(item.q), answer: t(item.a) })),
+  ];
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -25,7 +35,7 @@ export default function FaqContent() {
       </div>
 
       <div className="space-y-3">
-        {FAQ_ITEMS.map((item, idx) => {
+        {allItems.map((item, idx) => {
           const isOpen = openIndex === idx;
           return (
             <div
@@ -37,7 +47,7 @@ export default function FaqContent() {
                 className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-gray-50"
               >
                 <span className="pr-4 text-sm font-semibold text-gray-900">
-                  {t(item.q)}
+                  {item.question}
                 </span>
                 <svg
                   className={`h-5 w-5 shrink-0 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
@@ -52,7 +62,7 @@ export default function FaqContent() {
               {isOpen && (
                 <div className="border-t border-gray-100 px-5 py-4">
                   <p className="text-sm leading-relaxed text-gray-600">
-                    {t(item.a)}
+                    {item.answer}
                   </p>
                 </div>
               )}

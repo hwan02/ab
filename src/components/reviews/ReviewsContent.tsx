@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
-import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { Review } from "@/types/database";
 
@@ -52,21 +52,29 @@ export default function ReviewsContent({ reviews, currentUserId }: ReviewsConten
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("ko-KR", { year: "numeric", month: "short", day: "numeric" });
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d`;
+    const weeks = Math.floor(days / 7);
+    return `${weeks}w`;
   };
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <div className="mb-6 flex items-center justify-between">
+    <main className="mx-auto max-w-lg px-0 sm:px-4 sm:py-6">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 sm:border-none sm:bg-transparent sm:px-0 sm:pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t("reviews.title")}</h1>
-          <p className="mt-1 text-sm text-gray-500">{t("reviews.subtitle")}</p>
+          <h1 className="text-xl font-bold text-gray-900">{t("reviews.title")}</h1>
+          <p className="mt-0.5 text-xs text-gray-400">{t("reviews.subtitle")}</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-rose-600"
+          className="flex items-center gap-1 rounded-full bg-rose-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-rose-600"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -75,21 +83,13 @@ export default function ReviewsContent({ reviews, currentUserId }: ReviewsConten
         </button>
       </div>
 
+      {/* Write form */}
       {showForm && (
-        <Card className="mb-6">
-          {/* Star rating */}
-          <div className="mb-3 flex gap-1">
+        <div className="border-b border-gray-100 bg-white px-4 py-4">
+          <div className="flex gap-1 mb-3">
             {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                onClick={() => setRating(star)}
-                className="transition-transform hover:scale-110"
-              >
-                <svg
-                  className={`h-7 w-7 ${star <= rating ? "text-yellow-400" : "text-gray-200"}`}
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
+              <button key={star} onClick={() => setRating(star)} className="transition-transform hover:scale-110">
+                <svg className={`h-6 w-6 ${star <= rating ? "text-yellow-400" : "text-gray-200"}`} fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                 </svg>
               </button>
@@ -99,94 +99,115 @@ export default function ReviewsContent({ reviews, currentUserId }: ReviewsConten
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={t("reviews.placeholder")}
-            rows={4}
+            rows={3}
             className="w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
           />
           <div className="mt-3 flex justify-end gap-2">
             <button
               onClick={() => setShowForm(false)}
-              className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100"
+              className="rounded-lg px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100"
             >
               {t("common.cancel")}
             </button>
             <button
               onClick={handleSubmit}
               disabled={submitting || !content.trim()}
-              className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-rose-600 disabled:opacity-50"
+              className="rounded-lg bg-rose-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-rose-600 disabled:opacity-50"
             >
               {t("reviews.submit")}
             </button>
           </div>
-        </Card>
+        </div>
       )}
 
+      {/* Posts */}
       {reviews.length === 0 ? (
-        <EmptyState
-          icon={
-            <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
-            </svg>
-          }
-          title={t("reviews.noReviews")}
-          description={t("reviews.noReviewsDesc")}
-        />
+        <div className="px-4 pt-8">
+          <EmptyState
+            icon={
+              <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+              </svg>
+            }
+            title={t("reviews.noReviews")}
+            description={t("reviews.noReviewsDesc")}
+          />
+        </div>
       ) : (
-        <div className="space-y-4">
+        <div className="divide-y divide-gray-100">
           {reviews.map((review) => {
             const profile = review.profiles;
             const isOwn = review.user_id === currentUserId;
             return (
-              <Card key={review.id} className="relative">
-                <div className="flex items-start gap-3">
-                  {profile?.avatar_url ? (
-                    <img
-                      src={profile.avatar_url}
-                      alt=""
-                      className="h-10 w-10 rounded-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-orange-400 text-sm font-semibold text-white">
-                      {(profile?.name ?? t("reviews.anonymous")).charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-gray-900">
+              <article key={review.id} className="bg-white">
+                {/* Post header */}
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    {profile?.avatar_url ? (
+                      <img
+                        src={profile.avatar_url}
+                        alt=""
+                        className="h-9 w-9 rounded-full object-cover ring-2 ring-gray-100"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-orange-400 text-sm font-bold text-white">
+                        {(profile?.name ?? t("reviews.anonymous")).charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
                         {profile?.name || t("reviews.anonymous")}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {formatDate(review.created_at)}
-                      </span>
+                      </p>
+                      <p className="text-[11px] text-gray-400">{timeAgo(review.created_at)}</p>
                     </div>
-                    <div className="mt-0.5 flex gap-0.5">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <svg
-                          key={star}
-                          className={`h-3.5 w-3.5 ${star <= review.rating ? "text-yellow-400" : "text-gray-200"}`}
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                      ))}
-                    </div>
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
-                      {review.content}
-                    </p>
                   </div>
                   {isOwn && (
                     <button
                       onClick={() => handleDelete(review.id)}
-                      className="shrink-0 rounded-lg p-1.5 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                      className="rounded-lg p-1.5 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500"
                     >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                       </svg>
                     </button>
                   )}
                 </div>
-              </Card>
+
+                {/* Post image */}
+                {review.image_url && (
+                  <div className="relative aspect-square w-full bg-gray-100">
+                    <Image
+                      src={review.image_url}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 512px) 100vw, 512px"
+                    />
+                  </div>
+                )}
+
+                {/* Stars + content */}
+                <div className="px-4 py-3">
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg
+                        key={star}
+                        className={`h-4 w-4 ${star <= review.rating ? "text-yellow-400" : "text-gray-200"}`}
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-800">
+                    <span className="font-semibold">{profile?.name || t("reviews.anonymous")}</span>{" "}
+                    {review.content}
+                  </p>
+                </div>
+              </article>
             );
           })}
         </div>
