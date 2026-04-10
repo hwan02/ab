@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { ItemRequestForm } from "@/components/chat/ItemRequestForm";
 import { ReservationRequestForm } from "@/components/chat/ReservationRequestForm";
@@ -149,32 +148,6 @@ export default function ConciergePage() {
             {t("concierge.selectService")}
           </p>
         </div>
-
-        {/* Delivery Notice */}
-        <div className="mb-6 flex items-start gap-2.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
-          <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-          </svg>
-          <p className="text-sm leading-relaxed text-blue-700">
-            {t("concierge.itemDeliveryNotice")}
-          </p>
-        </div>
-
-        {/* Order History Link */}
-        <Link
-          href={`/property/${propertyId}/market`}
-          className="mb-6 flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-gray-50"
-        >
-          <div className="flex items-center gap-2">
-            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-            </svg>
-            <span className="text-sm font-medium text-gray-700">{t("market.orderHistory")}</span>
-          </div>
-          <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-          </svg>
-        </Link>
 
         {/* Service Cards */}
         <div className="flex flex-col gap-3">
