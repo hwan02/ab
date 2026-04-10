@@ -14,6 +14,22 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
 
   return (
     <div className="space-y-4">
+      {/* Address */}
+      {property.address && (
+        <Card className="p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50">
+              <svg className="h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-semibold text-gray-900">{t("property.address")}</h3>
+          </div>
+          <WifiField label={t("property.address")} value={property.address} copyLabel={t("property.copyLabel")} copiedLabel={t("property.copied")} />
+        </Card>
+      )}
+
       {/* WiFi Info */}
       {(property.wifi_ssid || property.wifi_password) && (
         <Card className="p-4">

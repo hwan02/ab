@@ -795,6 +795,12 @@ const translations = {
   },
 
   // Property Info
+  "property.address": {
+    ko: "주소",
+    en: "Address",
+    ja: "住所",
+    zh: "地址",
+  },
   "property.guide": {
     ko: "숙소 안내",
     en: "Property Guide",
