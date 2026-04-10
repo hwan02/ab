@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/context";
@@ -11,21 +10,9 @@ interface PropertyNavProps {
 
 export default function PropertyNav({ propertyId }: PropertyNavProps) {
   const pathname = usePathname();
-  const [moreOpen, setMoreOpen] = useState(false);
   const { t } = useI18n();
-  const moreRef = useRef<HTMLDivElement>(null);
 
   const basePath = `/property/${propertyId}`;
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
-        setMoreOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
 
   const isActive = (href: string) => {
     if (href === basePath) return pathname === basePath;
@@ -72,12 +59,6 @@ export default function PropertyNav({ propertyId }: PropertyNavProps) {
     },
   ];
 
-  const moreItems = [
-    { label: t("nav.announcements"), href: `${basePath}/announcements` },
-  ];
-
-  const isMoreActive = moreItems.some((item) => pathname.startsWith(item.href));
-
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-4xl items-center justify-around">
@@ -98,47 +79,6 @@ export default function PropertyNav({ propertyId }: PropertyNavProps) {
             </Link>
           );
         })}
-
-        <div className="relative" ref={moreRef}>
-          <button
-            onClick={() => setMoreOpen(!moreOpen)}
-            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 text-[11px] transition-colors ${
-              moreOpen || isMoreActive
-                ? "font-semibold text-rose-500"
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-            </svg>
-            <span>{t("nav.more")}</span>
-          </button>
-
-          {moreOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setMoreOpen(false)}
-              />
-              <div className="absolute bottom-full right-0 z-50 mb-2 w-44 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
-                {moreItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMoreOpen(false)}
-                    className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${
-                      pathname.startsWith(item.href)
-                        ? "bg-rose-50 font-medium text-rose-600"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
       </div>
     </nav>
   );

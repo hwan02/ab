@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import PropertyNav from "@/components/layout/PropertyNav";
+import AnnouncementModal from "@/components/announcements/AnnouncementModal";
 
 interface PropertyLayoutShellProps {
   propertyId: string;
@@ -59,6 +60,9 @@ export default function PropertyLayoutShell({
 
       {/* Bottom Navigation */}
       <PropertyNav propertyId={propertyId} />
+
+      {/* Announcement Modal */}
+      <AnnouncementModal propertyId={propertyId} />
     </div>
   );
 }

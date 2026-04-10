@@ -1384,6 +1384,12 @@ const translations = {
     ja: "ゲストへのお知らせを作成してください。",
     zh: "为您的客人撰写公告。",
   },
+  "announcements.dismissToday": {
+    ko: "하루 동안 보지 않기",
+    en: "Don't show today",
+    ja: "今日は表示しない",
+    zh: "今天不再显示",
+  },
 
   // Emergency
   "emergency.title": {
