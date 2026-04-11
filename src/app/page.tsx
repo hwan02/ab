@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import HomeHeader from "@/components/layout/HomeHeader";
 import HomeContent from "@/components/home/HomeContent";
@@ -11,8 +12,10 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Not logged in → show landing page
-  if (!user) {
+  // Not logged in and hasn't entered yet → show landing page
+  const cookieStore = await cookies();
+  const hasEntered = cookieStore.get("entered");
+  if (!user && !hasEntered) {
     return <LandingPage />;
   }
 
@@ -20,6 +23,15 @@ export default async function HomePage() {
     .from("properties")
     .select("*")
     .order("created_at", { ascending: false });
+
+  if (!user) {
+    return (
+      <div className="min-h-dvh bg-gray-50">
+        <HomeHeader userName={null} avatarUrl={null} isAdmin={false} />
+        <HomeContent isHost={false} properties={(allProperties as Property[]) ?? []} />
+      </div>
+    );
+  }
 
   const { data: profile } = await supabase
     .from("profiles")

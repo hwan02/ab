@@ -1,11 +1,18 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n/context";
 import { LOCALES } from "@/lib/i18n/translations";
 
 export default function LandingPage() {
+  const router = useRouter();
   const { locale, setLocale, t } = useI18n();
+
+  const handleEnter = () => {
+    document.cookie = "entered=1; path=/; max-age=86400";
+    router.push("/");
+    router.refresh();
+  };
 
   return (
     <div className="min-h-dvh bg-gray-50">
@@ -42,15 +49,15 @@ export default function LandingPage() {
           {t("landing.subtitle")}
         </p>
 
-        <Link
-          href="/login"
+        <button
+          onClick={handleEnter}
           className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-rose-500 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-rose-200/50 transition-all hover:bg-rose-600 hover:shadow-xl"
         >
           {t("landing.enter")}
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
           </svg>
-        </Link>
+        </button>
 
         <footer className="absolute bottom-6 text-xs text-gray-400">
           {t("login.title")} &copy; {new Date().getFullYear()}
