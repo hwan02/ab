@@ -144,7 +144,7 @@ function ReservationRequestForm({
         <Input
           label={t("reservationForm.time")}
           type="time"
-          step="1800"
+          step="900"
           value={time}
           onChange={(e) => setTime(e.target.value)}
           error={fieldErrors.time}
