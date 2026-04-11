@@ -103,17 +103,21 @@ export default function ReviewsContent({ reviews, currentUserId }: ReviewsConten
           <h1 className="text-xl font-bold text-gray-900">{t("reviews.title")}</h1>
           <p className="mt-0.5 text-xs text-gray-400">{t("reviews.subtitle")}</p>
         </div>
-        {currentUserId && (
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-1 rounded-full bg-rose-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-rose-600"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            {t("reviews.write")}
-          </button>
-        )}
+        <button
+          onClick={() => {
+            if (!currentUserId) {
+              router.push("/login");
+              return;
+            }
+            setShowForm(!showForm);
+          }}
+          className="flex items-center gap-1 rounded-full bg-rose-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-rose-600"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          {t("reviews.write")}
+        </button>
       </div>
 
       {/* Write form */}

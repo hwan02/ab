@@ -29,25 +29,19 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Redirect unauthenticated users to login (except for public routes)
-  const publicPrefixes = ["/login", "/auth/login", "/auth/callback", "/property", "/faq", "/reviews", "/browse"];
-  const pathname = request.nextUrl.pathname;
-  const isPublicRoute =
-    pathname === "/" ||
-    publicPrefixes.some((prefix) => pathname.startsWith(prefix));
-
-  if (!user && !isPublicRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
-  }
-
-  // Restrict /host routes to admin only
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-  if (user && request.nextUrl.pathname.startsWith("/host") && user.email !== adminEmail) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
+  // Restrict /host routes: require login + admin only
+  if (request.nextUrl.pathname.startsWith("/host")) {
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+    if (user.email !== adminEmail) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;
