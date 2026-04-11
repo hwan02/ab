@@ -10,8 +10,6 @@ export default async function FaqPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
-
   const { data: faqs } = await supabase
     .from("faqs")
     .select("*")

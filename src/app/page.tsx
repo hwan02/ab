@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import HomeHeader from "@/components/layout/HomeHeader";
 import HomeContent from "@/components/home/HomeContent";
+import LandingPage from "@/components/home/LandingPage";
 import type { Property, Profile } from "@/types/database";
 
 export default async function HomePage() {
@@ -11,8 +11,14 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const { data: allProperties } = await supabase
+    .from("properties")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  // Not logged in → show landing page with properties visible
   if (!user) {
-    redirect("/login");
+    return <LandingPage properties={(allProperties as Property[]) ?? []} />;
   }
 
   const { data: profile } = await supabase
@@ -20,11 +26,6 @@ export default async function HomePage() {
     .select("*")
     .eq("id", user.id)
     .single<Profile>();
-
-  const { data: allProperties } = await supabase
-    .from("properties")
-    .select("*")
-    .order("created_at", { ascending: false });
 
   const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 

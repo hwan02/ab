@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Header from "@/components/layout/Header";
 import ReviewsContent from "@/components/reviews/ReviewsContent";
@@ -10,8 +9,6 @@ export default async function ReviewsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
-
   const { data: reviews } = await supabase
     .from("reviews")
     .select("*, profiles(name, avatar_url)")
@@ -20,7 +17,7 @@ export default async function ReviewsPage() {
   return (
     <div className="min-h-dvh bg-gray-50">
       <Header />
-      <ReviewsContent reviews={(reviews as Review[]) ?? []} currentUserId={user.id} />
+      <ReviewsContent reviews={(reviews as Review[]) ?? []} currentUserId={user?.id ?? null} />
     </div>
   );
 }

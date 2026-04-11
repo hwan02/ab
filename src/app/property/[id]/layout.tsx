@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PropertyLayoutShell from "@/components/layout/PropertyLayoutShell";
 import type { Property } from "@/types/database";
@@ -34,14 +34,6 @@ export default async function PropertyLayout({
   const { id } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
   const { data: property } = await supabase
     .from("properties")
     .select("id, name, description, address, photos")
@@ -52,9 +44,28 @@ export default async function PropertyLayout({
     notFound();
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Not logged in → show property but no stay period (chat/concierge will require login)
+  if (!user) {
+    return (
+      <PropertyLayoutShell
+        propertyId={property.id}
+        propertyName={property.name}
+        checkIn={null}
+        checkOut={null}
+        isWithinStayPeriod={false}
+        isLoggedIn={false}
+      >
+        {children}
+      </PropertyLayoutShell>
+    );
+  }
+
   const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
-  // Check guest record for stay dates (used for chat/concierge gating)
   const { data: guestRecord } = await supabase
     .from("property_guests")
     .select("id, check_in, check_out")
@@ -69,7 +80,6 @@ export default async function PropertyLayout({
        (!guestRecord.check_out || guestRecord.check_out >= today))
     : false);
 
-  // Everyone can see the property - chat/concierge gated by stay period
   return (
     <PropertyLayoutShell
       propertyId={property.id}
@@ -77,6 +87,7 @@ export default async function PropertyLayout({
       checkIn={guestRecord?.check_in ?? null}
       checkOut={guestRecord?.check_out ?? null}
       isWithinStayPeriod={isWithinStayPeriod}
+      isLoggedIn={true}
     >
       {children}
     </PropertyLayoutShell>

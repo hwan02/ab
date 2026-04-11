@@ -14,6 +14,7 @@ interface PropertyLayoutShellProps {
   checkIn: string | null;
   checkOut: string | null;
   isWithinStayPeriod: boolean;
+  isLoggedIn?: boolean;
   children: React.ReactNode;
 }
 
@@ -23,6 +24,7 @@ export default function PropertyLayoutShell({
   checkIn,
   checkOut,
   isWithinStayPeriod,
+  isLoggedIn = true,
   children,
 }: PropertyLayoutShellProps) {
   const pathname = usePathname();
@@ -34,19 +36,29 @@ export default function PropertyLayoutShell({
   const isChatPage = pathname.endsWith("/chat");
   const isConciergePage = pathname.endsWith("/concierge");
 
-  // Intercept navigation to chat/concierge when outside stay period
+  // Intercept navigation to chat/concierge
   const handleNavClick = (href: string) => {
     const isChatOrConcierge = href.endsWith("/chat") || href.endsWith("/concierge");
-    if (isChatOrConcierge && !isWithinStayPeriod) {
-      setBlockedPath(href);
-      setShowStayModal(true);
-      return true; // blocked
+    if (isChatOrConcierge) {
+      if (!isLoggedIn) {
+        router.push("/login");
+        return true;
+      }
+      if (!isWithinStayPeriod) {
+        setBlockedPath(href);
+        setShowStayModal(true);
+        return true;
+      }
     }
     return false;
   };
 
   // Chat page: full-screen without chrome
   if (isChatPage) {
+    if (!isLoggedIn) {
+      router.push("/login");
+      return null;
+    }
     if (!isWithinStayPeriod) {
       return (
         <StayRequiredModal
@@ -62,6 +74,10 @@ export default function PropertyLayoutShell({
 
   // Concierge page: has its own header, just add nav
   if (isConciergePage) {
+    if (!isLoggedIn) {
+      router.push("/login");
+      return null;
+    }
     if (!isWithinStayPeriod) {
       return (
         <StayRequiredModal

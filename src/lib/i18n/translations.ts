@@ -40,6 +40,26 @@ const translations = {
     zh: "选择语言",
   },
 
+  // Landing
+  "landing.subtitle": {
+    ko: "편안한 숙박을 위한 모든 안내를 한 곳에서",
+    en: "Everything you need for a comfortable stay, in one place",
+    ja: "快適な滞在のためのすべてのガイドを一か所で",
+    zh: "舒适住宿所需的一切，尽在一处",
+  },
+  "landing.enter": {
+    ko: "입장하기",
+    en: "Enter",
+    ja: "入場する",
+    zh: "进入",
+  },
+  "landing.properties": {
+    ko: "숙소 둘러보기",
+    en: "Browse Properties",
+    ja: "宿泊先を見る",
+    zh: "浏览住宿",
+  },
+
   // Home
   "home.myProperties": {
     ko: "내 숙소",
