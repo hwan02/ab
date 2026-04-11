@@ -30,10 +30,11 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Redirect unauthenticated users to login (except for public routes)
-  const publicRoutes = ["/login", "/auth/login", "/auth/callback"];
-  const isPublicRoute = publicRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
-  );
+  const publicPrefixes = ["/login", "/auth/login", "/auth/callback", "/property", "/faq", "/reviews", "/browse"];
+  const pathname = request.nextUrl.pathname;
+  const isPublicRoute =
+    pathname === "/" ||
+    publicPrefixes.some((prefix) => pathname.startsWith(prefix));
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();

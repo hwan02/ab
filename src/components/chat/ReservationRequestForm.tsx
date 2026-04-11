@@ -141,14 +141,18 @@ function ReservationRequestForm({
           error={fieldErrors.date}
           required
         />
-        <Input
+        <Select
           label={t("reservationForm.time")}
-          type="time"
-          step="900"
           value={time}
           onChange={(e) => setTime(e.target.value)}
-          error={fieldErrors.time}
-          required
+          options={[
+            { value: "", label: t("reservationForm.timePlaceholder") },
+            ...Array.from({ length: 48 }, (_, i) => {
+              const h = String(Math.floor(i / 4) + 10).padStart(2, "0");
+              const m = ["00", "15", "30", "45"][i % 4];
+              return { value: `${h}:${m}`, label: `${h}:${m}` };
+            }),
+          ]}
         />
       </div>
       <Input
