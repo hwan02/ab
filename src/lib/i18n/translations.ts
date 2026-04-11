@@ -1172,6 +1172,12 @@ const translations = {
     ja: "時間",
     zh: "时间",
   },
+  "reservationForm.timePlaceholder": {
+    ko: "시간 선택",
+    en: "Select time",
+    ja: "時間を選択",
+    zh: "选择时间",
+  },
   "reservationForm.partySize": {
     ko: "인원",
     en: "Party Size",
