@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n/context";
 import { Card } from "@/components/ui/Card";
+import AutoTranslate from "@/components/i18n/AutoTranslate";
 import type { Property } from "@/types/database";
 
 interface PropertyInfoProps {
@@ -195,7 +196,7 @@ function InfoCard({
         <h3 className="text-base font-semibold text-gray-900">{title}</h3>
       </div>
       <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-600">
-        {content}
+        <AutoTranslate text={content} />
       </div>
     </Card>
   );

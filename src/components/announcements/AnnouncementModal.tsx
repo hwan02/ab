@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
+import AutoTranslate from "@/components/i18n/AutoTranslate";
 import type { Announcement } from "@/types/database";
 
 interface AnnouncementModalProps {
@@ -88,11 +89,11 @@ export default function AnnouncementModal({ propertyId }: AnnouncementModalProps
             {announcements.map((ann) => (
               <div key={ann.id}>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-gray-900">{ann.title}</h3>
+                  <h3 className="text-sm font-semibold text-gray-900"><AutoTranslate text={ann.title} /></h3>
                   <span className="text-xs text-gray-400">{formatDate(ann.created_at)}</span>
                 </div>
                 <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-gray-600">
-                  {ann.content}
+                  <AutoTranslate text={ann.content} />
                 </p>
               </div>
             ))}

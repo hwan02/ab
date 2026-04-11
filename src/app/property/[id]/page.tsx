@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PhotoGallery from "@/components/property/PhotoGallery";
 import PropertyInfo from "@/components/property/PropertyInfo";
+import TranslatedDescription from "@/components/property/TranslatedDescription";
 import WeatherWidget from "@/components/property/WeatherWidget";
 import { T } from "@/components/i18n/T";
 import type { Property } from "@/types/database";
@@ -53,11 +54,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
 
       {/* Description */}
       {property.description && (
-        <div className="mt-4 rounded-xl bg-white p-4 border border-gray-200">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-600">
-            {property.description}
-          </p>
-        </div>
+        <TranslatedDescription text={property.description} />
       )}
 
       {/* Weather */}

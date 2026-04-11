@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n/context";
+import AutoTranslate from "@/components/i18n/AutoTranslate";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import type { Faq } from "@/types/database";
 
@@ -22,9 +23,9 @@ export default function FaqContent({ customFaqs }: FaqContentProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   // Merge: custom DB FAQs first, then defaults
-  const allItems: { question: string; answer: string }[] = [
-    ...(customFaqs ?? []).map((f) => ({ question: f.question, answer: f.answer })),
-    ...DEFAULT_FAQ_ITEMS.map((item) => ({ question: t(item.q), answer: t(item.a) })),
+  const allItems: { question: string; answer: string; isCustom: boolean }[] = [
+    ...(customFaqs ?? []).map((f) => ({ question: f.question, answer: f.answer, isCustom: true })),
+    ...DEFAULT_FAQ_ITEMS.map((item) => ({ question: t(item.q), answer: t(item.a), isCustom: false })),
   ];
 
   return (
@@ -47,7 +48,7 @@ export default function FaqContent({ customFaqs }: FaqContentProps) {
                 className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-gray-50"
               >
                 <span className="pr-4 text-sm font-semibold text-gray-900">
-                  {item.question}
+                  {item.isCustom ? <AutoTranslate text={item.question} /> : item.question}
                 </span>
                 <svg
                   className={`h-5 w-5 shrink-0 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
@@ -62,7 +63,7 @@ export default function FaqContent({ customFaqs }: FaqContentProps) {
               {isOpen && (
                 <div className="border-t border-gray-100 px-5 py-4">
                   <p className="text-sm leading-relaxed text-gray-600">
-                    {item.answer}
+                    {item.isCustom ? <AutoTranslate text={item.answer} /> : item.answer}
                   </p>
                 </div>
               )}
