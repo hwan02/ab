@@ -31,9 +31,9 @@ export default function LandingPage() {
         </div>
 
         <img
-          src="/popo.png"
-          alt="popo"
-          className="mb-6 h-32 w-32 object-contain drop-shadow-lg"
+          src="/포동이.png"
+          alt="포동이"
+          className="mb-6 h-52 w-52 object-contain drop-shadow-lg"
         />
         <h1 className="text-4xl font-bold tracking-tight text-gray-900">
           {t("login.title")}
