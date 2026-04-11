@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
 import NearbyList from "@/components/nearby/NearbyList";
 import PlaceRecommendForm from "@/components/nearby/PlaceRecommendForm";
@@ -40,6 +41,13 @@ export default function NearbyPageContent({
   const router = useRouter();
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [showRecommendForm, setShowRecommendForm] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data: { user } }) => {
+      setIsLoggedIn(!!user);
+    });
+  }, []);
   const [inquiryPlace, setInquiryPlace] = useState<NearbyPlace | null>(null);
   const [customMessage, setCustomMessage] = useState("");
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -165,7 +173,10 @@ export default function NearbyPageContent({
             </Card>
           ) : (
             <button
-              onClick={() => setShowRecommendForm(true)}
+              onClick={() => {
+                if (!isLoggedIn) { router.push("/login"); return; }
+                setShowRecommendForm(true);
+              }}
               className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-300 py-4 text-sm font-medium text-gray-500 transition-colors hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
