@@ -10,7 +10,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { NearbyPlaceForm } from "@/components/nearby/NearbyPlaceForm";
 import GoogleMapsProvider from "@/components/maps/GoogleMapsProvider";
 import { useI18n } from "@/lib/i18n/context";
-import type { NearbyPlace } from "@/types/database";
+import type { NearbyPlace, PlaceRecommendation } from "@/types/database";
 
 export default function NearbyPage({
   params,
@@ -37,6 +37,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     { key: "experience" as const, label: t("nearby.experience") },
   ];
   const [places, setPlaces] = useState<NearbyPlace[]>([]);
+  const [recommendations, setRecommendations] = useState<PlaceRecommendation[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [activeCategory, setActiveCategory] =
     useState<NearbyPlace["category"]>("attraction");
@@ -48,6 +49,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
 
   useEffect(() => {
     fetchPlaces();
+    fetchRecommendations();
   }, [propertyId]);
 
   async function fetchPlaces() {
@@ -60,11 +62,60 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
 
     if (fetchError) {
       setError(t("nearby.fetchFailed"));
-      console.error("Fetch error:", fetchError);
     } else {
       setPlaces((data as NearbyPlace[]) ?? []);
     }
     setIsFetching(false);
+  }
+
+  async function fetchRecommendations() {
+    const { data } = await supabase
+      .from("place_recommendations")
+      .select("*")
+      .eq("property_id", propertyId)
+      .order("created_at", { ascending: false });
+    setRecommendations((data as PlaceRecommendation[]) ?? []);
+  }
+
+  async function handleApproveRec(rec: PlaceRecommendation) {
+    await supabase.from("place_recommendations").update({ status: "approved" }).eq("id", rec.id);
+    // Also add to nearby_places
+    await supabase.from("nearby_places").insert({
+      property_id: propertyId,
+      name: rec.name,
+      category: rec.category,
+      description: rec.description,
+      address: rec.address,
+      map_url: rec.map_url,
+    });
+    fetchRecommendations();
+    fetchPlaces();
+  }
+
+  async function handleRejectRec(id: string) {
+    await supabase.from("place_recommendations").update({ status: "rejected" }).eq("id", id);
+    fetchRecommendations();
+  }
+
+  async function handleEditRec(rec: PlaceRecommendation) {
+    // Open the add/edit modal with recommendation data pre-filled
+    setEditingPlace(null);
+    setIsModalOpen(true);
+    // We'll use a special flow - approve + add as nearby place for editing
+    await supabase.from("place_recommendations").update({ status: "approved" }).eq("id", rec.id);
+    const { data: newPlace } = await supabase.from("nearby_places").insert({
+      property_id: propertyId,
+      name: rec.name,
+      category: rec.category,
+      description: rec.description,
+      address: rec.address,
+      map_url: rec.map_url,
+    }).select("*").single();
+    if (newPlace) {
+      setEditingPlace(newPlace as NearbyPlace);
+    }
+    fetchRecommendations();
+    fetchPlaces();
   }
 
   async function handleAddPlace(data: {
@@ -382,6 +433,70 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
               </div>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Guest Recommendations */}
+      {recommendations.filter((r) => r.status === "pending").length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-4 text-lg font-bold text-gray-900">
+            {t("recommend.guestPick")}
+            <span className="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-sm text-rose-600">
+              {recommendations.filter((r) => r.status === "pending").length}
+            </span>
+          </h2>
+          <div className="space-y-3">
+            {recommendations
+              .filter((r) => r.status === "pending")
+              .map((rec) => (
+                <Card key={rec.id} className="border-rose-100 bg-rose-50/30 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-gray-900">{rec.name}</h3>
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                          {categories.find((c) => c.key === rec.category)?.label ?? rec.category}
+                        </span>
+                      </div>
+                      {rec.description && (
+                        <p className="mt-1 text-sm text-gray-500">{rec.description}</p>
+                      )}
+                      {rec.address && (
+                        <p className="mt-1 text-xs text-gray-400">{rec.address}</p>
+                      )}
+                      {rec.show_recommender && rec.recommender_name && (
+                        <p className="mt-1 text-xs text-gray-400">
+                          {rec.recommender_name} {rec.recommender_country ?? ""}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2 border-t border-rose-100 pt-3">
+                    <Button
+                      size="sm"
+                      onClick={() => handleApproveRec(rec)}
+                    >
+                      {t("guest.approve")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleEditRec(rec)}
+                    >
+                      {t("common.edit")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleRejectRec(rec.id)}
+                      className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                    >
+                      {t("guest.reject")}
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+          </div>
         </div>
       )}
 

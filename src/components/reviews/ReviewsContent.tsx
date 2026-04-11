@@ -19,22 +19,53 @@ export default function ReviewsContent({ reviews, currentUserId }: ReviewsConten
   const [showForm, setShowForm] = useState(false);
   const [content, setContent] = useState("");
   const [rating, setRating] = useState(5);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
 
   const handleSubmit = async () => {
     if (!content.trim()) return;
     setSubmitting(true);
     const supabase = createClient();
+
+    let imageUrl: string | null = null;
+
+    // Upload image if selected
+    if (imageFile) {
+      const ext = imageFile.name.split(".").pop();
+      const path = `${currentUserId}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("property-photos")
+        .upload(path, imageFile);
+
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage
+          .from("property-photos")
+          .getPublicUrl(path);
+        imageUrl = urlData.publicUrl;
+      }
+    }
+
     const { error } = await supabase.from("reviews").insert({
       user_id: currentUserId,
       content: content.trim(),
       rating,
+      image_url: imageUrl,
     });
     if (error) {
       alert(t("reviews.writeFailed"));
     } else {
       setContent("");
       setRating(5);
+      setImageFile(null);
+      setImagePreview(null);
       setShowForm(false);
       router.refresh();
     }
@@ -95,6 +126,20 @@ export default function ReviewsContent({ reviews, currentUserId }: ReviewsConten
               </button>
             ))}
           </div>
+          {/* Image preview */}
+          {imagePreview && (
+            <div className="relative mb-3 overflow-hidden rounded-xl">
+              <img src={imagePreview} alt="" className="w-full rounded-xl object-cover" style={{ maxHeight: 300 }} />
+              <button
+                onClick={() => { setImageFile(null); setImagePreview(null); }}
+                className="absolute right-2 top-2 rounded-full bg-black/50 p-1.5 text-white transition-colors hover:bg-black/70"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -102,7 +147,15 @@ export default function ReviewsContent({ reviews, currentUserId }: ReviewsConten
             rows={3}
             className="w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
           />
-          <div className="mt-3 flex justify-end gap-2">
+          <div className="mt-3 flex items-center justify-between">
+            <label className="flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+              </svg>
+              {t("chat.sendPhoto")}
+              <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+            </label>
+            <div className="flex gap-2">
             <button
               onClick={() => setShowForm(false)}
               className="rounded-lg px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100"
@@ -116,6 +169,7 @@ export default function ReviewsContent({ reviews, currentUserId }: ReviewsConten
             >
               {t("reviews.submit")}
             </button>
+            </div>
           </div>
         </div>
       )}
