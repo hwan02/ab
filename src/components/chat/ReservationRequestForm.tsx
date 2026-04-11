@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import GoogleMapsProvider from "@/components/maps/GoogleMapsProvider";
 import PlaceAutocomplete from "@/components/maps/PlaceAutocomplete";
@@ -140,13 +141,15 @@ function ReservationRequestForm({
           error={fieldErrors.date}
           required
         />
-        <Input
+        <Select
           label={t("reservationForm.time")}
-          type="time"
           value={time}
           onChange={(e) => setTime(e.target.value)}
-          error={fieldErrors.time}
-          required
+          options={Array.from({ length: 48 }, (_, i) => {
+            const h = String(Math.floor(i / 2)).padStart(2, "0");
+            const m = i % 2 === 0 ? "00" : "30";
+            return { value: `${h}:${m}`, label: `${h}:${m}` };
+          })}
         />
       </div>
       <Input
