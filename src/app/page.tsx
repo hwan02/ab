@@ -11,15 +11,15 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Not logged in → show landing page
+  if (!user) {
+    return <LandingPage />;
+  }
+
   const { data: allProperties } = await supabase
     .from("properties")
     .select("*")
     .order("created_at", { ascending: false });
-
-  // Not logged in → show landing page with properties visible
-  if (!user) {
-    return <LandingPage properties={(allProperties as Property[]) ?? []} />;
-  }
 
   const { data: profile } = await supabase
     .from("profiles")
