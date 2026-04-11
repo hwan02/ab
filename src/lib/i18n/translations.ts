@@ -356,10 +356,10 @@ const translations = {
     zh: "餐厅预订帮助",
   },
   "concierge.reservationDesc": {
-    ko: "대부분의 식당은 구글맵에서 직접 예약할 수 있습니다. 온라인 예약이 어렵거나 전화 예약이 필요한 경우 호스트가 대신 도와드립니다. 식당 사정에 따라 예약이 불가능할 수 있으며, 최종 예약 정보는 이메일로 전달됩니다.",
-    en: "Most restaurants can be booked directly through Google Maps. If online booking is difficult or phone reservation is needed, the host will help. Reservations may not be available depending on the restaurant. Final details will be sent via email.",
-    ja: "ほとんどのレストランはGoogleマップから直接予約できます。オンライン予約が難しい場合や電話予約が必要な場合、ホストがサポートします。レストランの状況により予約ができない場合があります。最終情報はメールでお届けします。",
-    zh: "大多数餐厅可以通过Google地图直接预订。如果在线预订困难或需要电话预订，房东将提供帮助。视餐厅情况，预订可能无法成功。最终信息将通过邮件发送。",
+    ko: "대부분의 식당은 구글맵에서 직접 예약할 수 있습니다. 온라인 예약이 어렵거나 전화 예약이 필요한 경우 호스트가 대신 도와드립니다. 식당 사정에 따라 예약이 불가능할 수 있습니다.",
+    en: "Most restaurants can be booked directly through Google Maps. If online booking is difficult or phone reservation is needed, the host will help. Reservations may not be available depending on the restaurant.",
+    ja: "ほとんどのレストランはGoogleマップから直接予約できます。オンライン予約が難しい場合や電話予約が必要な場合、ホストがサポートします。レストランの状況により予約ができない場合があります。",
+    zh: "大多数餐厅可以通过Google地图直接预订。如果在线预订困难或需要电话预订，房东将提供帮助。视餐厅情况，预订可能无法成功。",
   },
   "concierge.transportTitle": {
     ko: "교통/픽업 문의",
