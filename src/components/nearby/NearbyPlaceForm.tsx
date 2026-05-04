@@ -177,6 +177,29 @@ function NearbyPlaceForm({
         disabled={isLoading}
       />
 
+      {/* Photo URL */}
+      <div>
+        <Input
+          label={t("nearbyForm.photoUrlLabel")}
+          placeholder="https://..."
+          value={photoUrl}
+          onChange={(e) => setPhotoUrl(e.target.value)}
+          disabled={isLoading}
+        />
+        {photoUrl && (
+          <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+            <img
+              src={photoUrl}
+              alt=""
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          </div>
+        )}
+      </div>
+
       <div className="flex justify-end gap-3 pt-2">
         <Button
           type="button"

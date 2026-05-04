@@ -43,18 +43,19 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     useState<NearbyPlace["category"]>("attraction");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlace, setEditingPlace] = useState<NearbyPlace | null>(null);
+  const [editingRec, setEditingRec] = useState<PlaceRecommendation | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isFetchingPhotos, setIsFetchingPhotos] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchPlaces();
+    fetchPlaces(true);
     fetchRecommendations();
   }, [propertyId]);
 
-  async function fetchPlaces() {
-    setIsFetching(true);
+  async function fetchPlaces(showSpinner = false) {
+    if (showSpinner) setIsFetching(true);
     const { data, error: fetchError } = await supabase
       .from("nearby_places")
       .select("*")
@@ -66,7 +67,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     } else {
       setPlaces((data as NearbyPlace[]) ?? []);
     }
-    setIsFetching(false);
+    if (showSpinner) setIsFetching(false);
   }
 
   async function fetchRecommendations() {
@@ -98,25 +99,56 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     fetchRecommendations();
   }
 
-  async function handleEditRec(rec: PlaceRecommendation) {
-    // Open the add/edit modal with recommendation data pre-filled
+  function handleEditRec(rec: PlaceRecommendation) {
     setEditingPlace(null);
+    setEditingRec(rec);
     setIsModalOpen(true);
-    // We'll use a special flow - approve + add as nearby place for editing
-    await supabase.from("place_recommendations").update({ status: "approved" }).eq("id", rec.id);
-    const { data: newPlace } = await supabase.from("nearby_places").insert({
-      property_id: propertyId,
-      name: rec.name,
-      category: rec.category,
-      description: rec.description,
-      address: rec.address,
-      map_url: rec.map_url,
-    }).select("*").single();
-    if (newPlace) {
-      setEditingPlace(newPlace as NearbyPlace);
+  }
+
+  async function handleSubmitRec(data: {
+    name: string;
+    description: string;
+    address: string;
+    category: NearbyPlace["category"];
+    phone: string;
+    map_url: string;
+    latitude?: number;
+    longitude?: number;
+    google_place_id?: string;
+    photo_url?: string;
+  }) {
+    if (!editingRec) return;
+
+    setIsSubmitting(true);
+    setError("");
+
+    await supabase.from("place_recommendations").update({ status: "approved" }).eq("id", editingRec.id);
+
+    const { error: insertError } = await supabase
+      .from("nearby_places")
+      .insert({
+        property_id: propertyId,
+        name: data.name,
+        description: data.description || null,
+        address: data.address || null,
+        category: data.category,
+        phone: data.phone || null,
+        map_url: data.map_url || null,
+        latitude: data.latitude ?? null,
+        longitude: data.longitude ?? null,
+        google_place_id: data.google_place_id || null,
+        photo_url: data.photo_url || null,
+      });
+
+    if (insertError) {
+      setError(t("nearby.addFailed"));
+    } else {
+      setEditingRec(null);
+      setIsModalOpen(false);
+      await fetchPlaces();
+      await fetchRecommendations();
     }
-    fetchRecommendations();
-    fetchPlaces();
+    setIsSubmitting(false);
   }
 
   async function handleAddPlace(data: {
@@ -266,6 +298,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
 
   function closeModal() {
     setEditingPlace(null);
+    setEditingRec(null);
     setIsModalOpen(false);
   }
 
@@ -562,11 +595,18 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
       <Modal
         open={isModalOpen}
         onClose={closeModal}
-        title={editingPlace ? t("nearby.editPlace") : t("nearby.addPlace")}
+        title={editingPlace ? t("nearby.editPlace") : editingRec ? t("nearby.editPlace") : t("nearby.addPlace")}
       >
         <NearbyPlaceForm
-          initialData={editingPlace ?? undefined}
-          onSubmit={editingPlace ? handleEditPlace : handleAddPlace}
+          key={editingPlace?.id ?? editingRec?.id ?? "new"}
+          initialData={editingPlace ?? (editingRec ? {
+            name: editingRec.name,
+            category: editingRec.category,
+            description: editingRec.description,
+            address: editingRec.address,
+            map_url: editingRec.map_url,
+          } : undefined)}
+          onSubmit={editingPlace ? handleEditPlace : editingRec ? handleSubmitRec : handleAddPlace}
           onCancel={closeModal}
           isLoading={isSubmitting}
         />

@@ -1047,6 +1047,12 @@ const translations = {
     ja: "Google マップまたは地図リンク",
     zh: "谷歌地图或地图链接",
   },
+  "nearbyForm.photoUrlLabel": {
+    ko: "사진 URL",
+    en: "Photo URL",
+    ja: "写真URL",
+    zh: "照片链接",
+  },
 
   // Item Request Form
   "itemForm.itemNameRequired": {
