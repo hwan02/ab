@@ -36,9 +36,9 @@ export default async function PropertyLayout({
 
   const { data: property } = await supabase
     .from("properties")
-    .select("id, name, description, address, photos")
+    .select("id, name, name_en, name_ja, name_zh, description, address, photos")
     .eq("id", id)
-    .single<Pick<Property, "id" | "name" | "description" | "address" | "photos">>();
+    .single<Pick<Property, "id" | "name" | "name_en" | "name_ja" | "name_zh" | "description" | "address" | "photos">>();
 
   if (!property) {
     notFound();
@@ -54,6 +54,9 @@ export default async function PropertyLayout({
       <PropertyLayoutShell
         propertyId={property.id}
         propertyName={property.name}
+        propertyNameEn={property.name_en}
+        propertyNameJa={property.name_ja}
+        propertyNameZh={property.name_zh}
         checkIn={null}
         checkOut={null}
         isWithinStayPeriod={false}
@@ -84,6 +87,9 @@ export default async function PropertyLayout({
     <PropertyLayoutShell
       propertyId={property.id}
       propertyName={property.name}
+      propertyNameEn={property.name_en}
+      propertyNameJa={property.name_ja}
+      propertyNameZh={property.name_zh}
       checkIn={guestRecord?.check_in ?? null}
       checkOut={guestRecord?.check_out ?? null}
       isWithinStayPeriod={isWithinStayPeriod}

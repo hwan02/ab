@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PhotoGallery from "@/components/property/PhotoGallery";
 import PropertyInfo from "@/components/property/PropertyInfo";
-import TranslatedDescription from "@/components/property/TranslatedDescription";
+import LocalizedPropertyDetails from "@/components/property/LocalizedPropertyDetails";
 import WeatherWidget from "@/components/property/WeatherWidget";
 import { T } from "@/components/i18n/T";
 import type { Property } from "@/types/database";
@@ -30,32 +30,8 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
       {/* Photo Gallery */}
       <PhotoGallery photos={property.photos ?? []} />
 
-      {/* Property Name & Address */}
-      <div className="mt-4">
-        <h2 className="text-xl font-bold text-gray-900">{property.name}</h2>
-        {property.address && (
-          <p className="mt-1 flex items-center gap-1 text-sm text-gray-500">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 flex-shrink-0"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                clipRule="evenodd"
-              />
-            </svg>
-            {property.address}
-          </p>
-        )}
-      </div>
-
-      {/* Description */}
-      {property.description && (
-        <TranslatedDescription text={property.description} />
-      )}
+      {/* Property Name, Address & Description (localized) */}
+      <LocalizedPropertyDetails property={property} />
 
       {/* Weather */}
       <div className="mt-4">

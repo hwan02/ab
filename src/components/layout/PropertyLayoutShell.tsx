@@ -11,6 +11,9 @@ import { useI18n } from "@/lib/i18n/context";
 interface PropertyLayoutShellProps {
   propertyId: string;
   propertyName: string;
+  propertyNameEn?: string | null;
+  propertyNameJa?: string | null;
+  propertyNameZh?: string | null;
   checkIn: string | null;
   checkOut: string | null;
   isWithinStayPeriod: boolean;
@@ -21,6 +24,9 @@ interface PropertyLayoutShellProps {
 export default function PropertyLayoutShell({
   propertyId,
   propertyName,
+  propertyNameEn,
+  propertyNameJa,
+  propertyNameZh,
   checkIn,
   checkOut,
   isWithinStayPeriod,
@@ -29,7 +35,9 @@ export default function PropertyLayoutShell({
 }: PropertyLayoutShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const nameMap: Record<string, string | null | undefined> = { en: propertyNameEn, ja: propertyNameJa, zh: propertyNameZh };
+  const displayName = (locale !== "ko" && nameMap[locale]) || propertyName;
   const [showStayModal, setShowStayModal] = useState(false);
   const [blockedPath, setBlockedPath] = useState<string | null>(null);
 
@@ -111,7 +119,7 @@ export default function PropertyLayoutShell({
             </svg>
           </Link>
           <h1 className="truncate text-lg font-bold text-gray-900">
-            {propertyName}
+            {displayName}
           </h1>
         </div>
       </header>

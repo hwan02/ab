@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
+import { lp, hasDbTranslation } from "@/lib/i18n/localize";
+import AutoTranslate from "@/components/i18n/AutoTranslate";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -11,7 +13,7 @@ import PhotoGallery from "@/components/property/PhotoGallery";
 import type { Property } from "@/types/database";
 
 interface BrowsePropertyContentProps {
-  property: Pick<Property, "id" | "name" | "address" | "description" | "photos">;
+  property: Property;
   hasPendingRequest: boolean;
 }
 
@@ -19,8 +21,11 @@ export default function BrowsePropertyContent({
   property,
   hasPendingRequest,
 }: BrowsePropertyContentProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const supabase = createClient();
+  const name = lp(property, "name", locale);
+  const address = lp(property, "address", locale);
+  const description = lp(property, "description", locale);
 
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
@@ -104,7 +109,7 @@ export default function BrowsePropertyContent({
             </svg>
           </Link>
           <h1 className="truncate text-lg font-semibold text-gray-900">
-            {property.name}
+            {name}
           </h1>
         </div>
       </header>
@@ -115,14 +120,14 @@ export default function BrowsePropertyContent({
 
         {/* Property Info */}
         <div className="mt-6">
-          <h2 className="text-xl font-bold text-gray-900">{property.name}</h2>
-          {property.address && (
-            <p className="mt-1 text-sm text-gray-500">{property.address}</p>
+          <h2 className="text-xl font-bold text-gray-900">{name}</h2>
+          {address && (
+            <p className="mt-1 text-sm text-gray-500">{address}</p>
           )}
-          {property.description && (
-            <p className="mt-3 whitespace-pre-wrap text-gray-700">
-              {property.description}
-            </p>
+          {description && (
+            <div className="mt-3 whitespace-pre-wrap text-gray-700">
+              {hasDbTranslation(property, "description", locale) ? description : <AutoTranslate text={description} />}
+            </div>
           )}
         </div>
 

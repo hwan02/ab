@@ -4,13 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
+import { lp } from "@/lib/i18n/localize";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import PhotoGallery from "@/components/property/PhotoGallery";
 import type { Property } from "@/types/database";
 
 interface RestrictedPropertyViewProps {
-  property: Pick<Property, "id" | "name" | "description" | "address" | "photos">;
+  property: Property;
   hasPendingRequest: boolean;
   isExpired?: boolean;
 }
@@ -28,8 +29,10 @@ export default function RestrictedPropertyView({
   hasPendingRequest,
   isExpired = false,
 }: RestrictedPropertyViewProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const supabase = createClient();
+  const name = lp(property, "name", locale);
+  const description = lp(property, "description", locale);
 
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
@@ -40,7 +43,8 @@ export default function RestrictedPropertyView({
   const [success, setSuccess] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
-  const approximateLocation = getApproximateLocation(property.address);
+  const address = lp(property, "address", locale);
+  const approximateLocation = getApproximateLocation(address);
 
   async function handleSubmit() {
     setIsSubmitting(true);
@@ -116,7 +120,7 @@ export default function RestrictedPropertyView({
             </svg>
           </Link>
           <h1 className="truncate text-lg font-bold text-gray-900">
-            {property.name}
+            {name}
           </h1>
         </div>
       </header>
@@ -127,7 +131,7 @@ export default function RestrictedPropertyView({
 
         {/* Property Name & Approximate Location */}
         <div className="mt-4">
-          <h2 className="text-xl font-bold text-gray-900">{property.name}</h2>
+          <h2 className="text-xl font-bold text-gray-900">{name}</h2>
           {approximateLocation && (
             <p className="mt-1 flex items-center gap-1 text-sm text-gray-500">
               <svg
@@ -151,10 +155,10 @@ export default function RestrictedPropertyView({
         </div>
 
         {/* Description */}
-        {property.description && (
+        {description && (
           <div className="mt-4 rounded-xl bg-white p-4 border border-gray-200">
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-600">
-              {property.description}
+              {description}
             </p>
           </div>
         )}

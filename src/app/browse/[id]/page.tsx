@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import BrowsePropertyContent from "@/components/browse/BrowsePropertyContent";
-import type { Property, GuestRequest } from "@/types/database";
+import type { Property } from "@/types/database";
+import type { GuestRequest } from "@/types/database";
 
 export default async function BrowsePropertyPage({
   params,
@@ -21,9 +22,9 @@ export default async function BrowsePropertyPage({
 
   const { data: property } = await supabase
     .from("properties")
-    .select("id, name, address, description, photos")
+    .select("*")
     .eq("id", id)
-    .single<Pick<Property, "id" | "name" | "address" | "description" | "photos">>();
+    .single<Property>();
 
   if (!property) {
     redirect("/");

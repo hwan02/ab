@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useI18n } from "@/lib/i18n/context";
+import { lp } from "@/lib/i18n/localize";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { Property } from "@/types/database";
@@ -70,7 +71,10 @@ export default function HomeContent({
 }
 
 function PropertyCard({ property }: { property: Property }) {
+  const { locale } = useI18n();
   const photoUrl = property.photos?.[0];
+  const name = lp(property, "name", locale);
+  const address = lp(property, "address", locale);
 
   return (
     <Link href={`/property/${property.id}`}>
@@ -79,7 +83,7 @@ function PropertyCard({ property }: { property: Property }) {
           {photoUrl ? (
             <Image
               src={photoUrl}
-              alt={property.name}
+              alt={name}
               fill
               className="object-cover"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -94,11 +98,11 @@ function PropertyCard({ property }: { property: Property }) {
         </div>
         <div className="p-4">
           <h3 className="truncate text-base font-semibold text-gray-900">
-            {property.name}
+            {name}
           </h3>
-          {property.address && (
+          {address && (
             <p className="mt-1 truncate text-sm text-gray-500">
-              {property.address}
+              {address}
             </p>
           )}
         </div>

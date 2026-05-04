@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n/context";
+import { lp, hasDbTranslation } from "@/lib/i18n/localize";
 import { Card } from "@/components/ui/Card";
 import AutoTranslate from "@/components/i18n/AutoTranslate";
 import type { Property } from "@/types/database";
@@ -11,12 +12,16 @@ interface PropertyInfoProps {
 }
 
 export default function PropertyInfo({ property }: PropertyInfoProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const address = lp(property, "address", locale);
+  const checkinGuide = lp(property, "checkin_guide", locale);
+  const checkoutGuide = lp(property, "checkout_guide", locale);
+  const houseRules = lp(property, "house_rules", locale);
 
   return (
     <div className="space-y-4">
       {/* Address */}
-      {property.address && (
+      {address && (
         <Card className="p-4">
           <div className="mb-3 flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50">
@@ -27,7 +32,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
             </div>
             <h3 className="text-base font-semibold text-gray-900">{t("property.address")}</h3>
           </div>
-          <WifiField label={t("property.address")} value={property.address} copyLabel={t("property.copyLabel")} copiedLabel={t("property.copied")} />
+          <WifiField label={t("property.address")} value={address} copyLabel={t("property.copyLabel")} copiedLabel={t("property.copied")} />
         </Card>
       )}
 
@@ -63,10 +68,11 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
       )}
 
       {/* Check-in Guide */}
-      {property.checkin_guide && (
+      {checkinGuide && (
         <InfoCard
           title={t("property.checkinGuide")}
-          content={property.checkin_guide}
+          content={checkinGuide}
+          autoTranslate={!hasDbTranslation(property, "checkin_guide", locale)}
           iconBgColor="bg-green-50"
           iconColor="text-green-500"
           icon={
@@ -80,10 +86,11 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
       )}
 
       {/* Check-out Guide */}
-      {property.checkout_guide && (
+      {checkoutGuide && (
         <InfoCard
           title={t("property.checkoutGuide")}
-          content={property.checkout_guide}
+          content={checkoutGuide}
+          autoTranslate={!hasDbTranslation(property, "checkout_guide", locale)}
           iconBgColor="bg-orange-50"
           iconColor="text-orange-500"
           icon={
@@ -97,10 +104,11 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
       )}
 
       {/* House Rules */}
-      {property.house_rules && (
+      {houseRules && (
         <InfoCard
           title={t("property.houseRules")}
-          content={property.house_rules}
+          content={houseRules}
+          autoTranslate={!hasDbTranslation(property, "house_rules", locale)}
           iconBgColor="bg-rose-50"
           iconColor="text-rose-500"
           icon={
@@ -166,12 +174,14 @@ function WifiField({ label, value, copyLabel, copiedLabel }: { label: string; va
 function InfoCard({
   title,
   content,
+  autoTranslate,
   iconBgColor,
   iconColor,
   icon,
 }: {
   title: string;
   content: string;
+  autoTranslate?: boolean;
   iconBgColor: string;
   iconColor: string;
   icon: React.ReactNode;
@@ -196,7 +206,7 @@ function InfoCard({
         <h3 className="text-base font-semibold text-gray-900">{title}</h3>
       </div>
       <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-600">
-        <AutoTranslate text={content} />
+        {autoTranslate ? <AutoTranslate text={content} /> : content}
       </div>
     </Card>
   );

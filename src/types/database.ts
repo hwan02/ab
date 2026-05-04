@@ -22,6 +22,24 @@ export interface Property {
   checkin_guide: string | null;
   checkout_guide: string | null;
   house_rules: string | null;
+  checkin_guide_en: string | null;
+  checkin_guide_ja: string | null;
+  checkin_guide_zh: string | null;
+  checkout_guide_en: string | null;
+  checkout_guide_ja: string | null;
+  checkout_guide_zh: string | null;
+  house_rules_en: string | null;
+  house_rules_ja: string | null;
+  house_rules_zh: string | null;
+  name_en: string | null;
+  name_ja: string | null;
+  name_zh: string | null;
+  description_en: string | null;
+  description_ja: string | null;
+  description_zh: string | null;
+  address_en: string | null;
+  address_ja: string | null;
+  address_zh: string | null;
   created_at: string;
 }
 
