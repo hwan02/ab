@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, type FormEvent } from "react";
+import { useState, useCallback, useRef, type FormEvent } from "react";
+import Image from "next/image";
 import { useI18n } from "@/lib/i18n/context";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -23,6 +24,7 @@ interface NearbyPlaceFormProps {
     longitude?: number;
     google_place_id?: string;
     photo_url?: string;
+    photo_file?: File;
   }) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
@@ -55,6 +57,9 @@ function NearbyPlaceForm({
     initialData?.google_place_id ?? ""
   );
   const [photoUrl, setPhotoUrl] = useState(initialData?.photo_url ?? "");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const categoryOptions = [
@@ -119,6 +124,7 @@ function NearbyPlaceForm({
       longitude: result.data.longitude,
       google_place_id: result.data.google_place_id,
       photo_url: photoUrl || undefined,
+      photo_file: photoFile || undefined,
     });
   }
 
@@ -177,27 +183,60 @@ function NearbyPlaceForm({
         disabled={isLoading}
       />
 
-      {/* Photo URL */}
+      {/* Photo Upload */}
       <div>
-        <Input
-          label={t("nearbyForm.photoUrlLabel")}
-          placeholder="https://..."
-          value={photoUrl}
-          onChange={(e) => setPhotoUrl(e.target.value)}
-          disabled={isLoading}
-        />
-        {photoUrl && (
-          <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-            <img
-              src={photoUrl}
+        <label className="mb-1.5 block text-sm font-medium text-gray-700">
+          {t("nearbyForm.photoLabel")}
+        </label>
+        {(photoPreview || photoUrl) ? (
+          <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+            <Image
+              src={photoPreview || photoUrl}
               alt=""
-              className="h-full w-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
+              fill
+              className="object-cover"
+              unoptimized={!!photoPreview}
             />
+            <button
+              type="button"
+              onClick={() => {
+                setPhotoFile(null);
+                setPhotoPreview(null);
+                setPhotoUrl("");
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+              className="absolute right-2 top-2 rounded-full bg-black/50 p-1.5 text-white transition-colors hover:bg-black/70"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 py-8 text-gray-400 transition-colors hover:border-rose-300 hover:text-rose-500"
+          >
+            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+            </svg>
+            <span className="text-sm font-medium">{t("nearbyForm.uploadPhoto")}</span>
+          </button>
         )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            setPhotoFile(file);
+            setPhotoPreview(URL.createObjectURL(file));
+          }}
+        />
       </div>
 
       <div className="flex justify-end gap-3 pt-2">

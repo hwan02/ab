@@ -132,6 +132,7 @@ export interface PlaceRecommendation {
   description: string | null;
   address: string | null;
   map_url: string | null;
+  photo_url: string | null;
   show_recommender: boolean;
   recommender_name: string | null;
   recommender_avatar: string | null;

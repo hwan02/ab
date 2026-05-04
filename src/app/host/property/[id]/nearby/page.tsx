@@ -81,7 +81,6 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
 
   async function handleApproveRec(rec: PlaceRecommendation) {
     await supabase.from("place_recommendations").update({ status: "approved" }).eq("id", rec.id);
-    // Also add to nearby_places
     await supabase.from("nearby_places").insert({
       property_id: propertyId,
       name: rec.name,
@@ -89,6 +88,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
       description: rec.description,
       address: rec.address,
       map_url: rec.map_url,
+      photo_url: rec.photo_url,
     });
     fetchRecommendations();
     fetchPlaces();
@@ -105,7 +105,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     setIsModalOpen(true);
   }
 
-  async function handleSubmitRec(data: {
+  type PlaceFormData = {
     name: string;
     description: string;
     address: string;
@@ -116,11 +116,46 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     longitude?: number;
     google_place_id?: string;
     photo_url?: string;
-  }) {
+    photo_file?: File;
+  };
+
+  async function uploadPhoto(file: File): Promise<string | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const fileExt = file.name.split(".").pop();
+    const filePath = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("property-photos")
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error("Photo upload error:", uploadError);
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("property-photos")
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  }
+
+  async function resolvePhotoUrl(data: PlaceFormData): Promise<string | null> {
+    if (data.photo_file) {
+      return await uploadPhoto(data.photo_file);
+    }
+    return data.photo_url || null;
+  }
+
+  async function handleSubmitRec(data: PlaceFormData) {
     if (!editingRec) return;
 
     setIsSubmitting(true);
     setError("");
+
+    const photoUrl = await resolvePhotoUrl(data);
 
     await supabase.from("place_recommendations").update({ status: "approved" }).eq("id", editingRec.id);
 
@@ -137,7 +172,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
         google_place_id: data.google_place_id || null,
-        photo_url: data.photo_url || null,
+        photo_url: photoUrl,
       });
 
     if (insertError) {
@@ -151,20 +186,11 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     setIsSubmitting(false);
   }
 
-  async function handleAddPlace(data: {
-    name: string;
-    description: string;
-    address: string;
-    category: NearbyPlace["category"];
-    phone: string;
-    map_url: string;
-    latitude?: number;
-    longitude?: number;
-    google_place_id?: string;
-    photo_url?: string;
-  }) {
+  async function handleAddPlace(data: PlaceFormData) {
     setIsSubmitting(true);
     setError("");
+
+    const photoUrl = await resolvePhotoUrl(data);
 
     const { error: insertError } = await supabase
       .from("nearby_places")
@@ -179,7 +205,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
         google_place_id: data.google_place_id || null,
-        photo_url: data.photo_url || null,
+        photo_url: photoUrl,
       });
 
     if (insertError) {
@@ -192,22 +218,13 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     setIsSubmitting(false);
   }
 
-  async function handleEditPlace(data: {
-    name: string;
-    description: string;
-    address: string;
-    category: NearbyPlace["category"];
-    phone: string;
-    map_url: string;
-    latitude?: number;
-    longitude?: number;
-    google_place_id?: string;
-    photo_url?: string;
-  }) {
+  async function handleEditPlace(data: PlaceFormData) {
     if (!editingPlace) return;
 
     setIsSubmitting(true);
     setError("");
+
+    const photoUrl = await resolvePhotoUrl(data);
 
     const { error: updateError } = await supabase
       .from("nearby_places")
@@ -221,7 +238,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
         google_place_id: data.google_place_id || null,
-        photo_url: data.photo_url || null,
+        photo_url: photoUrl,
       })
       .eq("id", editingPlace.id);
 
@@ -605,6 +622,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
             description: editingRec.description,
             address: editingRec.address,
             map_url: editingRec.map_url,
+            photo_url: editingRec.photo_url,
           } : undefined)}
           onSubmit={editingPlace ? handleEditPlace : editingRec ? handleSubmitRec : handleAddPlace}
           onCancel={closeModal}

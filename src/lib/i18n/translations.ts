@@ -1047,11 +1047,17 @@ const translations = {
     ja: "Google マップまたは地図リンク",
     zh: "谷歌地图或地图链接",
   },
-  "nearbyForm.photoUrlLabel": {
-    ko: "사진 URL",
-    en: "Photo URL",
-    ja: "写真URL",
-    zh: "照片链接",
+  "nearbyForm.photoLabel": {
+    ko: "사진",
+    en: "Photo",
+    ja: "写真",
+    zh: "照片",
+  },
+  "nearbyForm.uploadPhoto": {
+    ko: "사진 추가",
+    en: "Add Photo",
+    ja: "写真を追加",
+    zh: "添加照片",
   },
 
   // Item Request Form
