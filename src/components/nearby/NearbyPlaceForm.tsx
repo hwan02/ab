@@ -22,6 +22,7 @@ interface NearbyPlaceFormProps {
     latitude?: number;
     longitude?: number;
     google_place_id?: string;
+    photo_url?: string;
   }) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
@@ -53,6 +54,7 @@ function NearbyPlaceForm({
   const [googlePlaceId, setGooglePlaceId] = useState(
     initialData?.google_place_id ?? ""
   );
+  const [photoUrl, setPhotoUrl] = useState(initialData?.photo_url ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const categoryOptions = [
@@ -71,6 +73,7 @@ function NearbyPlaceForm({
       phone: string;
       mapUrl: string;
       googlePlaceId: string;
+      photoUrl: string;
     }) => {
       setName(result.name);
       setAddress(result.address);
@@ -79,6 +82,7 @@ function NearbyPlaceForm({
       setPhone(result.phone);
       setMapUrl(result.mapUrl);
       setGooglePlaceId(result.googlePlaceId);
+      setPhotoUrl(result.photoUrl);
     },
     []
   );
@@ -114,6 +118,7 @@ function NearbyPlaceForm({
       latitude: result.data.latitude,
       longitude: result.data.longitude,
       google_place_id: result.data.google_place_id,
+      photo_url: photoUrl || undefined,
     });
   }
 

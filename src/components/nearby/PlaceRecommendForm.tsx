@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
+import PlaceAutocomplete from "@/components/maps/PlaceAutocomplete";
 
 interface PlaceRecommendFormProps {
   propertyId: string;
@@ -21,10 +22,29 @@ export default function PlaceRecommendForm({ propertyId, onClose }: PlaceRecomme
   const [category, setCategory] = useState("restaurant");
   const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
+  const [mapUrl, setMapUrl] = useState("");
   const [showRecommender, setShowRecommender] = useState(false);
   const [country, setCountry] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+
+  const handlePlaceSelect = useCallback(
+    (result: {
+      name: string;
+      address: string;
+      latitude: number;
+      longitude: number;
+      phone: string;
+      mapUrl: string;
+      googlePlaceId: string;
+      photoUrl: string;
+    }) => {
+      setName(result.name);
+      setAddress(result.address);
+      setMapUrl(result.mapUrl);
+    },
+    []
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +68,7 @@ export default function PlaceRecommendForm({ propertyId, onClose }: PlaceRecomme
       category,
       description: description.trim() || null,
       address: address.trim() || null,
+      map_url: mapUrl.trim() || null,
       show_recommender: showRecommender,
       recommender_name: showRecommender ? (profile?.name ?? null) : null,
       recommender_avatar: showRecommender ? (profile?.avatar_url ?? null) : null,
@@ -80,12 +101,12 @@ export default function PlaceRecommendForm({ propertyId, onClose }: PlaceRecomme
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <Input
+      <PlaceAutocomplete
         label={t("recommend.nameLabel")}
         placeholder={t("recommend.namePlaceholder")}
         value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
+        onChange={setName}
+        onPlaceSelect={handlePlaceSelect}
       />
       <Select
         label={t("recommend.categoryLabel")}

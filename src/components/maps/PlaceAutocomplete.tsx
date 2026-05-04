@@ -13,6 +13,7 @@ interface PlaceResult {
   phone: string;
   mapUrl: string;
   googlePlaceId: string;
+  photoUrl: string;
 }
 
 interface PlaceAutocompleteProps {
@@ -78,12 +79,14 @@ function PlaceAutocompleteInner({
     if (!places || !inputRef.current || autocompleteRef.current) return;
 
     const autocomplete = new places.Autocomplete(inputRef.current, {
-      fields: ["name", "formatted_address", "geometry", "formatted_phone_number", "place_id", "url"],
+      fields: ["name", "formatted_address", "geometry", "formatted_phone_number", "place_id", "url", "photos"],
     });
 
     autocomplete.addListener("place_changed", () => {
       const place = autocomplete.getPlace();
       if (!place.geometry?.location) return;
+
+      const photoUrl = place.photos?.[0]?.getUrl({ maxWidth: 800 }) || "";
 
       const result: PlaceResult = {
         name: place.name || "",
@@ -93,6 +96,7 @@ function PlaceAutocompleteInner({
         phone: place.formatted_phone_number || "",
         mapUrl: place.url || "",
         googlePlaceId: place.place_id || "",
+        photoUrl,
       };
 
       onPlaceSelect(result);

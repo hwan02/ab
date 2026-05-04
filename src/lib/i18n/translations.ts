@@ -1644,6 +1644,12 @@ const translations = {
     ja: "スポット追加",
     zh: "添加地点",
   },
+  "nearby.fetchPhotos": {
+    ko: "사진 가져오기",
+    en: "Fetch Photos",
+    ja: "写真を取得",
+    zh: "获取照片",
+  },
   "nearby.editPlace": {
     ko: "장소 수정",
     en: "Edit Place",

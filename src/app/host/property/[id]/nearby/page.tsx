@@ -45,6 +45,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
   const [editingPlace, setEditingPlace] = useState<NearbyPlace | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isFetchingPhotos, setIsFetchingPhotos] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -128,6 +129,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     latitude?: number;
     longitude?: number;
     google_place_id?: string;
+    photo_url?: string;
   }) {
     setIsSubmitting(true);
     setError("");
@@ -145,6 +147,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
         google_place_id: data.google_place_id || null,
+        photo_url: data.photo_url || null,
       });
 
     if (insertError) {
@@ -167,6 +170,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     latitude?: number;
     longitude?: number;
     google_place_id?: string;
+    photo_url?: string;
   }) {
     if (!editingPlace) return;
 
@@ -185,6 +189,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
         google_place_id: data.google_place_id || null,
+        photo_url: data.photo_url || null,
       })
       .eq("id", editingPlace.id);
 
@@ -217,6 +222,36 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
       setPlaces((prev) => prev.filter((p) => p.id !== placeId));
     }
     setDeletingId(null);
+  }
+
+  async function handleFetchPhotos() {
+    const placesWithoutPhoto = places.filter(
+      (p) => p.google_place_id && !p.photo_url
+    );
+    if (placesWithoutPhoto.length === 0) return;
+
+    setIsFetchingPhotos(true);
+    setError("");
+
+    for (const place of placesWithoutPhoto) {
+      try {
+        const res = await fetch(
+          `/api/places/photo?place_id=${encodeURIComponent(place.google_place_id!)}`
+        );
+        const data = await res.json();
+        if (data.photo_url) {
+          await supabase
+            .from("nearby_places")
+            .update({ photo_url: data.photo_url })
+            .eq("id", place.id);
+        }
+      } catch {
+        // Skip individual failures
+      }
+    }
+
+    await fetchPlaces();
+    setIsFetchingPhotos(false);
   }
 
   function openAddModal() {
@@ -253,22 +288,46 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
             {t("nearby.hostSubtitle")}
           </p>
         </div>
-        <Button onClick={openAddModal}>
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 4.5v15m7.5-7.5h-15"
-            />
-          </svg>
-          {t("nearby.addPlace")}
-        </Button>
+        <div className="flex gap-2">
+          {places.some((p) => p.google_place_id && !p.photo_url) && (
+            <Button
+              variant="secondary"
+              onClick={handleFetchPhotos}
+              loading={isFetchingPhotos}
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z"
+                />
+              </svg>
+              {t("nearby.fetchPhotos")}
+            </Button>
+          )}
+          <Button onClick={openAddModal}>
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4.5v15m7.5-7.5h-15"
+              />
+            </svg>
+            {t("nearby.addPlace")}
+          </Button>
+        </div>
       </div>
 
       {error && (
