@@ -24,6 +24,8 @@ export default function NewPropertyPage() {
     checkout_guide: string;
     house_rules: string;
     photos: File[];
+    existingPhotos: string[];
+    deletedPhotos: string[];
   }) {
     setIsLoading(true);
     setError("");

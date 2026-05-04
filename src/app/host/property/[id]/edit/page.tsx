@@ -56,6 +56,8 @@ export default function EditPropertyPage({
     checkout_guide: string;
     house_rules: string;
     photos: File[];
+    existingPhotos: string[];
+    deletedPhotos: string[];
   }) {
     setIsLoading(true);
     setError("");
@@ -70,33 +72,48 @@ export default function EditPropertyPage({
         return;
       }
 
-      let photoUrls = property?.photos ?? [];
+      // Delete removed photos from storage
+      if (formData.deletedPhotos.length > 0) {
+        const pathsToDelete = formData.deletedPhotos
+          .map((url) => {
+            const match = url.match(/property-photos\/(.+)$/);
+            return match ? match[1] : null;
+          })
+          .filter((p): p is string => p !== null);
 
-      if (formData.photos.length > 0) {
-        const newPhotoUrls: string[] = [];
-        for (const photo of formData.photos) {
-          const fileExt = photo.name.split(".").pop();
-          const filePath = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-
-          const { error: uploadError } = await supabase.storage
+        if (pathsToDelete.length > 0) {
+          await supabase.storage
             .from("property-photos")
-            .upload(filePath, photo);
-
-          if (uploadError) {
-            console.error("Photo upload error:", uploadError);
-            continue;
-          }
-
-          const {
-            data: { publicUrl },
-          } = supabase.storage
-            .from("property-photos")
-            .getPublicUrl(filePath);
-
-          newPhotoUrls.push(publicUrl);
+            .remove(pathsToDelete);
         }
-        photoUrls = [...(photoUrls ?? []), ...newPhotoUrls];
       }
+
+      // Upload new photos
+      const newPhotoUrls: string[] = [];
+      for (const photo of formData.photos) {
+        const fileExt = photo.name.split(".").pop();
+        const filePath = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("property-photos")
+          .upload(filePath, photo);
+
+        if (uploadError) {
+          console.error("Photo upload error:", uploadError);
+          continue;
+        }
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage
+          .from("property-photos")
+          .getPublicUrl(filePath);
+
+        newPhotoUrls.push(publicUrl);
+      }
+
+      // Merge: existing (in order) + newly uploaded
+      const photoUrls = [...formData.existingPhotos, ...newPhotoUrls];
 
       const { error: updateError } = await supabase
         .from("properties")

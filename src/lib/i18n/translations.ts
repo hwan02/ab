@@ -813,6 +813,18 @@ const translations = {
     ja: "宿泊先の写真",
     zh: "住宿照片",
   },
+  "propertyForm.deletePhoto": {
+    ko: "사진 삭제",
+    en: "Delete photo",
+    ja: "写真を削除",
+    zh: "删除照片",
+  },
+  "propertyForm.dragToReorder": {
+    ko: "드래그하여 순서를 변경하세요",
+    en: "Drag to reorder",
+    ja: "ドラッグして並び替え",
+    zh: "拖动以重新排序",
+  },
 
   // Property Info
   "property.address": {
