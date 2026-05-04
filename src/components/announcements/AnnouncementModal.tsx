@@ -54,12 +54,6 @@ export default function AnnouncementModal({ propertyId }: AnnouncementModalProps
 
   if (!visible || announcements.length === 0) return null;
 
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const loc = locale === "ja" ? "ja-JP" : locale === "zh" ? "zh-CN" : locale === "en" ? "en-US" : "ko-KR";
-    return d.toLocaleDateString(loc, { month: "short", day: "numeric" });
-  };
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
       <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-w-xl">
@@ -88,10 +82,7 @@ export default function AnnouncementModal({ propertyId }: AnnouncementModalProps
           <div className="space-y-4">
             {announcements.map((ann) => (
               <div key={ann.id}>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-gray-900"><AutoTranslate text={ann.title} /></h3>
-                  <span className="text-xs text-gray-400">{formatDate(ann.created_at)}</span>
-                </div>
+                <h3 className="text-sm font-semibold text-gray-900"><AutoTranslate text={ann.title} /></h3>
                 <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-gray-600">
                   <AutoTranslate text={ann.content} />
                 </p>

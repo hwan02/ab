@@ -11,9 +11,9 @@ const translations = {
   // Login
   "login.title": {
     ko: "포포스테이",
-    en: "popo's stay",
-    ja: "popo's stay",
-    zh: "popo's stay",
+    en: "POPO's stay",
+    ja: "POPO's stay",
+    zh: "POPO's stay",
   },
   "login.google": {
     ko: "Google로 로그인",
@@ -2305,9 +2305,9 @@ const translations = {
   },
   "reviews.subtitle": {
     ko: "포포스테이에서의 추억을 남겨주세요",
-    en: "Leave your memories at Popo's Stay",
+    en: "Leave your memories at POPO's Stay",
     ja: "ポポステイでの思い出を残してください",
-    zh: "在Popo's Stay留下您的回忆",
+    zh: "在POPO's Stay留下您的回忆",
   },
   "reviews.tooltip": {
     ko: "다른 게스트들이 남긴 방명록을 확인해 보세요!",

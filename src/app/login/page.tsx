@@ -62,7 +62,7 @@ export default function LoginPage() {
           <div className="mb-8 text-center">
             <img
               src="/popo.png"
-              alt="popo"
+              alt="POPO"
               className="mx-auto mb-5 h-28 w-28 object-contain"
             />
             <h1 className="text-4xl font-bold tracking-tight text-gray-900">

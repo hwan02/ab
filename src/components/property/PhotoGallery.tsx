@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n/context";
 
@@ -39,49 +38,25 @@ export default function PhotoGallery({ photos }: PhotoGalleryProps) {
 
   return (
     <>
-      {photos.length === 1 ? (
-        <button
-          onClick={() => setSelectedIndex(0)}
-          className="relative h-56 w-full overflow-hidden rounded-xl"
-        >
-          <Image
-            src={photos[0]}
-            alt={t("photo.propertyPhoto")}
-            fill
-            className="object-cover transition-transform hover:scale-105"
-            sizes="(max-width: 640px) 100vw, 640px"
-          />
-        </button>
-      ) : (
-        <div className="grid grid-cols-2 gap-2">
-          {photos.map((photo, index) => (
-            <button
-              key={index}
-              onClick={() => setSelectedIndex(index)}
-              className={`relative overflow-hidden rounded-xl ${
-                index === 0 && photos.length > 2
-                  ? "col-span-2 h-48"
-                  : "h-32"
-              }`}
-            >
-              <Image
-                src={photo}
-                alt={`${t("photo.propertyPhoto")} ${index + 1}`}
-                fill
-                className="object-cover transition-transform hover:scale-105"
-                sizes="(max-width: 640px) 50vw, 320px"
-              />
-              {index === 3 && photos.length > 4 && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                  <span className="text-lg font-semibold text-white">
-                    +{photos.length - 4}
-                  </span>
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Hero: single cover photo */}
+      <button
+        onClick={() => setSelectedIndex(0)}
+        className="relative h-56 w-full overflow-hidden rounded-xl"
+      >
+        <img
+          src={photos[0]}
+          alt={t("photo.propertyPhoto")}
+          className="h-full w-full object-cover transition-transform hover:scale-105"
+        />
+        {photos.length > 1 && (
+          <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+            </svg>
+            {photos.length}
+          </div>
+        )}
+      </button>
 
       {/* Fullscreen photo viewer */}
       {selectedIndex !== null && (
@@ -154,17 +129,12 @@ function FullscreenViewer({
       </div>
 
       {/* Image area */}
-      <div className="relative flex flex-1 items-center justify-center px-2">
-        <div className="relative h-full w-full">
-          <Image
-            src={photos[currentIndex]}
-            alt={`${t("photo.propertyPhoto")} ${currentIndex + 1}`}
-            fill
-            className="object-contain"
-            sizes="100vw"
-            priority
-          />
-        </div>
+      <div className="relative flex min-h-0 flex-1 items-center justify-center px-2">
+        <img
+          src={photos[currentIndex]}
+          alt={`${t("photo.propertyPhoto")} ${currentIndex + 1}`}
+          className="h-full w-full object-contain"
+        />
 
         {/* Prev / Next overlays */}
         {photos.length > 1 && (

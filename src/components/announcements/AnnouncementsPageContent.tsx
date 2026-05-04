@@ -3,7 +3,6 @@
 import { useI18n } from "@/lib/i18n/context";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { formatDate } from "@/lib/utils";
 import type { Announcement } from "@/types/database";
 
 interface AnnouncementsPageContentProps {
@@ -51,13 +50,10 @@ export default function AnnouncementsPageContent({
         <div className="space-y-3">
           {announcements.map((announcement) => (
             <Card key={announcement.id} className="p-4">
-              <div className="mb-2 flex items-start justify-between gap-2">
+              <div className="mb-2">
                 <h3 className="text-base font-semibold text-gray-900">
                   {announcement.title}
                 </h3>
-                <span className="flex-shrink-0 text-xs text-gray-400">
-                  {formatDate(announcement.created_at)}
-                </span>
               </div>
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-600">
                 {announcement.content}
