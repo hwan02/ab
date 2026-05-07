@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useI18n } from "@/lib/i18n/context";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import AutoTranslate from "@/components/i18n/AutoTranslate";
 import type { NearbyPlace, PlaceRecommendation } from "@/types/database";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
@@ -167,9 +168,9 @@ function PlaceCard({
 
       {/* Info */}
       <div className="p-3.5">
-        <h3 className="text-sm font-semibold text-gray-900">{place.name}</h3>
+        <h3 className="text-sm font-semibold text-gray-900"><AutoTranslate text={place.name} /></h3>
         {place.description && (
-          <p className="mt-0.5 line-clamp-1 text-xs text-gray-500">{place.description}</p>
+          <p className="mt-0.5 line-clamp-1 text-xs text-gray-500"><AutoTranslate text={place.description} /></p>
         )}
         {place.address && (
           <AddressRow address={place.address} name={place.name} />
@@ -262,7 +263,7 @@ function RecommendedPlaceCard({
       <div className="min-w-0">
         <div className="flex items-start justify-between gap-2">
           <h3 className="truncate text-sm font-semibold text-gray-900">
-            {rec.name}
+            <AutoTranslate text={rec.name} />
           </h3>
           <div className="flex shrink-0 items-center gap-1.5">
             <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-600">
@@ -275,7 +276,7 @@ function RecommendedPlaceCard({
         </div>
         {rec.description && (
           <p className="mt-1 line-clamp-2 text-sm text-gray-500">
-            {rec.description}
+            <AutoTranslate text={rec.description} />
           </p>
         )}
         {rec.address && (

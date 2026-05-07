@@ -52,18 +52,6 @@ function ItemRequestCard({ content, t }: { content: string; t: (key: Translation
               <span className="text-gray-500">x{item.quantity}</span>
             </p>
           ))}
-          <p>
-            <span className="font-medium">{t("message.urgency")}</span>{" "}
-            <span
-              className={
-                data.urgency === "급함"
-                  ? "font-semibold text-red-600"
-                  : "text-gray-600"
-              }
-            >
-              {data.urgency}
-            </span>
-          </p>
           {data.notes && (
             <p>
               <span className="font-medium">{t("message.notes")}</span> {data.notes}

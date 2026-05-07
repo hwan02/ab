@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { notifySlack } from "@/lib/notifySlack";
 
@@ -21,11 +20,10 @@ interface ItemRequestFormProps {
 }
 
 function ItemRequestForm({ chatRoomId, senderId }: ItemRequestFormProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [itemName, setItemName] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [items, setItems] = useState<ItemEntry[]>([]);
-  const [urgency, setUrgency] = useState("보통");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +58,6 @@ function ItemRequestForm({ chatRoomId, senderId }: ItemRequestFormProps) {
 
     const content = JSON.stringify({
       items: finalItems,
-      urgency,
       notes,
     });
 
@@ -82,7 +79,6 @@ function ItemRequestForm({ chatRoomId, senderId }: ItemRequestFormProps) {
     setItems([]);
     setItemName("");
     setQuantity("1");
-    setUrgency("보통");
     setNotes("");
     setSubmitting(false);
   };
@@ -90,18 +86,25 @@ function ItemRequestForm({ chatRoomId, senderId }: ItemRequestFormProps) {
   const totalItems = items.length + (itemName.trim() ? 1 : 0);
 
   const popularItems = [
-    { ko: "생수", en: "Water" },
-    { ko: "컵라면", en: "Cup noodle" },
-    { ko: "돗자리", en: "Picnic mat" },
-    { ko: "헤어핀", en: "Hair pin" },
-    { ko: "롤헤어", en: "Hair roller" },
-    { ko: "칫솔", en: "Toothbrush" },
-    { ko: "충전기", en: "Charger" },
-    { ko: "우산", en: "Umbrella" },
+    { ko: "생수", en: "Water", ja: "水", zh: "矿泉水" },
+    { ko: "컵라면", en: "Cup noodle", ja: "カップ麺", zh: "杯面" },
+    { ko: "돗자리", en: "Picnic mat", ja: "レジャーシート", zh: "野餐垫" },
+    { ko: "헤어핀", en: "Hair pin", ja: "ヘアピン", zh: "发夹" },
+    { ko: "롤헤어", en: "Hair roller", ja: "ヘアローラー", zh: "卷发器" },
+    { ko: "칫솔", en: "Toothbrush", ja: "歯ブラシ", zh: "牙刷" },
+    { ko: "충전기", en: "Charger", ja: "充電器", zh: "充电器" },
+    { ko: "우산", en: "Umbrella", ja: "傘", zh: "雨伞" },
   ];
 
-  const handleQuickAdd = (name: string) => {
-    setItems((prev) => [...prev, { itemName: name, quantity: "1" }]);
+  const getItemLabel = (item: typeof popularItems[number]) => {
+    return item[locale as keyof typeof item] || item.ko;
+  };
+
+  const handleQuickAdd = (item: typeof popularItems[number]) => {
+    // Store both Korean (for host) and localized name
+    const label = getItemLabel(item);
+    const displayName = locale === "ko" ? label : `${label} (${item.ko})`;
+    setItems((prev) => [...prev, { itemName: displayName, quantity: "1" }]);
   };
 
   return (
@@ -112,10 +115,10 @@ function ItemRequestForm({ chatRoomId, senderId }: ItemRequestFormProps) {
           <button
             key={item.ko}
             type="button"
-            onClick={() => handleQuickAdd(item.ko)}
+            onClick={() => handleQuickAdd(item)}
             className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 transition-colors hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
           >
-            + {item.ko}
+            + {getItemLabel(item)}
           </button>
         ))}
       </div>
@@ -191,15 +194,6 @@ function ItemRequestForm({ chatRoomId, senderId }: ItemRequestFormProps) {
         </div>
       )}
 
-      <Select
-        label={t("itemForm.urgency")}
-        value={urgency}
-        onChange={(e) => setUrgency(e.target.value)}
-        options={[
-          { value: "보통", label: t("itemForm.normal") },
-          { value: "급함", label: t("itemForm.urgent") },
-        ]}
-      />
       <Textarea
         label={t("itemForm.notes")}
         placeholder={t("itemForm.notesPlaceholder")}
