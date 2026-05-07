@@ -1,0 +1,166 @@
+"use client";
+
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { useI18n } from "@/lib/i18n/context";
+import type { PropertyGuide } from "@/types/database";
+
+interface PropertyGuideSectionProps {
+  guides: PropertyGuide[];
+}
+
+const CATEGORY_ORDER = ["appliance", "directions", "facility", "other"] as const;
+
+export default function PropertyGuideSection({ guides }: PropertyGuideSectionProps) {
+  const { t } = useI18n();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
+
+  const categoryLabels: Record<string, string> = {
+    appliance: t("guide.appliance"),
+    directions: t("guide.directions"),
+    facility: t("guide.facility"),
+    other: t("guide.other"),
+  };
+
+  const categoryIcons: Record<string, React.ReactNode> = {
+    appliance: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Z" />
+      </svg>
+    ),
+    directions: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m0 0-3-3m3 3 3-3m-3-6a9 9 0 1 1 0 18 9 9 0 0 1 0-18Z" />
+      </svg>
+    ),
+    facility: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3H21m-3.75 3H21" />
+      </svg>
+    ),
+    other: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+      </svg>
+    ),
+  };
+
+  // Group guides by category
+  const grouped = CATEGORY_ORDER.reduce(
+    (acc, cat) => {
+      const items = guides.filter((g) => g.category === cat);
+      if (items.length > 0) acc[cat] = items;
+      return acc;
+    },
+    {} as Record<string, PropertyGuide[]>
+  );
+
+  return (
+    <div className="space-y-3">
+      {Object.entries(grouped).map(([category, items]) => (
+        <div key={category} className="rounded-xl border border-gray-200 bg-white">
+          <div className="flex items-center gap-2.5 px-4 py-3">
+            <div className="text-gray-500">{categoryIcons[category]}</div>
+            <span className="text-sm font-semibold text-gray-800">
+              {categoryLabels[category]}
+            </span>
+            <span className="ml-auto rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+              {items.length}
+            </span>
+          </div>
+
+          <div className="border-t border-gray-100">
+            {items.map((guide) => {
+              const isExpanded = expandedId === guide.id;
+              return (
+                <div key={guide.id} className="border-b border-gray-50 last:border-b-0">
+                  <button
+                    onClick={() => setExpandedId(isExpanded ? null : guide.id)}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50"
+                  >
+                    <span className="min-w-0 flex-1 text-sm font-medium text-gray-700">
+                      {guide.title}
+                    </span>
+                    <svg
+                      className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                    </svg>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="px-4 pb-4">
+                      {guide.content && (
+                        <p className="mb-3 whitespace-pre-wrap text-sm text-gray-600">
+                          {guide.content}
+                        </p>
+                      )}
+                      {guide.media_url && (
+                        <div className="overflow-hidden rounded-lg">
+                          {guide.media_type === "video" ? (
+                            <video
+                              src={guide.media_url}
+                              controls
+                              playsInline
+                              className="w-full rounded-lg"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => setViewingImage(guide.media_url)}
+                              className="w-full"
+                            >
+                              <img
+                                src={guide.media_url}
+                                alt={guide.title}
+                                className="w-full rounded-lg object-cover"
+                              />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      {/* Image Fullscreen Viewer */}
+      {viewingImage && (
+        <ImageViewer src={viewingImage} onClose={() => setViewingImage(null)} />
+      )}
+    </div>
+  );
+}
+
+function ImageViewer({ src, onClose }: { src: string; onClose: () => void }) {
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
+      onClick={onClose}
+    >
+      <button
+        onClick={onClose}
+        className="absolute right-4 top-4 rounded-full bg-black/40 p-2 text-white/80 hover:bg-black/60 hover:text-white"
+      >
+        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <img
+        src={src}
+        alt=""
+        className="max-h-[90vh] max-w-[90vw] object-contain"
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>,
+    document.body
+  );
+}

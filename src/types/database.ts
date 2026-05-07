@@ -160,3 +160,34 @@ export interface Review {
   created_at: string;
   profiles?: Pick<Profile, "name" | "avatar_url">;
 }
+
+export interface PodongPhoto {
+  id: string;
+  property_id: string;
+  photo_url: string;
+  caption: string | null;
+  display_order: number;
+  created_at: string;
+}
+
+export interface PodongComment {
+  id: string;
+  photo_id: string;
+  user_id: string;
+  user_name: string | null;
+  user_avatar: string | null;
+  content: string;
+  created_at: string;
+}
+
+export interface PropertyGuide {
+  id: string;
+  property_id: string;
+  title: string;
+  content: string | null;
+  media_url: string | null;
+  media_type: "image" | "video" | null;
+  category: "appliance" | "directions" | "facility" | "other";
+  display_order: number;
+  created_at: string;
+}
