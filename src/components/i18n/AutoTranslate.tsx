@@ -12,6 +12,42 @@ interface AutoTranslateProps {
 let batchQueue: { text: string; target: string; resolve: (v: string) => void }[] = [];
 let batchTimer: ReturnType<typeof setTimeout> | null = null;
 
+const CACHE_KEY = "at-cache";
+const CACHE_VERSION = 1;
+
+// Persistent localStorage cache
+let memCache: Map<string, string> | null = null;
+
+function getCache(): Map<string, string> {
+  if (memCache) return memCache;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.v === CACHE_VERSION && parsed.d) {
+        memCache = new Map(Object.entries(parsed.d));
+        return memCache;
+      }
+    }
+  } catch {}
+  memCache = new Map();
+  return memCache;
+}
+
+function saveCache() {
+  try {
+    const cache = getCache();
+    // Limit cache size to 2000 entries
+    if (cache.size > 2000) {
+      const entries = [...cache.entries()];
+      memCache = new Map(entries.slice(entries.length - 1500));
+    }
+    const obj: Record<string, string> = {};
+    getCache().forEach((v, k) => { obj[k] = v; });
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ v: CACHE_VERSION, d: obj }));
+  } catch {}
+}
+
 function flushBatch() {
   const queue = [...batchQueue];
   batchQueue = [];
@@ -30,7 +66,13 @@ function flushBatch() {
     .then((r) => r.json())
     .then((data) => {
       const translations: string[] = data.translations ?? texts;
-      queue.forEach((q, i) => q.resolve(translations[i] ?? q.text));
+      const cache = getCache();
+      queue.forEach((q, i) => {
+        const result = translations[i] ?? q.text;
+        cache.set(`${q.text}::${q.target}`, result);
+        q.resolve(result);
+      });
+      saveCache();
     })
     .catch(() => {
       queue.forEach((q) => q.resolve(q.text));
@@ -46,9 +88,6 @@ function requestTranslation(text: string, target: string): Promise<string> {
   });
 }
 
-// Client-side cache
-const clientCache = new Map<string, string>();
-
 export default function AutoTranslate({ text, className }: AutoTranslateProps) {
   const { locale } = useI18n();
   const [translated, setTranslated] = useState(text);
@@ -60,14 +99,13 @@ export default function AutoTranslate({ text, className }: AutoTranslateProps) {
     }
 
     const cacheKey = `${text}::${locale}`;
-    const cached = clientCache.get(cacheKey);
+    const cached = getCache().get(cacheKey);
     if (cached) {
       setTranslated(cached);
       return;
     }
 
     requestTranslation(text, locale).then((result) => {
-      clientCache.set(cacheKey, result);
       setTranslated(result);
     });
   }, [text, locale]);
