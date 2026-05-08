@@ -61,7 +61,7 @@ function Modal({ open, onClose, title, children, className }: ModalProps) {
     >
       <div
         className={cn(
-          "w-full max-w-lg rounded-xl bg-white shadow-xl animate-in fade-in",
+          "flex max-h-[90vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-xl animate-in fade-in",
           className
         )}
       >
@@ -89,7 +89,7 @@ function Modal({ open, onClose, title, children, className }: ModalProps) {
             </button>
           </div>
         )}
-        <div className="px-6 py-4">{children}</div>
+        <div className="overflow-y-auto px-6 py-4">{children}</div>
       </div>
     </div>,
     document.body
