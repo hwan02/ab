@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useI18n } from "@/lib/i18n/context";
 import { lp, hasDbTranslation } from "@/lib/i18n/localize";
 import { Card } from "@/components/ui/Card";
+import { Modal } from "@/components/ui/Modal";
 import AutoTranslate from "@/components/i18n/AutoTranslate";
 import type { Property } from "@/types/database";
 
@@ -13,6 +15,7 @@ interface PropertyInfoProps {
 
 export default function PropertyInfo({ property }: PropertyInfoProps) {
   const { t, locale } = useI18n();
+  const [showWifiQR, setShowWifiQR] = useState(false);
   const address = lp(property, "address", locale);
   const checkinGuide = lp(property, "checkin_guide", locale);
   const checkoutGuide = lp(property, "checkout_guide", locale);
@@ -55,6 +58,14 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
               </svg>
             </div>
             <h3 className="text-base font-semibold text-gray-900">WiFi</h3>
+            {property.wifi_ssid && property.wifi_password && (
+              <button
+                onClick={() => setShowWifiQR(true)}
+                className="ml-auto rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100"
+              >
+                QR
+              </button>
+            )}
           </div>
           <div className="space-y-2">
             {property.wifi_ssid && (
@@ -64,6 +75,18 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
               <WifiField label={t("property.wifiPassword")} value={property.wifi_password} copyLabel={t("property.copyLabel")} copiedLabel={t("property.copied")} />
             )}
           </div>
+          {property.wifi_ssid && property.wifi_password && (
+            <Modal open={showWifiQR} onClose={() => setShowWifiQR(false)} title={`WiFi ${t("property.wifiQR")}`}>
+              <div className="flex flex-col items-center gap-4 py-2">
+                <QRCodeSVG
+                  value={`WIFI:T:WPA;S:${property.wifi_ssid};P:${property.wifi_password};;`}
+                  size={200}
+                  level="M"
+                />
+                <p className="text-sm text-gray-500">{property.wifi_ssid}</p>
+              </div>
+            </Modal>
+          )}
         </Card>
       )}
 

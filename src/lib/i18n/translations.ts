@@ -899,6 +899,12 @@ const translations = {
     ja: "コピー済み",
     zh: "已复制",
   },
+  "property.wifiQR": {
+    ko: "QR 코드",
+    en: "QR Code",
+    ja: "QRコード",
+    zh: "二维码",
+  },
 
   // Nearby places
   "nearby.title": {
