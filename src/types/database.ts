@@ -187,6 +187,12 @@ export interface PropertyGuide {
   content: string | null;
   media_url: string | null;
   media_type: "image" | "video" | null;
+  media_url_en: string | null;
+  media_url_ja: string | null;
+  media_url_zh: string | null;
+  media_type_en: "image" | "video" | null;
+  media_type_ja: "image" | "video" | null;
+  media_type_zh: "image" | "video" | null;
   category: "appliance" | "directions" | "facility" | "other";
   display_order: number;
   created_at: string;

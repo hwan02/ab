@@ -2643,6 +2643,18 @@ const translations = {
     ja: "動画は50MB以下にしてください",
     zh: "视频必须小于50MB",
   },
+  "guide.mediaByLocale": {
+    ko: "언어별 미디어",
+    en: "Media by language",
+    ja: "言語別メディア",
+    zh: "按语言分类的媒体",
+  },
+  "guide.mediaFallback": {
+    ko: "해당 언어 미디어가 없으면 한국어 이미지가 표시됩니다",
+    en: "If no media is set for a language, the Korean image will be shown",
+    ja: "該当言語のメディアがない場合、韓国語の画像が表示されます",
+    zh: "如果没有该语言的媒体，将显示韩语图片",
+  },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

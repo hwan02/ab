@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n/context";
+import { lp } from "@/lib/i18n/localize";
 import type { PropertyGuide } from "@/types/database";
 
 interface PropertyGuideSectionProps {
@@ -12,7 +13,7 @@ interface PropertyGuideSectionProps {
 const CATEGORY_ORDER = ["appliance", "directions", "facility", "other"] as const;
 
 export default function PropertyGuideSection({ guides }: PropertyGuideSectionProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
 
@@ -100,29 +101,34 @@ export default function PropertyGuideSection({ guides }: PropertyGuideSectionPro
                           {guide.content}
                         </p>
                       )}
-                      {guide.media_url && (
-                        <div className="overflow-hidden rounded-lg">
-                          {guide.media_type === "video" ? (
-                            <video
-                              src={guide.media_url}
-                              controls
-                              playsInline
-                              className="w-full rounded-lg"
-                            />
-                          ) : (
-                            <button
-                              onClick={() => setViewingImage(guide.media_url)}
-                              className="w-full"
-                            >
-                              <img
-                                src={guide.media_url}
-                                alt={guide.title}
-                                className="w-full rounded-lg object-cover"
+                      {(() => {
+                        const mediaUrl = lp(guide, "media_url", locale) || null;
+                        const mediaType = lp(guide, "media_type", locale) || null;
+                        if (!mediaUrl) return null;
+                        return (
+                          <div className="overflow-hidden rounded-lg">
+                            {mediaType === "video" ? (
+                              <video
+                                src={mediaUrl}
+                                controls
+                                playsInline
+                                className="w-full rounded-lg"
                               />
-                            </button>
-                          )}
-                        </div>
-                      )}
+                            ) : (
+                              <button
+                                onClick={() => setViewingImage(mediaUrl)}
+                                className="w-full"
+                              >
+                                <img
+                                  src={mediaUrl}
+                                  alt={guide.title}
+                                  className="w-full rounded-lg object-cover"
+                                />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
