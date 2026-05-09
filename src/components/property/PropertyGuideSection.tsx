@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n/context";
 import { lp } from "@/lib/i18n/localize";
+import AutoTranslate from "@/components/i18n/AutoTranslate";
 import type { PropertyGuide } from "@/types/database";
 
 interface PropertyGuideSectionProps {
@@ -98,7 +99,7 @@ export default function PropertyGuideSection({ guides }: PropertyGuideSectionPro
                     <div className="px-4 pb-4">
                       {guide.content && (
                         <p className="mb-3 whitespace-pre-wrap text-sm text-gray-600">
-                          {guide.content}
+                          <AutoTranslate text={guide.content} />
                         </p>
                       )}
                       {(() => {
