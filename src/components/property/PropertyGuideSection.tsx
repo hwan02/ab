@@ -109,12 +109,7 @@ export default function PropertyGuideSection({ guides }: PropertyGuideSectionPro
                         return (
                           <div className="overflow-hidden rounded-lg">
                             {mediaType === "video" ? (
-                              <video
-                                src={mediaUrl}
-                                controls
-                                playsInline
-                                className="w-full rounded-lg"
-                              />
+                              <LazyVideo src={mediaUrl} />
                             ) : (
                               <button
                                 onClick={() => setViewingImage(mediaUrl)}
@@ -144,6 +139,41 @@ export default function PropertyGuideSection({ guides }: PropertyGuideSectionPro
         <ImageViewer src={viewingImage} onClose={() => setViewingImage(null)} />
       )}
     </div>
+  );
+}
+
+function LazyVideo({ src }: { src: string }) {
+  const [playing, setPlaying] = useState(false);
+  const { t } = useI18n();
+
+  if (playing) {
+    return (
+      <video
+        src={src}
+        controls
+        autoPlay
+        playsInline
+        className="w-full rounded-lg"
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setPlaying(true)}
+      className="relative flex w-full items-center justify-center rounded-lg bg-gray-900 py-8"
+    >
+      <div className="flex flex-col items-center gap-2">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-lg">
+          <svg className="ml-1 h-7 w-7 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
+        <span className="text-sm font-medium text-white/80">
+          {t("guide.playVideo")}
+        </span>
+      </div>
+    </button>
   );
 }
 

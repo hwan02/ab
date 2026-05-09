@@ -2644,10 +2644,16 @@ const translations = {
     zh: "确定要删除这个指南吗？",
   },
   "guide.videoTooLarge": {
-    ko: "영상 파일은 50MB 이하여야 합니다",
-    en: "Video must be under 50MB",
-    ja: "動画は50MB以下にしてください",
-    zh: "视频必须小于50MB",
+    ko: "영상 파일은 200MB 이하여야 합니다",
+    en: "Video must be under 200MB",
+    ja: "動画は200MB以下にしてください",
+    zh: "视频必须小于200MB",
+  },
+  "guide.playVideo": {
+    ko: "영상 재생",
+    en: "Play Video",
+    ja: "動画を再生",
+    zh: "播放视频",
   },
   "guide.mediaByLocale": {
     ko: "언어별 미디어",
