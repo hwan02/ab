@@ -82,7 +82,7 @@ export default function PropertyGuideSection({ guides }: PropertyGuideSectionPro
                     className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50"
                   >
                     <span className="min-w-0 flex-1 text-sm font-medium text-gray-700">
-                      {guide.title}
+                      <AutoTranslate text={guide.title} />
                     </span>
                     <svg
                       className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}

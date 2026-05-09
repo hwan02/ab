@@ -170,10 +170,11 @@ export default function GuidesPage({
 
     const { error: uploadError } = await supabase.storage
       .from("property-photos")
-      .upload(filePath, file);
+      .upload(filePath, file, { contentType: file.type });
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
+      setError(`Upload failed: ${uploadError.message}`);
       return null;
     }
 
