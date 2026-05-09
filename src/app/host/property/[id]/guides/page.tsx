@@ -16,7 +16,7 @@ import { LOCALES } from "@/lib/i18n/translations";
 import type { Locale } from "@/lib/i18n/translations";
 import type { PropertyGuide } from "@/types/database";
 
-const MAX_VIDEO_SIZE_MB = 100;
+const MAX_VIDEO_SIZE_MB = 200;
 
 type GuideCategory = PropertyGuide["category"];
 
