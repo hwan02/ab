@@ -16,7 +16,7 @@ import { LOCALES } from "@/lib/i18n/translations";
 import type { Locale } from "@/lib/i18n/translations";
 import type { PropertyGuide } from "@/types/database";
 
-const MAX_VIDEO_SIZE_MB = 50;
+const MAX_VIDEO_SIZE_MB = 100;
 
 type GuideCategory = PropertyGuide["category"];
 
@@ -202,7 +202,6 @@ export default function GuidesPage({
       if (state.file) {
         const uploaded = await uploadMedia(state.file);
         if (!uploaded) {
-          setError(t("guide.saveFailed"));
           setIsSubmitting(false);
           return;
         }
@@ -246,7 +245,8 @@ export default function GuidesPage({
         .eq("id", editingGuide.id);
 
       if (updateError) {
-        setError(t("guide.saveFailed"));
+        console.error("Update error:", updateError);
+        setError(`${t("guide.saveFailed")}: ${updateError.message}`);
       } else {
         closeModal();
         await fetchGuides();
@@ -267,7 +267,8 @@ export default function GuidesPage({
       });
 
       if (insertError) {
-        setError(t("guide.saveFailed"));
+        console.error("Insert error:", insertError);
+        setError(`${t("guide.saveFailed")}: ${insertError.message}`);
       } else {
         closeModal();
         await fetchGuides();
