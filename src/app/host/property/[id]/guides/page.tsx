@@ -70,6 +70,7 @@ export default function GuidesPage({
   // Form state
   const [formTitle, setFormTitle] = useState("");
   const [formContent, setFormContent] = useState("");
+  const [formVideoUrl, setFormVideoUrl] = useState("");
   const [formCategory, setFormCategory] = useState<GuideCategory>("appliance");
   const [localeMedia, setLocaleMedia] = useState<Record<Locale, LocaleMediaState>>(emptyLocaleMedia);
   const [activeMediaTab, setActiveMediaTab] = useState<Locale>("ko");
@@ -93,6 +94,7 @@ export default function GuidesPage({
   function resetForm() {
     setFormTitle("");
     setFormContent("");
+    setFormVideoUrl("");
     setFormCategory("appliance");
     setLocaleMedia(emptyLocaleMedia());
     setActiveMediaTab("ko");
@@ -109,6 +111,7 @@ export default function GuidesPage({
     setEditingGuide(guide);
     setFormTitle(guide.title);
     setFormContent(guide.content || "");
+    setFormVideoUrl(guide.video_url || "");
     setFormCategory(guide.category);
     setLocaleMedia({
       ko: { file: null, preview: guide.media_url, mediaType: guide.media_type },
@@ -227,6 +230,7 @@ export default function GuidesPage({
       property_id: propertyId,
       title: formTitle.trim(),
       content: formContent.trim() || null,
+      video_url: formVideoUrl.trim() || null,
       media_url: mediaFields.media_url,
       media_type: mediaFields.media_type,
       media_url_en: mediaFields.media_url_en,
@@ -397,6 +401,14 @@ export default function GuidesPage({
                   {guide.content && (
                     <p className="mt-1 text-sm text-gray-500 line-clamp-2">{guide.content}</p>
                   )}
+                  {guide.video_url && (
+                    <p className="mt-1 flex items-center gap-1 text-xs text-rose-500">
+                      <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                      YouTube
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="mt-4 flex gap-2 border-t border-gray-100 pt-3">
@@ -437,6 +449,13 @@ export default function GuidesPage({
             placeholder={t("guide.descriptionPlaceholder")}
             value={formContent}
             onChange={(e) => setFormContent(e.target.value)}
+          />
+
+          <Input
+            label={t("guide.videoUrlLabel")}
+            placeholder={t("guide.videoUrlPlaceholder")}
+            value={formVideoUrl}
+            onChange={(e) => setFormVideoUrl(e.target.value)}
           />
 
           <Select

@@ -185,6 +185,7 @@ export interface PropertyGuide {
   property_id: string;
   title: string;
   content: string | null;
+  video_url: string | null;
   media_url: string | null;
   media_type: "image" | "video" | null;
   media_url_en: string | null;

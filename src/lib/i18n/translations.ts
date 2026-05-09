@@ -2655,6 +2655,18 @@ const translations = {
     ja: "動画を再生",
     zh: "播放视频",
   },
+  "guide.videoUrlLabel": {
+    ko: "YouTube 링크 (선택)",
+    en: "YouTube Link (optional)",
+    ja: "YouTubeリンク（任意）",
+    zh: "YouTube链接（可选）",
+  },
+  "guide.videoUrlPlaceholder": {
+    ko: "https://www.youtube.com/watch?v=...",
+    en: "https://www.youtube.com/watch?v=...",
+    ja: "https://www.youtube.com/watch?v=...",
+    zh: "https://www.youtube.com/watch?v=...",
+  },
   "guide.mediaByLocale": {
     ko: "언어별 미디어",
     en: "Media by language",

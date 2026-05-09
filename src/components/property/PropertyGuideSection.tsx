@@ -102,6 +102,9 @@ export default function PropertyGuideSection({ guides }: PropertyGuideSectionPro
                           <AutoTranslate text={guide.content} />
                         </p>
                       )}
+                      {guide.video_url && (
+                        <YouTubeEmbed url={guide.video_url} />
+                      )}
                       {(() => {
                         const mediaUrl = lp(guide, "media_url", locale) || null;
                         const mediaType = lp(guide, "media_type", locale) || null;
@@ -138,6 +141,45 @@ export default function PropertyGuideSection({ guides }: PropertyGuideSectionPro
       {viewingImage && (
         <ImageViewer src={viewingImage} onClose={() => setViewingImage(null)} />
       )}
+    </div>
+  );
+}
+
+function extractYouTubeId(url: string): string | null {
+  const match =
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/.exec(url);
+  return match ? match[1] : null;
+}
+
+function YouTubeEmbed({ url }: { url: string }) {
+  const videoId = extractYouTubeId(url);
+  if (!videoId) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mb-3 flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2.5 text-sm text-blue-600 hover:bg-gray-200"
+      >
+        <svg className="h-5 w-5 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+        {url}
+      </a>
+    );
+  }
+
+  return (
+    <div className="mb-3 overflow-hidden rounded-lg">
+      <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+        <iframe
+          className="absolute inset-0 h-full w-full"
+          src={`https://www.youtube.com/embed/${videoId}`}
+          title="YouTube video"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
     </div>
   );
 }
