@@ -28,8 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={`${geistSans.variable} h-full antialiased`}>
-      <body className="min-h-full bg-gray-50 font-sans text-gray-900">
+    <html lang="ko" className={`${geistSans.variable} h-full antialiased overflow-x-hidden`}>
+      <body className="min-h-full overflow-x-hidden bg-gray-50 font-sans text-gray-900">
         <I18nProvider>
           <TopLoader />
           {children}
