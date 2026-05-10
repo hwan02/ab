@@ -39,14 +39,17 @@ export default function PhotoGallery({ photos }: PhotoGalleryProps) {
   return (
     <>
       {/* Hero: single cover photo */}
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setSelectedIndex(0)}
-        className="relative h-56 w-full overflow-hidden rounded-xl"
+        onKeyDown={(e) => e.key === "Enter" && setSelectedIndex(0)}
+        className="relative h-56 w-full cursor-pointer overflow-hidden rounded-xl"
       >
         <img
           src={photos[0]}
           alt={t("photo.propertyPhoto")}
-          className="h-full w-full object-cover transition-transform hover:scale-105"
+          className="block h-full w-full max-w-full object-cover"
         />
         {photos.length > 1 && (
           <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
@@ -56,7 +59,7 @@ export default function PhotoGallery({ photos }: PhotoGalleryProps) {
             {photos.length}
           </div>
         )}
-      </button>
+      </div>
 
       {/* Fullscreen photo viewer */}
       {selectedIndex !== null && (
