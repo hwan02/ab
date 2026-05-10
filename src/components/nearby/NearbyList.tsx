@@ -142,30 +142,29 @@ function PlaceCard({
   return (
     <div className="group overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md">
       {/* Image */}
-      <div className="relative aspect-[4/3] w-full bg-gray-100">
+      <div className="w-full bg-gray-100">
         {place.photo_url ? (
           <img
             src={place.photo_url}
             alt={place.name}
-            className="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105"
+            className="h-48 w-full object-cover"
             loading="lazy"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-gray-300">
+          <div className="flex h-48 w-full items-center justify-center text-gray-300">
             <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
             </svg>
           </div>
         )}
-        {/* Category badge */}
-        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-gray-700 shadow-sm backdrop-blur-sm">
-          {categoryLabel}
-        </span>
       </div>
 
       {/* Info */}
       <div className="p-3.5">
+        <span className="mb-1.5 inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+          {categoryLabel}
+        </span>
         <h3 className="text-sm font-semibold text-gray-900"><AutoTranslate text={place.name} /></h3>
         {place.description && (
           <p className="mt-0.5 line-clamp-1 text-xs text-gray-500"><AutoTranslate text={place.description} /></p>
