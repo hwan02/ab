@@ -42,7 +42,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
   const guides = guidesResult.data ?? [];
 
   return (
-    <div className="px-4 py-4">
+    <div className="max-w-full overflow-hidden px-4 py-4">
       {/* Photo Gallery */}
       <PhotoGallery photos={property.photos ?? []} />
 
