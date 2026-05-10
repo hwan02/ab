@@ -125,7 +125,7 @@ export default function PropertyLayoutShell({
       </header>
 
       {/* Page Content */}
-      <main className="mx-auto max-w-4xl">{children}</main>
+      <main className="mx-auto max-w-4xl overflow-x-hidden">{children}</main>
 
       {/* Bottom Navigation */}
       <PropertyNav propertyId={propertyId} onNavClick={handleNavClick} />
