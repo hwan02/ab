@@ -49,7 +49,7 @@ export default function PhotoGallery({ photos }: PhotoGalleryProps) {
         <img
           src={photos[0]}
           alt={t("photo.propertyPhoto")}
-          className="block h-full w-full max-w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover"
         />
         {photos.length > 1 && (
           <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
