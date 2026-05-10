@@ -105,7 +105,7 @@ export default function PropertyLayoutShell({
   }
 
   return (
-    <div className="min-h-dvh max-w-full overflow-x-hidden bg-gray-50 pb-20">
+    <div className="min-h-dvh bg-gray-50 pb-20">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
@@ -125,7 +125,7 @@ export default function PropertyLayoutShell({
       </header>
 
       {/* Page Content */}
-      <main className="mx-auto max-w-4xl overflow-x-hidden">{children}</main>
+      <main className="mx-auto max-w-4xl">{children}</main>
 
       {/* Bottom Navigation */}
       <PropertyNav propertyId={propertyId} onNavClick={handleNavClick} />

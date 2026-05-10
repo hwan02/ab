@@ -12,7 +12,7 @@ function Card({ title, description, children, className }: CardProps) {
   return (
     <div
       className={cn(
-        "max-w-full overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm",
+        "rounded-xl border border-gray-200 bg-white p-6 shadow-sm",
         className
       )}
     >

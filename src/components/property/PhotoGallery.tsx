@@ -44,14 +44,12 @@ export default function PhotoGallery({ photos }: PhotoGalleryProps) {
         tabIndex={0}
         onClick={() => setSelectedIndex(0)}
         onKeyDown={(e) => e.key === "Enter" && setSelectedIndex(0)}
-        className="relative aspect-[16/9] cursor-pointer overflow-hidden rounded-xl bg-gray-100"
-        style={{ maxWidth: "100%" }}
+        className="relative aspect-[16/9] w-full cursor-pointer overflow-hidden rounded-xl bg-gray-100"
       >
         <img
           src={photos[0]}
           alt={t("photo.propertyPhoto")}
           className="absolute inset-0 h-full w-full object-cover"
-          style={{ maxWidth: "100%" }}
         />
         {photos.length > 1 && (
           <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
