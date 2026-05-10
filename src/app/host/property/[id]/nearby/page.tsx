@@ -146,7 +146,18 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     if (data.photo_file) {
       return await uploadPhoto(data.photo_file);
     }
-    return data.photo_url || null;
+    if (data.photo_url) {
+      return data.photo_url;
+    }
+    // Fallback: fetch photo from Google Places API if we have a place ID
+    if (data.google_place_id) {
+      try {
+        const res = await fetch(`/api/places/photo?place_id=${encodeURIComponent(data.google_place_id)}`);
+        const json = await res.json();
+        if (json.photo_url) return json.photo_url;
+      } catch {}
+    }
+    return null;
   }
 
   async function handleSubmitRec(data: PlaceFormData) {
