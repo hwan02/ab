@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useRef, type FormEvent } from "react";
-import Image from "next/image";
 import { useI18n } from "@/lib/i18n/context";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -190,12 +189,10 @@ function NearbyPlaceForm({
         </label>
         {(photoPreview || photoUrl) ? (
           <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-            <Image
+            <img
               src={photoPreview || photoUrl}
               alt=""
-              fill
-              className="object-cover"
-              unoptimized={!!photoPreview}
+              className="absolute inset-0 h-full w-full object-cover"
             />
             <button
               type="button"

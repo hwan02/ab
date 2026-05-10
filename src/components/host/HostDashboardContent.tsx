@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useI18n } from "@/lib/i18n/context";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -78,12 +77,10 @@ export default function HostDashboardContent({
               <Card className="overflow-hidden p-0 transition-all hover:shadow-md">
                 <div className="relative aspect-[4/3] w-full bg-gray-100">
                   {property.photos && property.photos.length > 0 ? (
-                    <Image
+                    <img
                       src={property.photos[0]}
                       alt={property.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="absolute inset-0 h-full w-full object-cover"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-gray-300">

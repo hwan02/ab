@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useI18n } from "@/lib/i18n/context";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -49,12 +48,10 @@ export default function MarketOrdersContent({ orders }: MarketOrdersContentProps
                 <div className="flex items-start gap-3">
                   {order.image_url && (
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                      <Image
+                      <img
                         src={order.image_url}
                         alt=""
-                        fill
-                        className="object-cover"
-                        sizes="64px"
+                        className="absolute inset-0 h-full w-full object-cover"
                       />
                     </div>
                   )}

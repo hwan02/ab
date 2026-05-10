@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import Image from "next/image";
 import { useI18n } from "@/lib/i18n/context";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -145,12 +144,11 @@ function PlaceCard({
       {/* Image */}
       <div className="relative aspect-[4/3] w-full bg-gray-100">
         {place.photo_url ? (
-          <Image
+          <img
             src={place.photo_url}
             alt={place.name}
-            fill
-            className="object-cover transition-transform group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, 50vw"
+            className="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105"
+            loading="lazy"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-gray-300">

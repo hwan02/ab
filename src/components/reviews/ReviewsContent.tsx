@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
@@ -238,12 +237,11 @@ export default function ReviewsContent({ reviews, currentUserId }: ReviewsConten
                 {/* Post image */}
                 {review.image_url && (
                   <div className="relative aspect-square w-full bg-gray-100">
-                    <Image
+                    <img
                       src={review.image_url}
                       alt=""
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 512px) 100vw, 512px"
+                      className="absolute inset-0 h-full w-full object-cover"
+                      loading="lazy"
                     />
                   </div>
                 )}

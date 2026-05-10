@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useI18n } from "@/lib/i18n/context";
 import { lp } from "@/lib/i18n/localize";
 import { Card } from "@/components/ui/Card";
@@ -81,12 +80,11 @@ function PropertyCard({ property }: { property: Property }) {
       <Card className="overflow-hidden p-0 transition-all hover:shadow-md">
         <div className="relative aspect-[4/3] w-full bg-gray-100">
           {photoUrl ? (
-            <Image
+            <img
               src={photoUrl}
               alt={name}
-              fill
-              className="object-cover"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-gray-300">
