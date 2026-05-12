@@ -198,3 +198,14 @@ export interface PropertyGuide {
   display_order: number;
   created_at: string;
 }
+
+export interface CleaningGuide {
+  id: string;
+  property_id: string;
+  title: string;
+  description: string | null;
+  photo_urls: string[];
+  youtube_url: string | null;
+  display_order: number;
+  created_at: string;
+}

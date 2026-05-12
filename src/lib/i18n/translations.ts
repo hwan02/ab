@@ -2679,6 +2679,14 @@ const translations = {
     ja: "該当言語のメディアがない場合、韓国語の画像が表示されます",
     zh: "如果没有该语言的媒体，将显示韩语图片",
   },
+
+  // Cleaning Guides (Korean only — feature is host-side and accessed via direct link by Korean cleaning helpers)
+  "cleaning.hostTitle": {
+    ko: "청소 가이드",
+    en: "청소 가이드",
+    ja: "청소 가이드",
+    zh: "청소 가이드",
+  },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
