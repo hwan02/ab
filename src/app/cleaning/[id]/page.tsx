@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { youtubeEmbedUrl } from "@/lib/youtube";
+import PhotoGallery from "@/components/cleaning/PhotoGallery";
 import type { CleaningGuide, Property } from "@/types/database";
 
 export const metadata = {
@@ -34,7 +35,9 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
     notFound();
   }
 
-  const guides = guidesResult.data ?? [];
+  const all = guidesResult.data ?? [];
+  const steps = all.filter((g) => g.kind === "step");
+  const supplies = all.filter((g) => g.kind === "supply");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -45,18 +48,27 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-6">
-        {guides.length === 0 ? (
+      <main className="mx-auto max-w-2xl space-y-8 px-4 py-6">
+        {all.length === 0 && (
           <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
             등록된 청소 가이드가 없습니다
           </div>
-        ) : (
-          <>
-            <p className="mb-5 text-sm leading-relaxed text-gray-600">
+        )}
+
+        {/* 청소 순서 */}
+        {steps.length > 0 && (
+          <section>
+            <div className="mb-3 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-gray-900">청소 순서</h2>
+              <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-600">
+                {steps.length}단계
+              </span>
+            </div>
+            <p className="mb-4 text-sm leading-relaxed text-gray-600">
               아래 순서대로 청소를 진행해 주세요. 감사합니다.
             </p>
             <ol className="space-y-5">
-              {guides.map((guide, idx) => {
+              {steps.map((guide, idx) => {
                 const embedUrl = guide.youtube_url
                   ? youtubeEmbedUrl(guide.youtube_url)
                   : null;
@@ -70,9 +82,9 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                         {idx + 1}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-lg font-semibold text-gray-900">
                           {guide.title}
-                        </h2>
+                        </h3>
                         {guide.description && (
                           <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
                             {guide.description}
@@ -82,22 +94,8 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                     </div>
 
                     {guide.photo_urls.length > 0 && (
-                      <div className="mt-4 grid grid-cols-2 gap-2">
-                        {guide.photo_urls.map((url) => (
-                          <a
-                            key={url}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block overflow-hidden rounded-lg"
-                          >
-                            <img
-                              src={url}
-                              alt=""
-                              className="h-40 w-full object-cover transition-transform hover:scale-105"
-                            />
-                          </a>
-                        ))}
+                      <div className="mt-4">
+                        <PhotoGallery urls={guide.photo_urls} alt={guide.title} />
                       </div>
                     )}
 
@@ -130,7 +128,42 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                 );
               })}
             </ol>
-          </>
+          </section>
+        )}
+
+        {/* 청소용품 */}
+        {supplies.length > 0 && (
+          <section>
+            <div className="mb-3 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-gray-900">청소용품</h2>
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                {supplies.length}개
+              </span>
+            </div>
+            <p className="mb-4 text-sm leading-relaxed text-gray-600">
+              아래 용품들을 사용해 주세요.
+            </p>
+            <ul className="space-y-4">
+              {supplies.map((supply) => (
+                <li
+                  key={supply.id}
+                  className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+                >
+                  <h3 className="text-base font-semibold text-gray-900">{supply.title}</h3>
+                  {supply.description && (
+                    <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+                      {supply.description}
+                    </p>
+                  )}
+                  {supply.photo_urls.length > 0 && (
+                    <div className="mt-3">
+                      <PhotoGallery urls={supply.photo_urls} alt={supply.title} />
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </main>
     </div>

@@ -13,11 +13,28 @@ import { compressImage } from "@/lib/imageCompression";
 import { extractYouTubeId } from "@/lib/youtube";
 import type { CleaningGuide } from "@/types/database";
 
+type Kind = "step" | "supply";
+
 type PendingPhoto = {
   id: string;
   file: File | null;
   preview: string;
   uploadedUrl: string | null;
+};
+
+const KIND_LABELS: Record<Kind, { title: string; addBtn: string; titlePh: string; descPh: string }> = {
+  step: {
+    title: "청소 순서",
+    addBtn: "단계 추가",
+    titlePh: "예: 욕실 청소",
+    descPh: "청소 방법을 자세히 적어주세요",
+  },
+  supply: {
+    title: "청소용품",
+    addBtn: "용품 추가",
+    titlePh: "예: 변기 세정제",
+    descPh: "사용법, 보관 위치 등을 적어주세요",
+  },
 };
 
 export default function CleaningGuideHostPage({
@@ -30,6 +47,7 @@ export default function CleaningGuideHostPage({
 
   const [guides, setGuides] = useState<CleaningGuide[]>([]);
   const [isFetching, setIsFetching] = useState(true);
+  const [activeKind, setActiveKind] = useState<Kind>("step");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGuide, setEditingGuide] = useState<CleaningGuide | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,6 +60,7 @@ export default function CleaningGuideHostPage({
   const [formDescription, setFormDescription] = useState("");
   const [formYoutubeUrl, setFormYoutubeUrl] = useState("");
   const [formYoutubeError, setFormYoutubeError] = useState("");
+  const [formKind, setFormKind] = useState<Kind>("step");
   const [photos, setPhotos] = useState<PendingPhoto[]>([]);
 
   useEffect(() => {
@@ -73,6 +92,7 @@ export default function CleaningGuideHostPage({
   function openAddModal() {
     setEditingGuide(null);
     resetForm();
+    setFormKind(activeKind);
     setIsModalOpen(true);
   }
 
@@ -82,6 +102,7 @@ export default function CleaningGuideHostPage({
     setFormDescription(guide.description ?? "");
     setFormYoutubeUrl(guide.youtube_url ?? "");
     setFormYoutubeError("");
+    setFormKind(guide.kind);
     setPhotos(
       guide.photo_urls.map((url) => ({
         id: url,
@@ -176,6 +197,7 @@ export default function CleaningGuideHostPage({
       description: formDescription.trim() || null,
       photo_urls: uploadedUrls,
       youtube_url: formYoutubeUrl.trim() || null,
+      kind: formKind,
     };
 
     if (editingGuide) {
@@ -190,8 +212,9 @@ export default function CleaningGuideHostPage({
         await fetchGuides();
       }
     } else {
+      const sameKind = guides.filter((g) => g.kind === formKind);
       const maxOrder =
-        guides.length > 0 ? Math.max(...guides.map((g) => g.display_order)) + 1 : 0;
+        sameKind.length > 0 ? Math.max(...sameKind.map((g) => g.display_order)) + 1 : 0;
       const { error: insertError } = await supabase
         .from("cleaning_guides")
         .insert({ ...guideData, display_order: maxOrder });
@@ -206,7 +229,7 @@ export default function CleaningGuideHostPage({
   }
 
   async function handleDelete(guideId: string) {
-    if (!confirm("이 단계를 삭제하시겠습니까?")) return;
+    if (!confirm("이 항목을 삭제하시겠습니까?")) return;
     setDeletingId(guideId);
     setError("");
     const { error: deleteError } = await supabase
@@ -239,24 +262,27 @@ export default function CleaningGuideHostPage({
     );
   }
 
+  const filtered = guides.filter((g) => g.kind === activeKind);
+  const stepCount = guides.filter((g) => g.kind === "step").length;
+  const supplyCount = guides.filter((g) => g.kind === "supply").length;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">청소 가이드 관리</h1>
           <p className="mt-1 text-sm text-gray-500">
-            청소 도우미에게 보낼 청소 방법을 등록하세요
+            청소 도우미에게 보낼 청소 순서와 용품을 등록하세요
           </p>
         </div>
         <Button onClick={openAddModal}>
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
-          단계 추가
+          {KIND_LABELS[activeKind].addBtn}
         </Button>
       </div>
 
-      {/* Share link */}
       <Card>
         <div className="space-y-2">
           <p className="text-sm font-medium text-gray-700">청소 도우미 공유 링크</p>
@@ -283,30 +309,56 @@ export default function CleaningGuideHostPage({
         </div>
       )}
 
-      {/* Guide list */}
-      {guides.length === 0 ? (
+      {/* Kind tabs */}
+      <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
+        {(["step", "supply"] as const).map((k) => {
+          const count = k === "step" ? stepCount : supplyCount;
+          return (
+            <button
+              key={k}
+              onClick={() => setActiveKind(k)}
+              className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                activeKind === k
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {KIND_LABELS[k].title}
+              {count > 0 && (
+                <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-200 px-1 text-xs">
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {filtered.length === 0 ? (
         <EmptyState
           icon={
             <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
             </svg>
           }
-          title="등록된 청소 단계가 없습니다"
-          description="첫 번째 청소 단계를 추가해 보세요"
+          title={activeKind === "step" ? "등록된 청소 순서가 없습니다" : "등록된 청소용품이 없습니다"}
+          description={activeKind === "step" ? "청소 단계를 추가해 보세요" : "사용할 청소용품을 추가해 보세요"}
           action={
             <Button onClick={openAddModal} size="sm">
-              단계 추가
+              {KIND_LABELS[activeKind].addBtn}
             </Button>
           }
         />
       ) : (
         <div className="space-y-4">
-          {guides.map((guide, idx) => (
+          {filtered.map((guide, idx) => (
             <Card key={guide.id}>
               <div className="flex items-start gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-100 text-sm font-semibold text-rose-600">
-                  {idx + 1}
-                </span>
+                {activeKind === "step" && (
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-100 text-sm font-semibold text-rose-600">
+                    {idx + 1}
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <h3 className="text-base font-semibold text-gray-900">{guide.title}</h3>
                   {guide.description && (
@@ -360,23 +412,26 @@ export default function CleaningGuideHostPage({
         </div>
       )}
 
-      {/* Add/Edit Modal */}
       <Modal
         open={isModalOpen}
         onClose={closeModal}
-        title={editingGuide ? "청소 단계 수정" : "청소 단계 추가"}
+        title={
+          editingGuide
+            ? `${KIND_LABELS[formKind].title} 수정`
+            : `${KIND_LABELS[formKind].title} 추가`
+        }
       >
         <div className="space-y-4">
           <Input
             label="제목"
-            placeholder="예: 욕실 청소"
+            placeholder={KIND_LABELS[formKind].titlePh}
             value={formTitle}
             onChange={(e) => setFormTitle(e.target.value)}
           />
 
           <Textarea
             label="설명"
-            placeholder="청소 방법을 자세히 적어주세요"
+            placeholder={KIND_LABELS[formKind].descPh}
             value={formDescription}
             onChange={(e) => setFormDescription(e.target.value)}
             rows={6}
@@ -416,16 +471,18 @@ export default function CleaningGuideHostPage({
             )}
           </div>
 
-          <Input
-            label="유튜브 영상 링크 (선택)"
-            placeholder="https://www.youtube.com/watch?v=..."
-            value={formYoutubeUrl}
-            onChange={(e) => {
-              setFormYoutubeUrl(e.target.value);
-              setFormYoutubeError("");
-            }}
-            error={formYoutubeError}
-          />
+          {formKind === "step" && (
+            <Input
+              label="유튜브 영상 링크 (선택)"
+              placeholder="https://www.youtube.com/watch?v=..."
+              value={formYoutubeUrl}
+              onChange={(e) => {
+                setFormYoutubeUrl(e.target.value);
+                setFormYoutubeError("");
+              }}
+              error={formYoutubeError}
+            />
+          )}
 
           <div className="flex gap-3 pt-2">
             <Button onClick={handleSubmit} loading={isSubmitting} disabled={!formTitle.trim()}>
