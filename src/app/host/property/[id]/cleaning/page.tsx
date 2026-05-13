@@ -13,7 +13,7 @@ import { compressImage } from "@/lib/imageCompression";
 import { extractYouTubeId } from "@/lib/youtube";
 import type { CleaningGuide } from "@/types/database";
 
-type Kind = "step" | "supply";
+type Kind = "step" | "supply" | "location";
 
 type PendingPhoto = {
   id: string;
@@ -29,13 +29,21 @@ const KIND_LABELS: Record<Kind, { title: string; addBtn: string; titlePh: string
     titlePh: "예: 욕실 청소",
     descPh: "청소 방법을 자세히 적어주세요",
   },
+  location: {
+    title: "보관 위치",
+    addBtn: "위치 추가",
+    titlePh: "예: 부엌 아래 수납장",
+    descPh: "어떤 용품이 어디에 있는지 적어주세요",
+  },
   supply: {
     title: "청소용품",
     addBtn: "용품 추가",
     titlePh: "예: 변기 세정제",
-    descPh: "사용법, 보관 위치 등을 적어주세요",
+    descPh: "사용법 등을 적어주세요",
   },
 };
+
+const KIND_ORDER: Kind[] = ["step", "location", "supply"];
 
 export default function CleaningGuideHostPage({
   params,
@@ -263,8 +271,6 @@ export default function CleaningGuideHostPage({
   }
 
   const filtered = guides.filter((g) => g.kind === activeKind);
-  const stepCount = guides.filter((g) => g.kind === "step").length;
-  const supplyCount = guides.filter((g) => g.kind === "supply").length;
 
   return (
     <div className="space-y-6">
@@ -311,8 +317,8 @@ export default function CleaningGuideHostPage({
 
       {/* Kind tabs */}
       <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
-        {(["step", "supply"] as const).map((k) => {
-          const count = k === "step" ? stepCount : supplyCount;
+        {KIND_ORDER.map((k) => {
+          const count = guides.filter((g) => g.kind === k).length;
           return (
             <button
               key={k}
@@ -341,8 +347,8 @@ export default function CleaningGuideHostPage({
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
             </svg>
           }
-          title={activeKind === "step" ? "등록된 청소 순서가 없습니다" : "등록된 청소용품이 없습니다"}
-          description={activeKind === "step" ? "청소 단계를 추가해 보세요" : "사용할 청소용품을 추가해 보세요"}
+          title={`등록된 ${KIND_LABELS[activeKind].title}이(가) 없습니다`}
+          description={`${KIND_LABELS[activeKind].title}을(를) 추가해 보세요`}
           action={
             <Button onClick={openAddModal} size="sm">
               {KIND_LABELS[activeKind].addBtn}

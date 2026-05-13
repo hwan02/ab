@@ -206,7 +206,7 @@ export interface CleaningGuide {
   description: string | null;
   photo_urls: string[];
   youtube_url: string | null;
-  kind: "step" | "supply";
+  kind: "step" | "supply" | "location";
   display_order: number;
   created_at: string;
 }

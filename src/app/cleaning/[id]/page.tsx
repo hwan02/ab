@@ -37,6 +37,7 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
 
   const all = guidesResult.data ?? [];
   const steps = all.filter((g) => g.kind === "step");
+  const locations = all.filter((g) => g.kind === "location");
   const supplies = all.filter((g) => g.kind === "supply");
 
   return (
@@ -128,6 +129,53 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                 );
               })}
             </ol>
+          </section>
+        )}
+
+        {/* 보관 위치 */}
+        {locations.length > 0 && (
+          <section>
+            <div className="mb-3 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-gray-900">보관 위치</h2>
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                {locations.length}곳
+              </span>
+            </div>
+            <p className="mb-4 text-sm leading-relaxed text-gray-600">
+              청소용품은 아래 위치에서 찾으실 수 있습니다.
+            </p>
+            <ul className="space-y-4">
+              {locations.map((loc) => (
+                <li
+                  key={loc.id}
+                  className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="flex items-start gap-2">
+                    <svg
+                      className="mt-0.5 h-5 w-5 shrink-0 text-amber-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.8}
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                    </svg>
+                    <h3 className="text-base font-semibold text-gray-900">{loc.title}</h3>
+                  </div>
+                  {loc.description && (
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+                      {loc.description}
+                    </p>
+                  )}
+                  {loc.photo_urls.length > 0 && (
+                    <div className="mt-3">
+                      <PhotoGallery urls={loc.photo_urls} alt={loc.title} />
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
           </section>
         )}
 
