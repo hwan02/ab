@@ -444,37 +444,49 @@ export default function CleaningGuideHostPage({
           />
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">사진</label>
-            <p className="mb-2 text-xs text-gray-400">여러 장 선택할 수 있습니다</p>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handlePhotoChange}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-rose-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-rose-600 hover:file:bg-rose-100"
-            />
-            {photos.length > 0 && (
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                {photos.map((photo) => (
-                  <div key={photo.id} className="relative">
-                    <img
-                      src={photo.preview}
-                      alt=""
-                      className="h-24 w-full rounded-lg object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(photo.id)}
-                      className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
-                    >
-                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+              사진{photos.length > 0 ? ` (${photos.length}장)` : ""}
+            </label>
+            <p className="mb-2 text-xs text-gray-400">
+              여러 장 선택할 수 있고, 버튼을 다시 눌러 더 추가할 수도 있습니다
+            </p>
+
+            <div className="grid grid-cols-3 gap-2">
+              {photos.map((photo) => (
+                <div key={photo.id} className="relative">
+                  <img
+                    src={photo.preview}
+                    alt=""
+                    className="h-24 w-full rounded-lg object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(photo.id)}
+                    className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+                  >
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+
+              <label className="flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 bg-rose-50/30 text-rose-500 transition-colors hover:border-rose-300 hover:bg-rose-50">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span className="text-xs font-medium">
+                  {photos.length === 0 ? "사진 추가" : "더 추가"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
           </div>
 
           {formKind === "step" && (
