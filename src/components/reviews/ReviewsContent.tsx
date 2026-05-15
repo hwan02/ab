@@ -59,7 +59,8 @@ export default function ReviewsContent({ reviews, currentUserId }: ReviewsConten
       image_url: imageUrl,
     });
     if (error) {
-      alert(t("reviews.writeFailed"));
+      console.error("Review insert error:", error);
+      alert(`${t("reviews.writeFailed")}: ${error.message}`);
     } else {
       setContent("");
       setRating(5);
