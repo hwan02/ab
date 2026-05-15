@@ -237,11 +237,11 @@ export default function ReviewsContent({ reviews, currentUserId }: ReviewsConten
 
                 {/* Post image */}
                 {review.image_url && (
-                  <div className="relative aspect-square w-full bg-gray-100">
+                  <div className="w-full">
                     <img
                       src={review.image_url}
                       alt=""
-                      className="absolute inset-0 h-full w-full object-cover"
+                      className="w-full"
                       loading="lazy"
                     />
                   </div>
