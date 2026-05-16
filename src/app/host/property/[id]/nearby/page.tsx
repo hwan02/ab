@@ -142,11 +142,34 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     return publicUrl;
   }
 
+  async function saveGooglePhoto(url: string): Promise<string | null> {
+    try {
+      const res = await fetch("/api/places/save-photo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const json = await res.json();
+      return json.photo_url || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function isGoogleUrl(url: string): boolean {
+    return url.includes("googleusercontent.com") || url.includes("googleapis.com");
+  }
+
   async function resolvePhotoUrl(data: PlaceFormData): Promise<string | null> {
     if (data.photo_file) {
       return await uploadPhoto(data.photo_file);
     }
     if (data.photo_url) {
+      // Google URL은 임시 → Supabase에 영구 저장
+      if (isGoogleUrl(data.photo_url)) {
+        const saved = await saveGooglePhoto(data.photo_url);
+        if (saved) return saved;
+      }
       return data.photo_url;
     }
     // Fallback: fetch photo from Google Places API if we have a place ID
@@ -154,7 +177,10 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
       try {
         const res = await fetch(`/api/places/photo?place_id=${encodeURIComponent(data.google_place_id)}`);
         const json = await res.json();
-        if (json.photo_url) return json.photo_url;
+        if (json.photo_url) {
+          const saved = await saveGooglePhoto(json.photo_url);
+          return saved || json.photo_url;
+        }
       } catch {}
     }
     return null;
@@ -285,24 +311,28 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
   }
 
   async function handleFetchPhotos() {
-    const placesWithoutPhoto = places.filter(
+    const placesNeedingPhotos = places.filter(
       (p) => p.google_place_id && !p.photo_url
     );
-    if (placesWithoutPhoto.length === 0) return;
+    if (placesNeedingPhotos.length === 0) return;
 
     setIsFetchingPhotos(true);
     setError("");
 
-    for (const place of placesWithoutPhoto) {
+    for (const place of placesNeedingPhotos) {
       try {
+        // Get Google photo URL
         const res = await fetch(
           `/api/places/photo?place_id=${encodeURIComponent(place.google_place_id!)}`
         );
         const data = await res.json();
         if (data.photo_url) {
+          // Save permanently to Supabase storage
+          const saved = await saveGooglePhoto(data.photo_url);
+          const finalUrl = saved || data.photo_url;
           await supabase
             .from("nearby_places")
-            .update({ photo_url: data.photo_url })
+            .update({ photo_url: finalUrl })
             .eq("id", place.id);
         }
       } catch {
