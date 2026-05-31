@@ -315,7 +315,6 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
   }
 
   async function handleFetchPhotos() {
-    // Supabase에 이미 영구 저장된 사진은 건너뛰고, 나머지 모두 다시 가져옴
     const placesNeedingPhotos = places.filter(
       (p) => p.google_place_id && (!p.photo_url || !isSupabaseUrl(p.photo_url))
     );
@@ -324,19 +323,34 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     setIsFetchingPhotos(true);
     setError("");
 
+    // Use Google Places JS API (client-side, works with referer-restricted keys)
+    const service = new google.maps.places.PlacesService(
+      document.createElement("div")
+    );
+
     for (const place of placesNeedingPhotos) {
       try {
-        const res = await fetch(
-          `/api/places/photo?place_id=${encodeURIComponent(place.google_place_id!)}`
-        );
-        const data = await res.json();
-        if (data.photo_url) {
-          const saved = await saveGooglePhoto(data.photo_url);
-          const finalUrl = saved || data.photo_url;
-          await supabase
-            .from("nearby_places")
-            .update({ photo_url: finalUrl })
-            .eq("id", place.id);
+        const photoUrl = await new Promise<string | null>((resolve) => {
+          service.getDetails(
+            { placeId: place.google_place_id!, fields: ["photos"] },
+            (result, status) => {
+              if (status === google.maps.places.PlacesServiceStatus.OK && result?.photos?.[0]) {
+                resolve(result.photos[0].getUrl({ maxWidth: 800 }));
+              } else {
+                resolve(null);
+              }
+            }
+          );
+        });
+
+        if (photoUrl) {
+          const saved = await saveGooglePhoto(photoUrl);
+          if (saved) {
+            await supabase
+              .from("nearby_places")
+              .update({ photo_url: saved })
+              .eq("id", place.id);
+          }
         }
       } catch {
         // Skip individual failures
