@@ -310,9 +310,14 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     setDeletingId(null);
   }
 
+  function isSupabaseUrl(url: string): boolean {
+    return url.includes("supabase.co/storage");
+  }
+
   async function handleFetchPhotos() {
+    // Supabase에 이미 영구 저장된 사진은 건너뛰고, 나머지 모두 다시 가져옴
     const placesNeedingPhotos = places.filter(
-      (p) => p.google_place_id && !p.photo_url
+      (p) => p.google_place_id && (!p.photo_url || !isSupabaseUrl(p.photo_url))
     );
     if (placesNeedingPhotos.length === 0) return;
 
@@ -321,13 +326,11 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
 
     for (const place of placesNeedingPhotos) {
       try {
-        // Get Google photo URL
         const res = await fetch(
           `/api/places/photo?place_id=${encodeURIComponent(place.google_place_id!)}`
         );
         const data = await res.json();
         if (data.photo_url) {
-          // Save permanently to Supabase storage
           const saved = await saveGooglePhoto(data.photo_url);
           const finalUrl = saved || data.photo_url;
           await supabase
@@ -380,7 +383,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
           </p>
         </div>
         <div className="flex gap-2">
-          {places.some((p) => p.google_place_id && !p.photo_url) && (
+          {places.some((p) => p.google_place_id && (!p.photo_url || !isSupabaseUrl(p.photo_url))) && (
             <Button
               variant="secondary"
               onClick={handleFetchPhotos}
