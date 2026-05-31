@@ -142,22 +142,36 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     return publicUrl;
   }
 
-  async function saveGooglePhoto(url: string): Promise<string | null> {
+  function isGoogleUrl(url: string): boolean {
+    return url.includes("googleusercontent.com") || url.includes("googleapis.com");
+  }
+
+  async function downloadAndUpload(url: string): Promise<string | null> {
     try {
-      const res = await fetch("/api/places/save-photo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
-      const json = await res.json();
-      return json.photo_url || null;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const imgRes = await fetch(url);
+      if (!imgRes.ok) return null;
+      const blob = await imgRes.blob();
+
+      const ext = blob.type.includes("png") ? "png" : blob.type.includes("webp") ? "webp" : "jpg";
+      const filePath = `${user.id}/places-${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("property-photos")
+        .upload(filePath, blob, { contentType: blob.type });
+
+      if (uploadError) return null;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("property-photos")
+        .getPublicUrl(filePath);
+
+      return publicUrl;
     } catch {
       return null;
     }
-  }
-
-  function isGoogleUrl(url: string): boolean {
-    return url.includes("googleusercontent.com") || url.includes("googleapis.com");
   }
 
   async function resolvePhotoUrl(data: PlaceFormData): Promise<string | null> {
@@ -165,9 +179,8 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
       return await uploadPhoto(data.photo_file);
     }
     if (data.photo_url) {
-      // Google URL은 임시 → Supabase에 영구 저장
       if (isGoogleUrl(data.photo_url)) {
-        const saved = await saveGooglePhoto(data.photo_url);
+        const saved = await downloadAndUpload(data.photo_url);
         if (saved) return saved;
       }
       return data.photo_url;
@@ -178,7 +191,7 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
         const res = await fetch(`/api/places/photo?place_id=${encodeURIComponent(data.google_place_id)}`);
         const json = await res.json();
         if (json.photo_url) {
-          const saved = await saveGooglePhoto(json.photo_url);
+          const saved = await downloadAndUpload(json.photo_url);
           return saved || json.photo_url;
         }
       } catch {}
@@ -323,13 +336,20 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
     setIsFetchingPhotos(true);
     setError("");
 
-    // Use Google Places JS API (client-side, works with referer-restricted keys)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setError("Login required");
+      setIsFetchingPhotos(false);
+      return;
+    }
+
     const service = new google.maps.places.PlacesService(
       document.createElement("div")
     );
 
     for (const place of placesNeedingPhotos) {
       try {
+        // 1. Get photo URL from Google Places JS API
         const photoUrl = await new Promise<string | null>((resolve) => {
           service.getDetails(
             { placeId: place.google_place_id!, fields: ["photos"] },
@@ -343,15 +363,32 @@ function NearbyPageInner({ propertyId }: { propertyId: string }) {
           );
         });
 
-        if (photoUrl) {
-          const saved = await saveGooglePhoto(photoUrl);
-          if (saved) {
-            await supabase
-              .from("nearby_places")
-              .update({ photo_url: saved })
-              .eq("id", place.id);
-          }
-        }
+        if (!photoUrl) continue;
+
+        // 2. Download image in browser (Google URLs only work client-side)
+        const imgRes = await fetch(photoUrl);
+        if (!imgRes.ok) continue;
+        const blob = await imgRes.blob();
+
+        // 3. Upload to Supabase storage from client
+        const ext = blob.type.includes("png") ? "png" : blob.type.includes("webp") ? "webp" : "jpg";
+        const filePath = `${user.id}/places-${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("property-photos")
+          .upload(filePath, blob, { contentType: blob.type });
+
+        if (uploadError) continue;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("property-photos")
+          .getPublicUrl(filePath);
+
+        // 4. Update DB with permanent URL
+        await supabase
+          .from("nearby_places")
+          .update({ photo_url: publicUrl })
+          .eq("id", place.id);
       } catch {
         // Skip individual failures
       }
