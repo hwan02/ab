@@ -5,8 +5,25 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://popostay.vercel.app";
 
 export const maxDuration = 120;
+
+async function fetchGooglePhoto(photoRef: string): Promise<{ buffer: ArrayBuffer; contentType: string } | null> {
+  // Use Places Photo REST API with referer header to bypass restriction
+  const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${GOOGLE_MAPS_API_KEY}`;
+
+  const res = await fetch(photoUrl, {
+    redirect: "follow",
+    headers: { Referer: SITE_URL },
+  });
+
+  if (!res.ok) return null;
+
+  const contentType = res.headers.get("content-type") || "image/jpeg";
+  const buffer = await res.arrayBuffer();
+  return { buffer, contentType };
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,17 +32,13 @@ export async function POST(req: NextRequest) {
     if (!property_id) {
       return NextResponse.json({ error: "property_id required" }, { status: 400 });
     }
-    if (!SUPABASE_URL) {
-      return NextResponse.json({ error: "SUPABASE_URL not configured" }, { status: 500 });
-    }
     if (!GOOGLE_MAPS_API_KEY) {
       return NextResponse.json({ error: "GOOGLE_MAPS_API_KEY not configured" }, { status: 500 });
     }
 
-    // Use service key if available, otherwise anon key
     const key = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
-    if (!key) {
-      return NextResponse.json({ error: "No Supabase key configured" }, { status: 500 });
+    if (!key || !SUPABASE_URL) {
+      return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
     }
     const supabase = createClient(SUPABASE_URL, key);
 
@@ -35,7 +48,7 @@ export async function POST(req: NextRequest) {
       .eq("property_id", property_id);
 
     if (fetchError) {
-      return NextResponse.json({ error: `DB fetch failed: ${fetchError.message}` }, { status: 500 });
+      return NextResponse.json({ error: `DB error: ${fetchError.message}` }, { status: 500 });
     }
     if (!places || places.length === 0) {
       return NextResponse.json({ message: "No places found", migrated: 0 });
@@ -54,37 +67,38 @@ export async function POST(req: NextRequest) {
 
     for (const place of needsMigration) {
       try {
-        // Get photo reference from Google
+        // Step 1: Get photo_reference from Place Details
         const detailsRes = await fetch(
-          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(place.google_place_id!)}&fields=photos&key=${GOOGLE_MAPS_API_KEY}`
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(place.google_place_id!)}&fields=photos&key=${GOOGLE_MAPS_API_KEY}`,
+          { headers: { Referer: SITE_URL } }
         );
         const details = await detailsRes.json();
+
+        if (details.status === "REQUEST_DENIED") {
+          errors.push(`${place.name}: API denied - ${details.error_message || "check API key"}`);
+          continue;
+        }
+
         const photoRef = details.result?.photos?.[0]?.photo_reference;
-
         if (!photoRef) {
-          errors.push(`${place.name}: no photo found`);
+          errors.push(`${place.name}: no photo available`);
           continue;
         }
 
-        // Get actual photo URL (follow redirect)
-        const photoApiUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${GOOGLE_MAPS_API_KEY}`;
-        const photoRes = await fetch(photoApiUrl, { redirect: "follow" });
-        if (!photoRes.ok) {
-          errors.push(`${place.name}: photo fetch failed`);
+        // Step 2: Download photo
+        const photo = await fetchGooglePhoto(photoRef);
+        if (!photo) {
+          errors.push(`${place.name}: download failed`);
           continue;
         }
 
-        // Download the image
-        const contentType = photoRes.headers.get("content-type") || "image/jpeg";
-        const arrayBuffer = await photoRes.arrayBuffer();
-
-        // Upload to Supabase storage
-        const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
+        // Step 3: Upload to Supabase storage
+        const ext = photo.contentType.includes("png") ? "png" : photo.contentType.includes("webp") ? "webp" : "jpg";
         const filePath = `places/${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
 
         const { error: uploadError } = await supabase.storage
           .from("property-photos")
-          .upload(filePath, new Uint8Array(arrayBuffer), { contentType });
+          .upload(filePath, new Uint8Array(photo.buffer), { contentType: photo.contentType });
 
         if (uploadError) {
           errors.push(`${place.name}: upload failed - ${uploadError.message}`);
@@ -95,7 +109,7 @@ export async function POST(req: NextRequest) {
           .from("property-photos")
           .getPublicUrl(filePath);
 
-        // Update DB
+        // Step 4: Update DB
         await supabase
           .from("nearby_places")
           .update({ photo_url: publicUrl })
@@ -103,20 +117,12 @@ export async function POST(req: NextRequest) {
 
         migrated++;
       } catch (err) {
-        errors.push(`${place.name}: ${err instanceof Error ? err.message : "unknown error"}`);
+        errors.push(`${place.name}: ${err instanceof Error ? err.message : "error"}`);
       }
     }
 
-    return NextResponse.json({
-      message: `Migrated ${migrated}/${needsMigration.length} photos`,
-      migrated,
-      total: needsMigration.length,
-      errors: errors.length > 0 ? errors : undefined,
-    });
+    return NextResponse.json({ migrated, total: needsMigration.length, errors: errors.length > 0 ? errors : undefined });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
   }
 }
