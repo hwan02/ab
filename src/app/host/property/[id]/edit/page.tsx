@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { PropertyForm, type PropertyFormData } from "@/components/property/PropertyForm";
 import { removePhotoByUrl, uploadMainPhoto } from "@/lib/propertyPhoto";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useI18n } from "@/lib/i18n/context";
 import type { Property } from "@/types/database";
@@ -25,7 +24,6 @@ export default function EditPropertyPage({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState("");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     async function fetchProperty() {
@@ -164,45 +162,18 @@ export default function EditPropertyPage({
         />
       </Card>
 
-      <div className="mt-8 border-t border-gray-200 pt-8">
-        <h2 className="text-lg font-semibold text-red-600">{t("host.dangerZone")}</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          {t("host.deleteWarning")}
-        </p>
-
-        {showDeleteConfirm ? (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
-            <p className="text-sm font-medium text-red-800">
-              {t("host.deleteConfirm")}
-            </p>
-            <div className="mt-3 flex gap-3">
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleDelete}
-                loading={isDeleting}
-              >
-                {t("host.confirmDelete")}
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={isDeleting}
-              >
-                {t("common.cancel")}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <Button
-            variant="danger"
-            className="mt-4"
-            onClick={() => setShowDeleteConfirm(true)}
-          >
-            {t("host.deleteProperty")}
-          </Button>
-        )}
+      <div className="mt-10 text-center">
+        <button
+          type="button"
+          onClick={async () => {
+            if (!confirm("이 숙소를 삭제할까요? 규칙과 수신 메시지도 함께 삭제되며 되돌릴 수 없습니다.")) return;
+            await handleDelete();
+          }}
+          disabled={isDeleting}
+          className="text-xs text-gray-400 underline-offset-2 hover:text-red-500 hover:underline disabled:opacity-50"
+        >
+          {isDeleting ? "삭제 중..." : "숙소 삭제"}
+        </button>
       </div>
     </div>
   );
