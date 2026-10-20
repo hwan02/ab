@@ -54,7 +54,7 @@ export const RULES: SeedRule[] = [
   },
   {
     name: "짐 보관",
-    keywords: ["짐", "캐리어", "가방", "보관", "맡길", "맡겨", "luggage", "baggage", "suitcase", "keep my"],
+    keywords: ["짐 보관", "짐을", "짐 맡", "짐도", "캐리어", "가방", "보관", "맡길", "맡겨", "luggage", "baggage", "suitcase", "keep my"],
     priority: 9,
     answer:
       "네, 체크인 전이나 체크아웃 후 짐 보관 가능합니다 :)\n도착 예정 시간이나 맡기실 시간을 알려주시면 안내해 드릴게요.",
@@ -135,7 +135,7 @@ export const RULES: SeedRule[] = [
   },
   {
     name: "빔프로젝터",
-    keywords: ["빔", "프로젝터", "projector", "리모컨", "remote", "넷플릭스", "netflix", "유튜브"],
+    keywords: ["빔프로", "프로젝터", "projector", "리모컨", "remote", "넷플릭스", "netflix", "유튜브"],
     priority: 6,
     answer:
       "빔프로젝터는 리모컨으로 켜시면 됩니다 :)\n펌웨어 업데이트 화면이 뜨면 15~30분 정도 걸릴 수 있으니 중간에 전원을 뽑거나 강제 종료하지 말고 기다려 주세요. 안 되면 바로 말씀해 주세요!",
