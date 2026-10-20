@@ -4,10 +4,13 @@
  * GET  /api/airbnb/inbox/sync   Vercel Cron 이 호출 (Authorization: Bearer $CRON_SECRET)
  * POST /api/airbnb/inbox/sync   수동 호출. 같은 헤더 필요. body { since?: ISO, limit?: number, dryRun?: boolean }
  *
- * 흐름: 카카오 IMAP → 파싱 → 숙소 매핑(에어비앤비 리스팅 제목) → airbnb_inbound_mails upsert(중복 무시)
+ * 흐름: 카카오 IMAP → 파싱 → 숙소 매핑(에어비앤비 리스팅 제목, src/lib/airbnb/sync.ts) → airbnb_inbound_mails upsert(중복 무시)
  *       → 게스트 메시지면 그 숙소의 키워드 규칙과 매칭 → 답변 렌더링
  *       → 숙소의 auto_reply_mode 가 auto 이고 회신 주소가 있으면 카카오 SMTP 로 바로 발송, 아니면 '확인 후 발송' 상태로 둠
- *       → Slack 알림
+ *       → Slack 알림. 숙소를 정하지 못한 메일(제목 불일치·후보 동점)은 '숙소 미확정'으로 알린다.
+ *
+ * 매 실행 시 최근 7일 안에 숙소가 안 붙은 행(property_id null)을 다시 매핑해 본다.
+ * 호스트가 숙소의 리스팅 제목을 나중에 고쳐도 지난 메일이 붙고, 붙으면 규칙도 적용된다.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -15,6 +18,7 @@ import { fetchAirbnbMails } from "@/lib/airbnb/mail/imap";
 import { parseAirbnbMail, type ParsedAirbnbMail } from "@/lib/airbnb/mail/parse";
 import { isAirbnbReplyAddress, sendAirbnbReply } from "@/lib/airbnb/mail/smtp";
 import { matchRule, pickAnswer, renderAnswer, type ReplyRule } from "@/lib/airbnb/rules";
+import { matchProperty, twinKey, type MatchReason } from "@/lib/airbnb/sync";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PRODUCT_NAME } from "@/lib/airbnb/brand";
 
@@ -43,6 +47,35 @@ type Outcome =
   | { kind: "ready"; ruleName: string; text: string; note?: string }
   | { kind: "needs_reply"; note?: string }
   | { kind: "skipped" };
+
+/** Slack 알림에 필요한 메일 요약. 새로 파싱한 메일과 DB 에서 다시 꺼낸 행을 같은 모양으로 넘긴다. */
+interface MailSummary {
+  kind: ParsedAirbnbMail["kind"];
+  guestName: string | null;
+  listingName: string | null;
+  messageText: string | null;
+  snippet: string | null;
+  threadUrl: string | null;
+}
+
+interface Notification {
+  mail: MailSummary;
+  propertyName: string | null;
+  outcome: Outcome;
+  /** 숙소 매핑 결과. 매핑됐으면 생략. */
+  mapping?: { reason: MatchReason; candidates: string[] };
+}
+
+function summarize(parsed: ParsedAirbnbMail): MailSummary {
+  return {
+    kind: parsed.kind,
+    guestName: parsed.guestName,
+    listingName: parsed.listingName,
+    messageText: parsed.messageText,
+    snippet: parsed.snippet,
+    threadUrl: parsed.threadUrl,
+  };
+}
 
 function authorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
@@ -119,7 +152,10 @@ async function run(opts: RunOptions) {
 
   let inserted = 0;
   let merged = 0;
-  const outcomes: { parsed: ParsedAirbnbMail; propertyName: string | null; outcome: Outcome }[] = [];
+  const outcomes: Notification[] = [];
+
+  // 지난 실행에서 숙소를 못 찾은 행을 다시 매핑한다 (리스팅 제목이 그 사이 고쳐졌을 수 있다).
+  const remapped = await remapUnmapped(supabase, propertyList, outcomes);
 
   // 숙박 문의는 automated@(문의 알림)와 express@(스레드 메시지, Reply-To 있음) 두 통으로 온다.
   // 같은 스레드 + 같은 본문이면 한 건으로 합치고, 회신 주소만 보강한다.
@@ -138,7 +174,9 @@ async function run(opts: RunOptions) {
   parsedRows.sort((a, b) => (a.mail.date?.getTime() ?? 0) - (b.mail.date?.getTime() ?? 0));
 
   for (const { mail, parsed } of parsedRows) {
-    const property = matchProperty(parsed.listingName, propertyList);
+    const match = matchProperty(parsed.listingName, propertyList);
+    const property = match.property;
+    const mapping = property ? undefined : { reason: match.reason, candidates: match.candidates.map((c) => c.name) };
 
     const key = twinKey(parsed.threadId, parsed.messageText);
     const twin = key ? seen.get(key) : undefined;
@@ -150,7 +188,7 @@ async function run(opts: RunOptions) {
           merged += 1;
           // 회신 주소가 생겼으니 '자동 발송' 모드면 이제 보낼 수 있다
           const outcome = await applyRules(supabase, twin.id, propertyList);
-          if (outcome.kind === "auto_sent") outcomes.push({ parsed, propertyName: property?.name ?? null, outcome });
+          if (outcome.kind === "auto_sent") outcomes.push({ mail: summarize(parsed), propertyName: property?.name ?? null, outcome });
         }
       }
       continue;
@@ -191,17 +229,96 @@ async function run(opts: RunOptions) {
       const id = data[0].id as string;
       if (key) seen.set(key, { id, reply_to: mail.replyTo });
       const outcome = await applyRules(supabase, id, propertyList);
-      outcomes.push({ parsed, propertyName: property?.name ?? null, outcome });
+      outcomes.push({ mail: summarize(parsed), propertyName: property?.name ?? null, outcome, mapping });
     }
   }
 
-  await Promise.all(outcomes.map((o) => notifySlack(o.parsed, o.propertyName, o.outcome)));
+  await Promise.all(outcomes.map((o) => notifySlack(o)));
 
   const autoSent = outcomes.filter((o) => o.outcome.kind === "auto_sent").length;
   const ready = outcomes.filter((o) => o.outcome.kind === "ready").length;
   const needsReply = outcomes.filter((o) => o.outcome.kind === "needs_reply").length;
+  const unmapped = outcomes.filter((o) => o.mapping).length;
 
-  return NextResponse.json({ fetched: mails.length, airbnb: parsedRows.length, inserted, merged, autoSent, ready, needsReply, replyFailures });
+  return NextResponse.json({
+    fetched: mails.length,
+    airbnb: parsedRows.length,
+    inserted,
+    merged,
+    remapped,
+    unmapped,
+    autoSent,
+    ready,
+    needsReply,
+    replyFailures,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 미매핑 행 재매핑
+// ---------------------------------------------------------------------------
+
+interface UnmappedRow {
+  id: string;
+  kind: ParsedAirbnbMail["kind"];
+  guest_name: string | null;
+  listing_name: string | null;
+  message_text: string | null;
+  snippet: string | null;
+  thread_url: string | null;
+}
+
+/**
+ * 최근 7일 안에 들어왔지만 숙소가 안 붙은 행을 listing_name 으로 다시 매핑한다.
+ * 붙으면 규칙을 적용하고, 결과가 있으면(발송·답변 준비·답변 필요) Slack 알림 목록에 넣는다.
+ * 여전히 애매하거나 안 맞는 행은 조용히 둔다 — 매 실행마다 같은 알림을 반복하지 않는다.
+ * 돌아오는 값은 새로 붙은 행 수.
+ */
+async function remapUnmapped(supabase: Admin, properties: PropertyRow[], outcomes: Notification[]): Promise<number> {
+  if (properties.length === 0) return 0;
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from("airbnb_inbound_mails")
+    .select("id, kind, guest_name, listing_name, message_text, snippet, thread_url")
+    .is("property_id", null)
+    .not("listing_name", "is", null)
+    .gte("created_at", since)
+    .limit(200);
+  if (error) {
+    console.error("[airbnb sync] remap query failed", error.message);
+    return 0;
+  }
+
+  let count = 0;
+  for (const row of (data ?? []) as UnmappedRow[]) {
+    const match = matchProperty(row.listing_name, properties);
+    if (!match.property) continue;
+    const { error: updateError } = await supabase
+      .from("airbnb_inbound_mails")
+      .update({ property_id: match.property.id })
+      .eq("id", row.id)
+      .is("property_id", null);
+    if (updateError) {
+      console.error("[airbnb sync] remap update failed", row.id, updateError.message);
+      continue;
+    }
+    count += 1;
+    const outcome = await applyRules(supabase, row.id, properties);
+    if (outcome.kind === "skipped") continue;
+    outcomes.push({
+      mail: {
+        kind: row.kind,
+        guestName: row.guest_name,
+        listingName: row.listing_name,
+        messageText: row.message_text,
+        snippet: row.snippet,
+        threadUrl: row.thread_url,
+      },
+      propertyName: match.property.name,
+      outcome,
+    });
+  }
+  return count;
 }
 
 // ---------------------------------------------------------------------------
@@ -297,18 +414,27 @@ async function applyRules(supabase: Admin, mailId: string, properties: PropertyR
     if (dup && dup.length > 0) return { kind: "ready", ruleName: rule.name, text, note: "같은 답변을 1시간 내 이미 보냄" };
   }
 
+  // 발송 경쟁 방어: 겹친 크론 실행이나 호스트의 수동 발송과 같은 행을 두 번 보내지 않도록
+  // status 를 먼저 조건부로 'replied' 로 바꿔 선점한다. 선점에 실패하면(이미 replied) 보내지 않는다.
+  const now = new Date().toISOString();
+  const { data: claimed, error: claimError } = await supabase
+    .from("airbnb_inbound_mails")
+    .update({ status: "replied", replied_at: now, auto_sent: true })
+    .eq("id", mail.id)
+    .neq("status", "replied")
+    .select("id");
+  if (claimError || !claimed || claimed.length === 0) return { kind: "skipped" };
+
   try {
     await sendAirbnbReply({ to: mail.reply_to, subject: mail.subject, text, inReplyTo: mail.message_id });
   } catch (e) {
     console.error("[airbnb sync] auto send failed", mail.id, e instanceof Error ? e.message : e);
+    // 선점을 되돌려 호스트가 수신함에서 다시 보낼 수 있게 한다
+    await supabase.from("airbnb_inbound_mails").update({ status: "drafted", replied_at: null, auto_sent: false }).eq("id", mail.id);
     return { kind: "ready", ruleName: rule.name, text, note: "발송 실패: " + (e instanceof Error ? e.message : String(e)) };
   }
 
-  const now = new Date().toISOString();
-  await supabase
-    .from("airbnb_inbound_mails")
-    .update({ sent_reply: text, sent_at: now, status: "replied", replied_at: now, auto_sent: true })
-    .eq("id", mail.id);
+  await supabase.from("airbnb_inbound_mails").update({ sent_reply: text, sent_at: now }).eq("id", mail.id);
   const { data: cur } = await supabase.from("airbnb_reply_rules").select("hit_count").eq("id", rule.id).maybeSingle();
   await supabase
     .from("airbnb_reply_rules")
@@ -316,63 +442,6 @@ async function applyRules(supabase: Admin, mailId: string, properties: PropertyR
     .eq("id", rule.id);
 
   return { kind: "auto_sent", ruleName: rule.name, text };
-}
-
-// ---------------------------------------------------------------------------
-// 숙소 매핑
-// ---------------------------------------------------------------------------
-
-/**
- * 메일의 숙소 제목과 숙소를 맞춘다.
- * 1순위: properties.airbnb_listing_title (해시태그 포함 에어비앤비 제목) 과 정규화 비교 → 포함 → 해시태그 겹침 수
- * 2순위: properties.name 으로 같은 방식
- * 숙소가 하나뿐이면 그냥 그 숙소.
- */
-export function matchProperty<T extends { id: string; name: string; airbnb_listing_title?: string | null }>(
-  listingName: string | null,
-  properties: T[]
-): T | null {
-  if (properties.length === 1) return properties[0];
-  if (!listingName) return null;
-  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, "");
-  const needle = norm(listingName);
-  const tags = (s: string) => new Set((s.toLowerCase().match(/#[^\s#]+/g) ?? []).map((t) => t.replace(/\s+/g, "")));
-  const mailTags = tags(listingName);
-
-  for (const field of ["airbnb_listing_title", "name"] as const) {
-    const exact = properties.find((p) => {
-      const v = p[field];
-      return !!v && norm(v) === needle;
-    });
-    if (exact) return exact;
-    const contains = properties.find((p) => {
-      const v = p[field];
-      return !!v && (needle.includes(norm(v)) || norm(v).includes(needle));
-    });
-    if (contains) return contains;
-    if (mailTags.size > 0) {
-      let best: { p: T; score: number } | null = null;
-      for (const p of properties) {
-        const v = p[field];
-        if (!v) continue;
-        const score = [...tags(v)].filter((t) => mailTags.has(t)).length;
-        if (score >= 2 && (!best || score > best.score)) best = { p, score };
-      }
-      if (best) return best.p;
-    }
-  }
-  return null;
-}
-
-/** 같은 스레드의 같은 본문을 한 건으로 묶는 키. 본문이 없으면 묶지 않는다. */
-function twinKey(threadId: string | null, messageText: string | null): string | null {
-  if (!threadId || !messageText) return null;
-  const norm = messageText
-    .split(/\n\s*원문에서 자동 번역된 메시지/)[0] // express@ 쪽에만 붙는 번역 블록은 뺀다
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 200);
-  return norm ? `${threadId}|${norm}` : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -388,30 +457,40 @@ const KIND_LABEL: Record<ParsedAirbnbMail["kind"], string> = {
   other: "📨 에어비앤비 알림",
 };
 
-async function notifySlack(parsed: ParsedAirbnbMail, propertyName: string | null, outcome: Outcome) {
+async function notifySlack({ mail, propertyName, outcome, mapping }: Notification) {
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
   if (!webhookUrl) return;
 
-  const where = propertyName ?? parsed.listingName;
-  const preview = (parsed.messageText ?? parsed.snippet).replace(/\s+/g, " ").slice(0, 200);
+  const where = propertyName ?? mail.listingName;
+  const preview = (mail.messageText ?? mail.snippet ?? "").replace(/\s+/g, " ").slice(0, 200);
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null);
 
   let tail = "";
+  if (mapping) {
+    if (mapping.reason === "ambiguous") {
+      tail += `\n\n🏠 *숙소 미확정* — 리스팅 제목이 여러 숙소와 같은 점수로 겹칩니다: ${mapping.candidates.join(", ")}. 각 숙소의 에어비앤비 리스팅 제목을 서로 다르게 맞춰 주세요.`;
+    } else if (mapping.reason === "no_listing") {
+      tail += "\n\n🏠 *숙소 미확정* — 메일에서 숙소 제목을 찾지 못했습니다.";
+    } else {
+      tail += "\n\n🏠 *숙소 미확정* — 맞는 숙소가 없습니다. 숙소 설정의 에어비앤비 리스팅 제목을 메일의 제목과 같게 맞춰 주세요.";
+    }
+  }
   if (outcome.kind === "auto_sent") {
-    tail = `\n\n🤖 *${PRODUCT_NAME} 자동 발송됨* (규칙: ${outcome.ruleName})\n${outcome.text.slice(0, 600)}`;
+    tail += `\n\n🤖 *${PRODUCT_NAME} 자동 발송됨* (규칙: ${outcome.ruleName})\n${outcome.text.slice(0, 600)}`;
   } else if (outcome.kind === "ready") {
-    tail = `\n\n✍️ *답변 준비됨* (규칙: ${outcome.ruleName})${outcome.note ? ` · ${outcome.note}` : ""} — 수신함에서 확인 후 보내세요\n${outcome.text.slice(0, 600)}`;
+    tail += `\n\n✍️ *답변 준비됨* (규칙: ${outcome.ruleName})${outcome.note ? ` · ${outcome.note}` : ""} — 수신함에서 확인 후 보내세요\n${outcome.text.slice(0, 600)}`;
   } else if (outcome.kind === "needs_reply") {
-    tail = `\n\n🙋 *답변 필요* — 매칭되는 규칙이 없습니다${outcome.note ? ` (${outcome.note})` : ""}`;
+    tail += `\n\n🙋 *답변 필요* — 매칭되는 규칙이 없습니다${outcome.note ? ` (${outcome.note})` : ""}`;
   }
 
+  const inboxUrl = appUrl ? `${appUrl}/host/airbnb${mapping ? "?property=unmapped" : ""}` : null;
   const text =
-    `${KIND_LABEL[parsed.kind]} — *${parsed.guestName ?? "게스트"}*${where ? ` (${where})` : ""}` +
+    `${KIND_LABEL[mail.kind]} — *${mail.guestName ?? "게스트"}*${where ? ` (${where})` : ""}` +
     `\n>${preview}` +
     tail +
-    (parsed.threadUrl ? `\n<${parsed.threadUrl}|에어비앤비에서 보기>` : "") +
-    (appUrl ? ` · <${appUrl}/host/airbnb|${PRODUCT_NAME} 수신함>` : "");
+    (mail.threadUrl ? `\n<${mail.threadUrl}|에어비앤비에서 보기>` : "") +
+    (inboxUrl ? ` · <${inboxUrl}|${PRODUCT_NAME} 수신함>` : "");
 
   try {
     await fetch(webhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });

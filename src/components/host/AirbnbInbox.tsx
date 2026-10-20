@@ -2,11 +2,13 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { cn } from "@/lib/utils";
+import { UNMAPPED_FILTER } from "@/lib/airbnb/sync";
 import type { AirbnbInboundMail, AirbnbInboundStatus, AirbnbMailKind, Property } from "@/types/database";
 
 type Filter = "all" | "todo" | "replied";
@@ -33,14 +35,22 @@ function formatReceived(iso: string | null): string {
   return d.toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+const UNMAPPED_LABEL = "숙소 미확정";
+
 interface Props {
   initialMails: AirbnbInboundMail[];
+  /** 필터에 보여 줄 숙소. 호스트는 자기 숙소만, 관리자는 전부. */
   properties: Pick<Property, "id" | "name">[];
   rules: { id: string; name: string }[];
+  /** 현재 숙소 필터(?property=). 빈 문자열이면 전체. 관리자는 UNMAPPED_FILTER 로 '숙소 미확정'만. */
+  selectedProperty?: string;
+  isAdmin?: boolean;
 }
 
-export default function AirbnbInbox({ initialMails, properties, rules }: Props) {
+export default function AirbnbInbox({ initialMails, properties, rules, selectedProperty = "", isAdmin = false }: Props) {
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
+  const pathname = usePathname();
   const [mails, setMails] = useState<AirbnbInboundMail[]>(initialMails);
   const [filter, setFilter] = useState<Filter>("todo");
   const [expanded, setExpanded] = useState<string | null>(initialMails[0]?.id ?? null);
@@ -53,6 +63,24 @@ export default function AirbnbInbox({ initialMails, properties, rules }: Props) 
     (id: string | null) => (id ? properties.find((p) => p.id === id)?.name ?? null : null),
     [properties]
   );
+
+  /** 카드마다 항상 보여 줄 숙소 표시. 매핑 안 됐으면 '숙소 미확정'과 메일의 리스팅 제목. */
+  const placeLabel = (mail: AirbnbInboundMail) => {
+    const name = propertyName(mail.property_id);
+    if (name) return { text: name, unmapped: false };
+    const title = mail.listing_name?.trim();
+    return { text: title ? `${UNMAPPED_LABEL} · ${title}` : UNMAPPED_LABEL, unmapped: true };
+  };
+
+  const selectProperty = (value: string) => {
+    router.push(value ? `${pathname}?property=${encodeURIComponent(value)}` : pathname);
+  };
+
+  const propertyOptions: { value: string; label: string }[] = [
+    { value: "", label: "전체 숙소" },
+    ...properties.map((p) => ({ value: p.id, label: p.name })),
+    ...(isAdmin ? [{ value: UNMAPPED_FILTER, label: UNMAPPED_LABEL }] : []),
+  ];
 
   const visible = mails.filter((m) => {
     if (filter === "todo") return m.status === "new" || m.status === "drafted";
@@ -119,6 +147,11 @@ export default function AirbnbInbox({ initialMails, properties, rules }: Props) 
         body: JSON.stringify({ id: mail.id, text }),
       });
       const json = await res.json();
+      if (res.status === 409) {
+        // 자동 발송이나 다른 탭이 먼저 보냈다. 화면도 '답장 완료'로 맞춘다.
+        patch(mail.id, { status: "replied" });
+        throw new Error(json.error ?? "이미 발송된 메일입니다.");
+      }
       if (!res.ok) throw new Error(json.detail ?? json.error ?? "실패");
       patch(mail.id, { status: "replied", replied_at: json.sentAt, sent_reply: text, sent_at: json.sentAt });
       flash("보냈습니다. 에어비앤비 스레드에 올라가는 데 몇 분 걸릴 수 있습니다.");
@@ -140,29 +173,56 @@ export default function AirbnbInbox({ initialMails, properties, rules }: Props) 
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex gap-1 rounded-full bg-white p-1 shadow-sm">
-          {(
-            [
-              ["todo", "할 일"],
-              ["replied", "답장 완료"],
-              ["all", "전체"],
-            ] as [Filter, string][]
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex gap-1 rounded-full bg-white p-1 shadow-sm">
+            {(
+              [
+                ["todo", "할 일"],
+                ["replied", "답장 완료"],
+                ["all", "전체"],
+              ] as [Filter, string][]
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setFilter(key)}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-medium transition-all",
+                  filter === key ? "bg-rose-500 text-white shadow-sm" : "text-gray-600 hover:bg-gray-100"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <label className="flex items-center gap-1 text-xs text-gray-500">
+            <span className="sr-only">숙소 필터</span>
+            <select
+              value={selectedProperty}
+              onChange={(e) => selectProperty(e.target.value)}
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium transition-all",
-                filter === key ? "bg-rose-500 text-white shadow-sm" : "text-gray-600 hover:bg-gray-100"
+                "rounded-full border border-gray-200 bg-white py-1 pl-3 pr-7 text-xs font-medium text-gray-700 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20",
+                selectedProperty === UNMAPPED_FILTER && "border-amber-300 text-amber-700"
               )}
+              aria-label="숙소 필터"
             >
-              {label}
-            </button>
-          ))}
+              {propertyOptions.map((o) => (
+                <option key={o.value || "all"} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         {notice && <span className="text-xs text-gray-500">{notice}</span>}
       </div>
+
+      {selectedProperty === UNMAPPED_FILTER && (
+        <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          숙소를 정하지 못한 메일입니다. 메일의 리스팅 제목과 같은 값을 해당 숙소의 &quot;에어비앤비 리스팅 제목&quot;에 넣으면 다음 동기화 때 자동으로
+          붙고 규칙이 적용됩니다. (최근 7일 메일만 다시 매핑합니다)
+        </p>
+      )}
 
       {visible.length === 0 ? (
         <Card className="py-12 text-center text-sm text-gray-500">
@@ -173,7 +233,7 @@ export default function AirbnbInbox({ initialMails, properties, rules }: Props) 
           {visible.map((mail) => {
             const isOpen = expanded === mail.id;
             const status = STATUS_LABEL[mail.status];
-            const place = propertyName(mail.property_id) ?? mail.listing_name;
+            const place = placeLabel(mail);
             return (
               <Card key={mail.id} className="p-4">
                 <button className="flex w-full items-start justify-between gap-3 text-left" onClick={() => setExpanded(isOpen ? null : mail.id)}>
@@ -181,7 +241,9 @@ export default function AirbnbInbox({ initialMails, properties, rules }: Props) 
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-semibold text-gray-900">{mail.guest_name ?? "게스트"}</span>
                       <span className="text-xs text-gray-500">{KIND_LABEL[mail.kind]}</span>
-                      {place && <span className="text-xs text-gray-400">· {place}</span>}
+                      <span className={cn("text-xs", place.unmapped ? "font-medium text-amber-600" : "text-gray-400")} title={mail.listing_name ?? undefined}>
+                        · {place.text}
+                      </span>
                       <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", status.className)}>{status.text}</span>
                       {mail.auto_sent && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">🤖 자동 발송</span>}
                       {mail.matched_rule_id && ruleName(mail.matched_rule_id) && (
