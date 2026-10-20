@@ -17,7 +17,7 @@ export default async function BrowsePropertyPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect(`/login?next=${encodeURIComponent(`/browse/${id}`)}`);
   }
 
   // 공개 뷰: 아직 등록되지 않은 게스트가 보는 페이지라 RLS 가 걸린 properties 대신 뷰를 읽는다

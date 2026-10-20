@@ -38,7 +38,7 @@ export default async function HostPage() {
       <HomeHeader
         userName={profile?.name ?? null}
         avatarUrl={user.user_metadata?.avatar_url ?? null}
-        isAdmin
+        showHostLink
       />
 
       <HostDashboardContent properties={(properties ?? []) as Property[]} />

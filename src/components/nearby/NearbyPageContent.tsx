@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
 import NearbyList from "@/components/nearby/NearbyList";
@@ -39,6 +39,7 @@ export default function NearbyPageContent({
 }: NearbyPageContentProps) {
   const { t } = useI18n();
   const router = useRouter();
+  const pathname = usePathname();
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [showRecommendForm, setShowRecommendForm] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -174,7 +175,7 @@ export default function NearbyPageContent({
           ) : (
             <button
               onClick={() => {
-                if (!isLoggedIn) { router.push("/login"); return; }
+                if (!isLoggedIn) { router.push(`/login?next=${encodeURIComponent(pathname)}`); return; }
                 setShowRecommendForm(true);
               }}
               className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-300 py-4 text-sm font-medium text-gray-500 transition-colors hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"

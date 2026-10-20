@@ -1,24 +1,31 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
 import { LOCALES } from "@/lib/i18n/translations";
+import { useHostLocale } from "@/components/layout/useHostLocale";
 
 interface HomeHeaderProps {
   userName: string | null;
   avatarUrl: string | null;
-  isAdmin?: boolean;
+  /** 드롭다운에 '호스트 모드' 링크를 보일지. 로그인한 사용자면 true. */
+  showHostLink?: boolean;
 }
 
-export default function HomeHeader({ userName, avatarUrl, isAdmin }: HomeHeaderProps) {
+export default function HomeHeader({ userName, avatarUrl, showHostLink }: HomeHeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { locale, setLocale, t } = useI18n();
   const [open, setOpen] = useState(false);
   const [emailNotif, setEmailNotif] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  // 호스트 화면(/host…)은 한국어 고정: 언어 전환 UI 를 숨기고 표시 locale 만 ko 로 맞춘다(저장값은 보존).
+  const isHostRoute = pathname?.startsWith("/host") ?? false;
+  useHostLocale(isHostRoute);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -85,22 +92,24 @@ export default function HomeHeader({ userName, avatarUrl, isAdmin }: HomeHeaderP
             </Link>
           </nav>
 
-          {/* Language switcher (compact) */}
-          <div className="hidden items-center gap-0.5 rounded-full border border-gray-200 p-0.5 sm:flex">
-            {LOCALES.map((loc) => (
-              <button
-                key={loc.code}
-                onClick={() => setLocale(loc.code)}
-                className={`rounded-full px-2 py-1 text-xs font-medium transition-all ${
-                  locale === loc.code
-                    ? "bg-rose-500 text-white"
-                    : "text-gray-500 hover:bg-gray-100"
-                }`}
-              >
-                {loc.flag}
-              </button>
-            ))}
-          </div>
+          {/* Language switcher (compact) — hidden on host routes */}
+          {!isHostRoute && (
+            <div className="hidden items-center gap-0.5 rounded-full border border-gray-200 p-0.5 sm:flex">
+              {LOCALES.map((loc) => (
+                <button
+                  key={loc.code}
+                  onClick={() => setLocale(loc.code)}
+                  className={`rounded-full px-2 py-1 text-xs font-medium transition-all ${
+                    locale === loc.code
+                      ? "bg-rose-500 text-white"
+                      : "text-gray-500 hover:bg-gray-100"
+                  }`}
+                >
+                  {loc.flag}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Avatar dropdown */}
           <div className="relative" ref={ref}>
@@ -130,27 +139,29 @@ export default function HomeHeader({ userName, avatarUrl, isAdmin }: HomeHeaderP
                   </div>
                 )}
 
-                {/* Mobile language switcher inside dropdown */}
-                <div className="border-b border-gray-100 px-4 py-2 sm:hidden">
-                  <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-gray-400">
-                    {t("login.language")}
-                  </p>
-                  <div className="flex gap-1">
-                    {LOCALES.map((loc) => (
-                      <button
-                        key={loc.code}
-                        onClick={() => setLocale(loc.code)}
-                        className={`rounded-md px-2 py-1 text-xs font-medium transition-all ${
-                          locale === loc.code
-                            ? "bg-rose-500 text-white"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
-                      >
-                        {loc.flag}
-                      </button>
-                    ))}
+                {/* Mobile language switcher inside dropdown — hidden on host routes */}
+                {!isHostRoute && (
+                  <div className="border-b border-gray-100 px-4 py-2 sm:hidden">
+                    <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-gray-400">
+                      {t("login.language")}
+                    </p>
+                    <div className="flex gap-1">
+                      {LOCALES.map((loc) => (
+                        <button
+                          key={loc.code}
+                          onClick={() => setLocale(loc.code)}
+                          className={`rounded-md px-2 py-1 text-xs font-medium transition-all ${
+                            locale === loc.code
+                              ? "bg-rose-500 text-white"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          }`}
+                        >
+                          {loc.flag}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Mobile nav links */}
                 <div className="border-b border-gray-100 sm:hidden">
@@ -177,7 +188,7 @@ export default function HomeHeader({ userName, avatarUrl, isAdmin }: HomeHeaderP
                   </Link>
                 </div>
 
-                {isAdmin && (
+                {showHostLink && (
                   <Link
                     href="/host"
                     onClick={() => setOpen(false)}

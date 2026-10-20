@@ -49,7 +49,7 @@ export default function PropertyLayoutShell({
     const isChatOrConcierge = href.endsWith("/chat") || href.endsWith("/concierge");
     if (isChatOrConcierge) {
       if (!isLoggedIn) {
-        router.push("/login");
+        router.push(`/login?next=${encodeURIComponent(href)}`);
         return true;
       }
       if (!isWithinStayPeriod) {
@@ -64,7 +64,7 @@ export default function PropertyLayoutShell({
   // Chat page: full-screen without chrome
   if (isChatPage) {
     if (!isLoggedIn) {
-      router.push("/login");
+      router.push(`/login?next=${encodeURIComponent(pathname)}`);
       return null;
     }
     if (!isWithinStayPeriod) {
@@ -83,7 +83,7 @@ export default function PropertyLayoutShell({
   // Concierge page: has its own header, just add nav
   if (isConciergePage) {
     if (!isLoggedIn) {
-      router.push("/login");
+      router.push(`/login?next=${encodeURIComponent(pathname)}`);
       return null;
     }
     if (!isWithinStayPeriod) {

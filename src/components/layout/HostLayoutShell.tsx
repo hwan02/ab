@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/context";
 import type { TranslationKey } from "@/lib/i18n/translations";
+import { useHostLocale } from "@/components/layout/useHostLocale";
 
 interface NavItem {
   labelKey: string;
@@ -28,6 +29,9 @@ export default function HostLayoutShell({
   const pathname = usePathname();
   const { t } = useI18n();
   const isChatPage = pathname.endsWith("/chat");
+
+  // 호스트 화면은 한국어 고정 (숙소 상세 페이지에는 Header 가 없으므로 여기서 맞춘다). 저장된 게스트 언어는 보존.
+  useHostLocale(true);
 
   // Chat page: full-screen without shell
   if (isChatPage) {
@@ -91,15 +95,15 @@ export default function HostLayoutShell({
           </nav>
         </aside>
 
-        {/* Mobile bottom nav */}
-        <nav className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-gray-200 bg-white lg:hidden">
+        {/* Mobile bottom nav — 항목이 적을 때(2개 등)도 가운데에 모여 보이도록 폭을 제한한다 */}
+        <nav className="fixed bottom-0 left-0 right-0 z-40 flex justify-center border-t border-gray-200 bg-white lg:hidden">
           {navItems.map((item) => {
             const isActive = currentSegment === item.segment;
             return (
               <Link
                 key={item.segment}
                 href={`/host/property/${propertyId}/${item.segment}`}
-                className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-xs transition-colors ${
+                className={`flex max-w-48 flex-1 flex-col items-center gap-1 py-2.5 text-xs transition-colors ${
                   isActive
                     ? "font-semibold text-rose-500"
                     : "text-gray-500 hover:text-gray-900"

@@ -31,7 +31,7 @@ export default function ConciergePage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      router.push("/login");
+      router.push(`/login?next=${encodeURIComponent(`/property/${propertyId}/concierge`)}`);
       return;
     }
 

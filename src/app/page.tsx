@@ -30,7 +30,7 @@ export default async function HomePage() {
   if (!user) {
     return (
       <div className="min-h-dvh bg-gray-50">
-        <HomeHeader userName={null} avatarUrl={null} isAdmin={false} />
+        <HomeHeader userName={null} avatarUrl={null} showHostLink={false} />
         <HomeContent isHost={false} properties={allProperties ?? []} />
       </div>
     );
@@ -42,18 +42,17 @@ export default async function HomePage() {
     .eq("id", user.id)
     .single<Profile>();
 
-  const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-
+  // 로그인한 사용자는 누구나 호스트 화면에 들어갈 수 있으므로 호스트 모드 링크/배너를 전원에게 보인다.
   return (
     <div className="min-h-dvh bg-gray-50">
       <HomeHeader
         userName={profile?.name ?? null}
         avatarUrl={user.user_metadata?.avatar_url ?? null}
-        isAdmin={isAdmin}
+        showHostLink
       />
 
       <HomeContent
-        isHost={isAdmin}
+        isHost
         properties={allProperties ?? []}
       />
     </div>

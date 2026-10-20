@@ -14,10 +14,17 @@ export default function LoginPage() {
     const supabase = createClient();
     const origin = window.location.origin;
 
+    // 로그인 뒤 돌아갈 곳(?next=). 같은 사이트 경로만 콜백에 전달하고, 최종 검증은 콜백이 한다.
+    const next = new URLSearchParams(window.location.search).get("next");
+    const callback = new URL("/auth/callback", origin);
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+      callback.searchParams.set("next", next);
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${origin}/auth/callback`,
+        redirectTo: callback.toString(),
       },
     });
 
