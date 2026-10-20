@@ -103,6 +103,28 @@ export default function AirbnbInbox({ initialMails, properties }: Props) {
     }
   };
 
+  const sendByMail = async (mail: AirbnbInboundMail) => {
+    const text = (mail.draft_reply ?? "").trim();
+    if (!text) return flash("보낼 답장이 없습니다.");
+    if (!confirm(`${mail.guest_name ?? "게스트"}님에게 이 답장을 에어비앤비로 보낼까요?\n\n${text.slice(0, 200)}${text.length > 200 ? "…" : ""}`)) return;
+    setBusy(mail.id);
+    try {
+      const res = await fetch("/api/airbnb/inbox/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: mail.id, text }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.detail ?? json.error ?? "실패");
+      patch(mail.id, { status: "replied", replied_at: json.sentAt, sent_reply: text, sent_at: json.sentAt });
+      flash("보냈습니다. 에어비앤비 스레드에 올라가는 데 몇 분 걸릴 수 있습니다.");
+    } catch (e) {
+      flash("발송 실패: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -182,7 +204,14 @@ export default function AirbnbInbox({ initialMails, properties }: Props) {
                         onSave={(v) => saveDraft(mail.id, v)}
                         onCopy={copy}
                         onRegenerate={() => regenerate(mail.id)}
+                        onSend={mail.reply_to && mail.status !== "replied" ? () => sendByMail(mail) : undefined}
                       />
+                    )}
+                    {mail.sent_reply && (
+                      <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                        메일로 보낸 답장 ({mail.sent_at ? formatReceived(mail.sent_at) : ""}): {mail.sent_reply.slice(0, 160)}
+                        {mail.sent_reply.length > 160 ? "…" : ""}
+                      </p>
                     )}
 
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -234,6 +263,7 @@ function DraftEditor({
   onSave,
   onCopy,
   onRegenerate,
+  onSend,
 }: {
   mail: AirbnbInboundMail;
   busy: boolean;
@@ -241,6 +271,8 @@ function DraftEditor({
   onSave: (v: string) => void;
   onCopy: (v: string) => void;
   onRegenerate: () => void;
+  /** 회신 주소가 있을 때만 전달됨. 메일 회신으로 바로 보낸다. */
+  onSend?: () => void;
 }) {
   const draft = mail.draft_reply ?? "";
   return (
@@ -261,9 +293,14 @@ function DraftEditor({
         <Button size="sm" variant="ghost" disabled={!draft || busy} onClick={() => onSave(draft)}>
           저장
         </Button>
-        <Button size="sm" disabled={!draft} onClick={() => onCopy(draft)}>
+        <Button size="sm" variant={onSend ? "secondary" : "primary"} disabled={!draft} onClick={() => onCopy(draft)}>
           초안 복사
         </Button>
+        {onSend && (
+          <Button size="sm" disabled={!draft || busy} loading={busy} onClick={onSend}>
+            메일로 바로 답장
+          </Button>
+        )}
       </div>
     </div>
   );

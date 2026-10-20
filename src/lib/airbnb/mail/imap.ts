@@ -25,6 +25,8 @@ export interface FetchedMail {
   uid: number;
   subject: string;
   from: string;
+  /** 에어비앤비 게스트 메시지 메일의 회신 주소(…@reply.airbnb.com). 여기로 답장하면 스레드에 올라간다. */
+  replyTo: string | null;
   date: Date | null;
   text: string | null;
   html: string | null;
@@ -97,11 +99,14 @@ export async function parseRawMail(source: Buffer | string, uid = 0): Promise<Fe
 
 function toFetchedMail(uid: number, parsed: ParsedMail): FetchedMail {
   const fromText = parsed.from?.text ?? "";
+  const replyToRaw = Array.isArray(parsed.replyTo) ? parsed.replyTo[0] : parsed.replyTo;
+  const replyTo = replyToRaw?.value?.[0]?.address ?? null;
   return {
     messageId: parsed.messageId ?? `uid:${uid}:${parsed.date?.getTime() ?? 0}`,
     uid,
     subject: parsed.subject ?? "",
     from: fromText,
+    replyTo,
     date: parsed.date ?? null,
     text: typeof parsed.text === "string" ? parsed.text : null,
     html: typeof parsed.html === "string" ? parsed.html : null,

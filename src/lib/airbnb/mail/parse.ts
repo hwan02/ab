@@ -142,6 +142,14 @@ function classify(subject: string, text: string, from: string): AirbnbMailKind {
   const s = subject.toLowerCase();
   const head = text.slice(0, 600).toLowerCase();
 
+  // 운영 알림(게스트가 쓴 메시지가 아님): 사전 승인 권유, 문의 결정 요청, 예약 메시지 전송 실패, 응답 기한 리마인더
+  if (
+    /결정을 내려|사전 승인하실 수도|전송되지 않았습니다/.test(s) ||
+    /응답률도 높이세요|까지 [^\n]{1,40}님에게 응답하여/.test(head)
+  ) {
+    return "other";
+  }
+
   // 게스트 일반 메시지: express@airbnb.com 발신, 제목 "RE: #숙소제목 예약(5월 11일~12일)",
   // 본문에 "예약자" 역할 줄과 "답장 보내기" 버튼. 제목만으로는 구분이 안 되므로 먼저 본다.
   if (
@@ -302,6 +310,7 @@ const END_MARKERS: RegExp[] = [
   /^(?:Reply|View message|View in app|Pre-approve|Decline|Accept)/i,
   /^(?:체크인|체크아웃|게스트|예약 코드|자주 묻는 질문|고객지원|집 전체|개인실|Airbnb|에어비앤비|Airbnb Ireland)/,
   /^이 이메일에 직접 회신|님이 호스팅하는 집/,
+  /^(?:문의 확인하기|예약 확인하기|원문 보기)$/,
   /^#\S/, // 해시태그 숙소 제목
   /^\d{1,2}월 \d{1,2}일|^\d{4}년/,
   /24시간 이내에 응답/,
@@ -346,6 +355,13 @@ function extractMessageBody(lines: string[], guestName: string | null): string |
   // "본인 인증 완료" 다음에 오는 위치 줄("도시, 나라")은 프로필이지 메시지가 아니다.
   if (afterProfile) {
     while (start < lines.length && (lines[start] === "" || LOCATION_LINE_RE.test(lines[start]))) start++;
+    // "홍콩" 처럼 쉼표 없는 짧은 위치 한 줄: 그 뒤에 다른 문단이 더 있을 때만 프로필로 보고 건너뛴다.
+    const first = lines[start] ?? "";
+    if (first.length <= 30 && !/[.?!~。？！]/.test(first)) {
+      let j = start + 1;
+      while (j < lines.length && lines[j] === "") j++;
+      if (j < lines.length && !END_MARKERS.some((re) => re.test(lines[j]))) start = j;
+    }
   }
 
   // 시작 마커를 못 찾으면 첫 "문장처럼 보이는" 줄부터
@@ -362,6 +378,12 @@ function extractMessageBody(lines: string[], guestName: string | null): string |
     if (END_MARKERS.some((re) => re.test(line))) break;
     if (line === "" && (body.length === 0 || body[body.length - 1] === "")) continue;
     body.push(line);
+  }
+
+  // 호스트 본인이 보낸 직전 메시지("You: ...")가 앞에 붙어 오면 제외한다.
+  while (body.length && /^(?:you|나|호스트|host)\s*:/i.test(body[0])) {
+    while (body.length && body[0] !== "") body.shift();
+    while (body.length && body[0] === "") body.shift();
   }
 
   const joined = body

@@ -79,13 +79,44 @@ async function run(opts: RunOptions) {
   const propertyList = (properties ?? []) as { id: string; name: string }[];
 
   let inserted = 0;
+  let merged = 0;
   const newItems: { id: string; parsed: ParsedAirbnbMail; propertyId: string | null; propertyName: string | null }[] = [];
+
+  // 숙박 문의는 automated@(문의 알림)와 express@(스레드 메시지, Reply-To 있음) 두 통으로 온다.
+  // 같은 스레드 + 같은 본문이면 한 건으로 합치고, 회신 주소만 보강한다.
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: recent } = await supabase
+    .from("airbnb_inbound_mails")
+    .select("id, thread_id, message_text, reply_to")
+    .gte("created_at", since);
+  const seen = new Map<string, { id: string; reply_to: string | null }>();
+  for (const r of (recent ?? []) as { id: string; thread_id: string | null; message_text: string | null; reply_to: string | null }[]) {
+    const key = twinKey(r.thread_id, r.message_text);
+    if (key) seen.set(key, { id: r.id, reply_to: r.reply_to });
+  }
+
+  // 오래된 것부터 처리해야 "먼저 온 쪽이 남고 나중 쪽이 보강"하는 순서가 된다.
+  parsedRows.sort((a, b) => (a.mail.date?.getTime() ?? 0) - (b.mail.date?.getTime() ?? 0));
 
   for (const { mail, parsed } of parsedRows) {
     const property = matchProperty(parsed.listingName, propertyList);
 
+    const key = twinKey(parsed.threadId, parsed.messageText);
+    const twin = key ? seen.get(key) : undefined;
+    if (twin) {
+      if (!twin.reply_to && mail.replyTo) {
+        const { error } = await supabase.from("airbnb_inbound_mails").update({ reply_to: mail.replyTo }).eq("id", twin.id);
+        if (!error) {
+          twin.reply_to = mail.replyTo;
+          merged += 1;
+        }
+      }
+      continue;
+    }
+
     const row = {
       message_id: mail.messageId,
+      reply_to: mail.replyTo,
       received_at: mail.date?.toISOString() ?? null,
       subject: mail.subject,
       sender: mail.from,
@@ -115,7 +146,9 @@ async function run(opts: RunOptions) {
     }
     if (data && data.length > 0) {
       inserted += 1;
-      newItems.push({ id: data[0].id as string, parsed, propertyId: property?.id ?? null, propertyName: property?.name ?? null });
+      const id = data[0].id as string;
+      if (key) seen.set(key, { id, reply_to: mail.replyTo });
+      newItems.push({ id, parsed, propertyId: property?.id ?? null, propertyName: property?.name ?? null });
     }
   }
 
@@ -156,7 +189,18 @@ async function run(opts: RunOptions) {
 
   await Promise.all(newItems.map((item) => notifySlack(item.parsed, item.propertyName, drafts.get(item.id) ?? null)));
 
-  return NextResponse.json({ fetched: mails.length, airbnb: parsedRows.length, inserted, drafted });
+  return NextResponse.json({ fetched: mails.length, airbnb: parsedRows.length, inserted, merged, drafted });
+}
+
+/** 같은 스레드의 같은 본문을 한 건으로 묶는 키. 본문이 없으면 묶지 않는다. */
+function twinKey(threadId: string | null, messageText: string | null): string | null {
+  if (!threadId || !messageText) return null;
+  const norm = messageText
+    .split(/\n\s*원문에서 자동 번역된 메시지/)[0] // express@ 쪽에만 붙는 번역 블록은 뺀다
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);
+  return norm ? `${threadId}|${norm}` : null;
 }
 
 /**

@@ -241,6 +241,9 @@ export interface AirbnbInboundMail {
   status: AirbnbInboundStatus;
   draft_reply: string | null;
   replied_at: string | null;
+  reply_to: string | null;
+  sent_reply: string | null;
+  sent_at: string | null;
   raw_text: string | null;
   created_at: string;
 }

@@ -144,3 +144,40 @@ test("실제 게스트 메시지(express@, 'RE: #숙소 예약(5월 11일~12일)
   assert.equal(parsed.checkIn, "2026-05-11");
   assert.equal(parsed.checkOut, "2026-05-12");
 });
+
+test("게스트 메시지 메일의 Reply-To(…@reply.airbnb.com)를 읽는다", async () => {
+  const { mail } = await parseFixture("guest-message-ko-real.eml");
+  assert.equal(mail.replyTo, "44p85ysp5v08arys81fhy3mtfwdqe0zzsu56@reply.airbnb.com");
+});
+
+test("숙박 문의('본인 인증 완료 · 후기 N개' + 쉼표 없는 도시): 도시 줄 제외", async () => {
+  const { parsed } = await parseFixture("inquiry-ko-real-city.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.guestName, "HELEN");
+  assert.match(parsed.messageText ?? "", /^안녕하세요\. 5월 28일부터/);
+  assert.doesNotMatch(parsed.messageText ?? "", /홍콩|예약 사전 승인/);
+});
+
+test("스레드 답장(호스트 본인 'You:' 메시지 포함): 게스트 메시지만 남기고 '문의 확인하기' 제외", async () => {
+  const { mail, parsed } = await parseFixture("thread-reply-you-ko-real.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.guestName, "HELEN");
+  assert.equal(parsed.messageText, "Okok thx");
+  assert.match(mail.replyTo ?? "", /@reply\.airbnb\.com$/);
+});
+
+test("스레드 답장(자동 번역 포함): 번역문과 원문을 함께 남긴다", async () => {
+  const { parsed } = await parseFixture("thread-translated-ko-real.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.guestName, "CHENYI");
+  assert.equal(parsed.messageText, "여기서 가장 가까운 지하철역까지 대략 얼마나 걸리나요?\n\n원문에서 자동 번역된 메시지:\n\n请问最近的地铁站离这大概要多久");
+});
+
+test("응답 기한 리마인더, 사전 승인 권유, 문의 결정 요청, 예약 메시지 전송 실패는 other", async () => {
+  const { parsed } = await parseFixture("reminder-other-ko-real.eml");
+  assert.equal(parsed.kind, "other");
+  const from = "에어비앤비 <express@airbnb.com>";
+  assert.equal(parseAirbnbMail({ subject: "알림: Kwang님의 예약을 사전 승인하실 수도 있습니다", from, text: "x" }).kind, "other");
+  assert.equal(parseAirbnbMail({ subject: "Helen님의 예약 문의에 대한 결정을 내려 알려주세요", from, text: "x" }).kind, "other");
+  assert.equal(parseAirbnbMail({ subject: "예약 메시지가 전송되지 않았습니다", from: "에어비앤비 <automated@airbnb.com>", text: "x" }).kind, "other");
+});
