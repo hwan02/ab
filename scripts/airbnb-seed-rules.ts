@@ -26,7 +26,7 @@ interface SeedRule {
 
 export const RULES: SeedRule[] = [
   {
-    name: "와이파이 안내",
+    name: "와이파이",
     keywords: ["와이파이", "wifi", "wi-fi", "인터넷", "비밀번호", "password", "internet"],
     priority: 10,
     answer:
@@ -35,7 +35,7 @@ export const RULES: SeedRule[] = [
       "Hi {게스트이름} :)\nWi-Fi name: {와이파이이름}\nPassword: {와이파이비밀번호}\nLet me know anytime if it doesn't connect!",
   },
   {
-    name: "체크인 시간·이른 체크인",
+    name: "체크인 시간",
     keywords: ["체크인", "입실", "몇 시에", "몇시에", "일찍", "check in", "check-in", "checkin", "early", "arrive", "도착"],
     priority: 8,
     answer:
@@ -44,7 +44,7 @@ export const RULES: SeedRule[] = [
       "Check-in starts at 3:00 PM :)\nEarly check-in may be possible depending on the cleaning schedule that day. Let me know your arrival time and I'll confirm.\nI'll send detailed directions for the last 1–2 minutes before check-in. Please mind the stairs up to the 2nd floor!",
   },
   {
-    name: "체크아웃 시간·늦은 체크아웃",
+    name: "체크아웃 시간",
     keywords: ["체크아웃", "퇴실", "check out", "check-out", "checkout", "늦게", "late check"],
     priority: 8,
     answer:
@@ -62,7 +62,7 @@ export const RULES: SeedRule[] = [
       "Yes, luggage storage is available before check-in and after check-out :)\nLet me know what time you'd like to drop it off and I'll guide you.",
   },
   {
-    name: "주소·위치·오시는 길",
+    name: "찾아오는 길",
     keywords: ["주소", "위치", "어디", "어디에", "찾아가", "가는 법", "오는 길", "길 안내", "address", "location", "where", "directions", "how to get"],
     priority: 6,
     answer:
@@ -80,7 +80,7 @@ export const RULES: SeedRule[] = [
       "From Incheon Airport, take the Airport Railroad to Hongik Univ. Station (about 53 min).\nFrom Exit 4, it's a 6-minute taxi ride (get off at GS25 Yeonhui Jinseong) or an 18-minute walk.\nAirport bus 6011 (get off at Yeonhui 104-goji / Gungdong Park, about 44 min) also works. Plan on about 50–70 minutes total :)",
   },
   {
-    name: "지하철역·홍대 거리",
+    name: "지하철역 거리",
     keywords: ["지하철", "홍대입구", "홍대", "연남", "신촌", "역까지", "걸어서", "도보", "subway", "station", "hongdae", "walk", "far from"],
     priority: 5,
     answer:
@@ -89,7 +89,7 @@ export const RULES: SeedRule[] = [
       "It's about a 16-minute walk to Hongik Univ. Station and 18 minutes to Sinchon Station.\nYeonnam-dong and the Hongdae area are a 10–15 minute walk, and a convenience store is 2–3 minutes away :)",
   },
   {
-    name: "주차·차량",
+    name: "주차",
     keywords: ["주차", "차 대", "차량", "밴", "van", "parking", "park the", "drop off", "내려줄"],
     priority: 7,
     answer:
@@ -98,7 +98,7 @@ export const RULES: SeedRule[] = [
       "There's no parking at the building 🚫 — please use a nearby paid parking lot.\nA quick drop-off in the alley in front of the house is fine, so let me know if you're coming by car.",
   },
   {
-    name: "몇 층·계단·엘리베이터",
+    name: "층수와 계단",
     keywords: ["몇 층", "몇층", "층인", "계단", "엘리베이터", "floor", "stairs", "elevator", "lift"],
     priority: 6,
     answer:
@@ -107,7 +107,7 @@ export const RULES: SeedRule[] = [
       "You'll have the entire 2nd floor to yourselves, reached by an outdoor staircase (no elevator).\nThe stairs have anti-slip pads, a handrail and night lighting. Let me know if you have heavy luggage!",
   },
   {
-    name: "욕실·화장실",
+    name: "욕실",
     keywords: ["욕실", "화장실", "샤워", "비데", "bathroom", "toilet", "shower", "restroom"],
     priority: 6,
     answer:
@@ -116,7 +116,7 @@ export const RULES: SeedRule[] = [
       "There are 2 bathrooms. They're not inside the bedrooms, but the whole 2nd floor is only for your group, so you won't share them with anyone :)\nThe main bathroom has a bidet, and shampoo, conditioner, body wash and towels are provided.",
   },
   {
-    name: "인원·침대",
+    name: "인원과 침대",
     keywords: ["인원", "몇 명", "몇명", "명까지", "침대", "bed", "bedroom", "people", "guests", "최대", "capacity", "어른", "아이들", "children", "kids"],
     priority: 5,
     answer:
@@ -125,7 +125,7 @@ export const RULES: SeedRule[] = [
       "Up to 6 guests.\nEach of the 2 bedrooms has a queen bed and a super-single bed, and the living room has an 80-inch projector and a 6-seat dining table :)",
   },
   {
-    name: "흡연·파티·반려동물",
+    name: "금지 사항",
     keywords: ["흡연", "담배", "전자담배", "파티", "반려", "강아지", "고양이", "애완", "smoke", "smoking", "party", "pets", "dog", "puppy", "animal"],
     priority: 6,
     answer:
@@ -143,7 +143,7 @@ export const RULES: SeedRule[] = [
       "Turn on the projector with the remote :)\nIf a firmware update appears, it can take 15–30 minutes — please don't unplug it or force it off. Message me if it doesn't work!",
   },
   {
-    name: "보일러·난방·온수 (확인 필요)",
+    name: "난방과 온수",
     keywords: ["보일러", "난방", "온수", "따뜻", "추워", "heater", "heating", "hot water", "cold"],
     priority: 6,
     enabled: false,
@@ -151,14 +151,14 @@ export const RULES: SeedRule[] = [
     answer_en: "You can adjust heating and hot water on the boiler panel in the living room. Message me if it doesn't work!",
   },
   {
-    name: "예약 가능 여부 (확인 후 답변)",
+    name: "예약 가능 문의",
     keywords: ["예약 가능", "가능 여부", "가능한가요", "가능할까요", "빈 방", "남아 있", "available", "availability", "vacancy"],
     priority: -1,
     answer: "문의 감사합니다 :) 해당 날짜 예약 가능 여부를 확인하고 바로 답변드릴게요!",
     answer_en: "Thanks for asking :) I'll check availability for those dates and get back to you shortly!",
   },
   {
-    name: "가격·할인·취소·환불 (확인 후 답변)",
+    name: "가격·환불 문의",
     keywords: ["할인", "가격", "비용", "요금", "취소", "환불", "discount", "price", "cheaper", "cancel", "cancellation", "refund"],
     priority: -1,
     answer: "말씀 감사합니다 :) 가격·예약 관련 내용은 확인 후 바로 답변드릴게요!",
@@ -172,7 +172,7 @@ export const RULES: SeedRule[] = [
     answer_en: "Thank you too :) Hope you have a relaxing and wonderful trip!",
   },
   {
-    name: "인사만 온 경우",
+    name: "인사",
     keywords: ["안녕하세요", "안녕하십니까", "hello", "你好", "こんにちは"],
     priority: -5,
     answer: "안녕하세요 {게스트이름}님! 포포스테이 홍대점 호스트입니다 :)\n궁금한 점이 있으시면 편하게 물어봐 주세요.",

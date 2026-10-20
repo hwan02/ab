@@ -125,6 +125,7 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
   const [priority, setPriority] = useState("0");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
 
   const flash = (msg: string) => {
     setNotice(msg);
@@ -298,6 +299,11 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
     return rules.filter((r) => r.name.toLowerCase().includes(q) || r.keywords.some((k) => k.toLowerCase().includes(q)) || r.answer.toLowerCase().includes(q));
   }, [rules, query]);
 
+  const PAGE_SIZE = 10;
+  const pageCount = Math.max(1, Math.ceil(visibleRules.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount - 1);
+  const pagedRules = visibleRules.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+
   if (loading) return <div className="p-8 text-sm text-gray-500">불러오는 중...</div>;
   if (!property) return <div className="p-8 text-sm text-red-600">숙소를 찾을 수 없습니다.</div>;
 
@@ -437,7 +443,10 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
         <div className="flex items-center gap-2">
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(0);
+            }}
             placeholder="검색"
             className="h-8 w-40 rounded-lg border border-gray-200 px-2.5 text-sm focus:border-rose-400 focus:outline-none"
           />
@@ -451,17 +460,17 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
         <Card className="py-10 text-center text-sm text-gray-500">아직 규칙이 없습니다</Card>
       ) : (
         <div className="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 bg-white">
-          {visibleRules.map((rule) => {
+          {pagedRules.map((rule) => {
             const open = openId === rule.id;
             return (
               <div key={rule.id} className={cn(!rule.enabled && "bg-gray-50")}>
                 <div className="flex items-center gap-3 px-4 py-2.5">
                   <button onClick={() => setOpenId(open ? null : rule.id)} className="min-w-0 flex-1 text-left">
-                    <span className="flex items-center gap-2">
-                      <span className={cn("truncate text-sm font-medium", rule.enabled ? "text-gray-900" : "text-gray-400")}>{rule.name}</span>
-                      {rule.priority !== 0 && <span className="shrink-0 rounded bg-amber-50 px-1.5 text-[10px] text-amber-700">먼저 {rule.priority}</span>}
+                    <span className={cn("block truncate text-sm font-medium", rule.enabled ? "text-gray-900" : "text-gray-400")}>{rule.name}</span>
+                    <span className="mt-0.5 block truncate text-xs text-gray-400">
+                      {rule.keywords.slice(0, 4).join(", ")}
+                      {rule.keywords.length > 4 && ` 외 ${rule.keywords.length - 4}개`}
                     </span>
-                    <span className="mt-0.5 block truncate text-xs text-gray-400">{rule.keywords.join(" · ")}</span>
                   </button>
                   <label className="flex shrink-0 cursor-pointer items-center">
                     <input type="checkbox" checked={rule.enabled} onChange={() => toggleRule(rule)} className="h-4 w-4 accent-rose-500" aria-label="사용" />
@@ -484,6 +493,34 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
             );
           })}
           {visibleRules.length === 0 && <div className="px-4 py-6 text-center text-sm text-gray-400">검색 결과 없음</div>}
+        </div>
+      )}
+
+      {pageCount > 1 && (
+        <div className="mt-3 flex items-center justify-center gap-1">
+          <button
+            onClick={() => setPage(currentPage - 1)}
+            disabled={currentPage === 0}
+            className="h-8 rounded-lg px-3 text-sm text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+          >
+            이전
+          </button>
+          {Array.from({ length: pageCount }, (_, i) => (
+            <button
+              key={i}
+              onClick={() => setPage(i)}
+              className={cn("h-8 w-8 rounded-lg text-sm", i === currentPage ? "bg-rose-500 font-medium text-white" : "text-gray-600 hover:bg-gray-100")}
+            >
+              {i + 1}
+            </button>
+          ))}
+          <button
+            onClick={() => setPage(currentPage + 1)}
+            disabled={currentPage === pageCount - 1}
+            className="h-8 rounded-lg px-3 text-sm text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+          >
+            다음
+          </button>
         </div>
       )}
     </div>
