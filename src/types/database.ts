@@ -261,6 +261,8 @@ export interface AirbnbReplyRule {
   keywords: string[];
   answer: string;
   answer_en: string | null;
+  answer_zh: string | null;
+  answer_ja: string | null;
   priority: number;
   enabled: boolean;
   hit_count: number;
