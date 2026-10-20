@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, use } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Textarea } from "@/components/ui/Textarea";
+import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 import { ANSWER_LANG_LABELS, detectLanguage, matchRule, pickAnswerWithLang, renderAnswer, type ReplyRule } from "@/lib/airbnb/rules";
 import type { AirbnbReplyRule, Property } from "@/types/database";
@@ -18,6 +19,7 @@ export default function RulesTestPage({ params }: { params: Promise<{ id: string
   const [rules, setRules] = useState<AirbnbReplyRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [guestName, setGuestName] = useState("민지");
 
   useEffect(() => {
     let cancelled = false;
@@ -43,7 +45,7 @@ export default function RulesTestPage({ params }: { params: Promise<{ id: string
     if (!m) return { matched: null, text: "", detected, answerLang: detected };
     const picked = pickAnswerWithLang(m.rule, message);
     const text = renderAnswer(picked.text, {
-      guestName: "게스트",
+      guestName: guestName.trim() || "게스트",
       propertyName: property?.name,
       checkIn: "2026-12-23",
       checkOut: "2026-12-27",
@@ -54,7 +56,7 @@ export default function RulesTestPage({ params }: { params: Promise<{ id: string
       address: property?.address,
     });
     return { matched: m.rule, text, detected, answerLang: picked.answerLang };
-  }, [message, rules, property]);
+  }, [message, rules, property, guestName]);
 
   if (loading) return <div className="p-8 text-sm text-gray-500">불러오는 중...</div>;
 
@@ -62,6 +64,9 @@ export default function RulesTestPage({ params }: { params: Promise<{ id: string
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <h1 className="mb-6 text-2xl font-bold text-gray-900">테스트</h1>
 
+      <div className="mb-3 max-w-xs">
+        <Input label="게스트 이름" value={guestName} onChange={(e) => setGuestName(e.target.value)} />
+      </div>
       <Textarea label="게스트 메시지" placeholder="예) 혹시 와이파이 비밀번호가 뭔가요?" value={message} onChange={(e) => setMessage(e.target.value)} rows={3} />
 
       {result && (
