@@ -141,12 +141,7 @@ export default function EditPropertyPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">{t("host.editProperty")}</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {t("host.editPropertyDesc")}
-        </p>
-      </div>
+      <h1 className="mb-8 text-2xl font-bold text-gray-900">숙소 정보</h1>
 
       {error && (
         <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
