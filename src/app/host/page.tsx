@@ -1,11 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Card } from "@/components/ui/Card";
-import { EmptyState } from "@/components/ui/EmptyState";
 import HomeHeader from "@/components/layout/HomeHeader";
 import HostDashboardContent from "@/components/host/HostDashboardContent";
-import { formatDate } from "@/lib/utils";
 import type { Property } from "@/types/database";
 
 export default async function HostPage() {
@@ -33,6 +29,20 @@ export default async function HostPage() {
     .eq("host_id", user.id)
     .order("created_at", { ascending: false });
 
+  // 숙소별 '답변 필요' 수: 게스트 메시지 중 아직 호스트가 보내지 않은 것(new / drafted). RLS 로 자기 숙소 메일만 읽힌다.
+  const { data: pending } = await supabase
+    .from("airbnb_inbound_mails")
+    .select("property_id")
+    .eq("kind", "message")
+    .in("status", ["new", "drafted"])
+    .not("property_id", "is", null);
+  const pendingCounts: Record<string, number> = {};
+  for (const row of (pending ?? []) as { property_id: string }[]) {
+    pendingCounts[row.property_id] = (pendingCounts[row.property_id] ?? 0) + 1;
+  }
+
+  const isAdmin = !!process.env.NEXT_PUBLIC_ADMIN_EMAIL && user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+
   return (
     <div className="min-h-dvh bg-gray-50">
       <HomeHeader
@@ -41,7 +51,7 @@ export default async function HostPage() {
         showHostLink
       />
 
-      <HostDashboardContent properties={(properties ?? []) as Property[]} />
+      <HostDashboardContent properties={(properties ?? []) as Property[]} pendingCounts={pendingCounts} isAdmin={isAdmin} />
     </div>
   );
 }

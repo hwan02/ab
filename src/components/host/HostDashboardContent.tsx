@@ -9,34 +9,37 @@ import type { Property } from "@/types/database";
 
 interface HostDashboardContentProps {
   properties: Property[];
+  /** 숙소 id → 답변 필요한 게스트 메시지 수 */
+  pendingCounts?: Record<string, number>;
+  /** 관리자만 전체 수신함(/host/airbnb) 버튼을 본다 */
+  isAdmin?: boolean;
 }
 
 export default function HostDashboardContent({
   properties,
+  pendingCounts = {},
+  isAdmin = false,
 }: HostDashboardContentProps) {
   const { t } = useI18n();
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {t("host.manageProperties")}
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {t("host.manageDesc")}
-          </p>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {t("host.manageProperties")}
+        </h1>
         <div className="flex items-center gap-2">
-          <Link
-            href="/host/airbnb"
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-            </svg>
-            포포톡 수신함
-          </Link>
+          {isAdmin && (
+            <Link
+              href="/host/airbnb"
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+              </svg>
+              전체 수신함
+            </Link>
+          )}
           <Link
             href="/host/faq"
             className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50"
@@ -66,7 +69,6 @@ export default function HostDashboardContent({
             </svg>
           }
           title={t("host.noProperties")}
-          description={t("host.noPropertiesDesc")}
           action={
             <Link
               href="/host/property/new"
@@ -81,10 +83,15 @@ export default function HostDashboardContent({
           {properties.map((property) => (
             <Link
               key={property.id}
-              href={`/host/property/${property.id}/edit`}
+              href={`/host/property/${property.id}/inbox`}
             >
               <Card className="overflow-hidden p-0 transition-all hover:shadow-md">
                 <div className="relative aspect-[4/3] w-full bg-gray-100">
+                  {(pendingCounts[property.id] ?? 0) > 0 && (
+                    <span className="absolute left-3 top-3 z-10 rounded-full bg-rose-500 px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+                      답변 필요 {pendingCounts[property.id]}
+                    </span>
+                  )}
                   {property.photos && property.photos.length > 0 ? (
                     <img
                       src={property.photos[0]}
