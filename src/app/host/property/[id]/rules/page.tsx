@@ -29,7 +29,6 @@ const MODE_OPTIONS: { value: PropertyBits["auto_reply_mode"]; label: string }[] 
 type OtherLang = Exclude<AnswerLang, "ko">;
 const OTHER_LANGS: OtherLang[] = ["en", "zh", "ja"];
 /** 규칙 목록 행에 보여 줄 키워드 수. 나머지는 +N 으로 접는다. */
-const KEYWORD_PREVIEW = 5;
 
 /**
  * 한국어 답변을 한 언어로 번역한다. 변수 토큰({게스트이름} 등)은 자리표시로 바꿨다가 복원하고,
@@ -124,6 +123,8 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
   const [othersOpen, setOthersOpen] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [priority, setPriority] = useState("0");
+  const [query, setQuery] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const flash = (msg: string) => {
     setNotice(msg);
@@ -291,6 +292,12 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
 
   const insertVariable = (token: string) => setAnswer((a) => (a ? `${a} ${token}` : token));
 
+  const visibleRules = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return rules;
+    return rules.filter((r) => r.name.toLowerCase().includes(q) || r.keywords.some((k) => k.toLowerCase().includes(q)) || r.answer.toLowerCase().includes(q));
+  }, [rules, query]);
+
   if (loading) return <div className="p-8 text-sm text-gray-500">불러오는 중...</div>;
   if (!property) return <div className="p-8 text-sm text-red-600">숙소를 찾을 수 없습니다.</div>;
 
@@ -403,9 +410,13 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input label="우선순위" type="number" value={priority} onChange={(e) => setPriority(e.target.value)} />
-          </div>
+          <details className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+            <summary className="cursor-pointer text-xs text-gray-500">고급</summary>
+            <div className="mt-2 max-w-xs">
+              <Input label="먼저 보낼 순서" type="number" value={priority} onChange={(e) => setPriority(e.target.value)} />
+              <p className="mt-1 text-xs text-gray-400">한 메시지에 규칙이 여러 개 걸리면 숫자가 큰 규칙의 답을 보냅니다. 보통 0.</p>
+            </div>
+          </details>
 
           <div className="flex justify-end gap-2">
             {editingId && (
@@ -421,9 +432,15 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
       </Card>
 
       {/* 목록 */}
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold text-gray-900">규칙 {rules.length}개</h2>
-        <div className="flex gap-1">
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="검색"
+            className="h-8 w-40 rounded-lg border border-gray-200 px-2.5 text-sm focus:border-rose-400 focus:outline-none"
+          />
           <Button size="sm" variant="ghost" onClick={addSamples}>
             기본 규칙 추가
           </Button>
@@ -433,41 +450,40 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
       {rules.length === 0 ? (
         <Card className="py-10 text-center text-sm text-gray-500">아직 규칙이 없습니다</Card>
       ) : (
-        <div className="space-y-2">
-          {rules.map((rule) => (
-            <Card key={rule.id} className={cn("p-4", !rule.enabled && "opacity-60")}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-gray-900">{rule.name}</p>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {rule.keywords.slice(0, KEYWORD_PREVIEW).map((k) => (
-                      <span key={k} className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600">
-                        {k}
-                      </span>
-                    ))}
-                    {rule.keywords.length > KEYWORD_PREVIEW && (
-                      <span className="px-1 py-0.5 text-[11px] text-gray-400">+{rule.keywords.length - KEYWORD_PREVIEW}</span>
-                    )}
-                  </div>
-                  <p className="mt-1.5 truncate text-sm text-gray-600">{rule.answer}</p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1">
-                  <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-600">
-                    <input type="checkbox" checked={rule.enabled} onChange={() => toggleRule(rule)} className="h-4 w-4 accent-rose-500" />
-                    사용
+        <div className="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 bg-white">
+          {visibleRules.map((rule) => {
+            const open = openId === rule.id;
+            return (
+              <div key={rule.id} className={cn(!rule.enabled && "bg-gray-50")}>
+                <div className="flex items-center gap-3 px-4 py-2.5">
+                  <button onClick={() => setOpenId(open ? null : rule.id)} className="min-w-0 flex-1 text-left">
+                    <span className="flex items-center gap-2">
+                      <span className={cn("truncate text-sm font-medium", rule.enabled ? "text-gray-900" : "text-gray-400")}>{rule.name}</span>
+                      {rule.priority !== 0 && <span className="shrink-0 rounded bg-amber-50 px-1.5 text-[10px] text-amber-700">먼저 {rule.priority}</span>}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-gray-400">{rule.keywords.join(" · ")}</span>
+                  </button>
+                  <label className="flex shrink-0 cursor-pointer items-center">
+                    <input type="checkbox" checked={rule.enabled} onChange={() => toggleRule(rule)} className="h-4 w-4 accent-rose-500" aria-label="사용" />
                   </label>
-                  <div className="flex gap-1">
-                    <button onClick={() => startEdit(rule)} className="rounded-lg px-2 py-1 text-xs text-gray-500 hover:bg-gray-100">
-                      편집
-                    </button>
-                    <button onClick={() => deleteRule(rule)} className="rounded-lg px-2 py-1 text-xs text-gray-500 hover:bg-red-50 hover:text-red-600">
-                      삭제
-                    </button>
-                  </div>
                 </div>
+                {open && (
+                  <div className="border-t border-gray-100 bg-gray-50 px-4 py-3">
+                    <p className="whitespace-pre-wrap text-sm text-gray-700">{rule.answer}</p>
+                    <div className="mt-3 flex gap-1">
+                      <Button size="sm" variant="secondary" onClick={() => startEdit(rule)}>
+                        편집
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => deleteRule(rule)}>
+                        삭제
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </Card>
-          ))}
+            );
+          })}
+          {visibleRules.length === 0 && <div className="px-4 py-6 text-center text-sm text-gray-400">검색 결과 없음</div>}
         </div>
       )}
     </div>
