@@ -70,6 +70,8 @@ export default function EditPropertyPage({
           name: formData.name,
           airbnb_listing_title: formData.airbnb_listing_title || null,
           address: formData.address || null,
+          // 주소가 바뀌면 장소 수집 기준 좌표를 비워 다음 수집 때 다시 찾게 한다.
+          ...((formData.address || null) !== (property?.address ?? null) ? { latitude: null, longitude: null } : {}),
           photos: mainUrl ? [mainUrl] : null,
           wifi_ssid: formData.wifi_ssid || null,
           wifi_password: formData.wifi_password || null,

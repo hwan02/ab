@@ -101,3 +101,10 @@ test("fillFoodVariables: {맛집:야식} 을 목록으로, 모르는 상황·빈
   assert.equal(fillFoodVariables("추천\n{맛집:카페}", places, "ko"), "추천");
   assert.equal(fillFoodVariables("추천 {맛집:없는상황}", places, "ko"), "추천");
 });
+
+test("renderFoodList/fillFoodVariables: links=true 면 지도 링크를 줄 아래에", () => {
+  const list = [fp({ name: "A", maps_url: "https://maps.google.com/a" })];
+  assert.equal(renderFoodList(list, "ko", 5, true), "1. A · 도보 5분 · ★4.4 · 새벽 2시까지\n   https://maps.google.com/a");
+  assert.match(fillFoodVariables("{맛집:야식}", list, "ko", true), /maps\.google\.com\/a/);
+  assert.doesNotMatch(fillFoodVariables("{맛집:야식}", list, "ko"), /https?:/);
+});

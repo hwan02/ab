@@ -4,6 +4,16 @@ import HostLayoutShell from "@/components/layout/HostLayoutShell";
 
 const navItems = [
   {
+    labelKey: "nav.places",
+    segment: "places",
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+      </svg>
+    ),
+  },
+  {
     labelKey: "nav.inbox",
     segment: "inbox",
     icon: (
@@ -223,8 +233,8 @@ const HIDDEN_SEGMENTS = new Set([
   "chat",
   "test",
 ]);
-/** 메뉴 순서: 수신함 · 자동응답 · 숙소 정보 (테스트는 자동응답 안의 탭) */
-const NAV_ORDER = ["inbox", "rules", "edit"];
+/** 메뉴 순서: 수신함 · 자동응답 · 장소 · 숙소 정보 (미리보기는 자동응답 안의 탭) */
+const NAV_ORDER = ["inbox", "rules", "places", "edit"];
 const visibleNavItems = navItems
   .filter((item) => !HIDDEN_SEGMENTS.has(item.segment))
   .sort((a, b) => NAV_ORDER.indexOf(a.segment) - NAV_ORDER.indexOf(b.segment));

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RuleTester from "@/components/host/RuleTester";
-import FoodLists from "@/components/host/FoodLists";
 import { FOOD_VARIABLES } from "@/lib/food/places";
 import { removePhotoByUrl, uploadMainPhoto } from "@/lib/propertyPhoto";
 import { createClient } from "@/lib/supabase/client";
@@ -86,11 +85,10 @@ function isMissingColumnError(error: { code?: string; message?: string }, column
   return columns.some((c) => msg.includes(c));
 }
 
-type Tab = "list" | "new" | "test" | "food";
+type Tab = "list" | "new" | "test";
 const TABS: { key: Tab; label: string }[] = [
   { key: "list", label: "목록" },
   { key: "new", label: "규칙 추가" },
-  { key: "food", label: "맛집" },
   { key: "test", label: "미리보기" },
 ];
 
@@ -118,7 +116,7 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const initialTab = searchParams.get("tab");
-  const [tab, setTabState] = useState<Tab>(initialTab === "new" || initialTab === "test" || initialTab === "food" ? initialTab : "list");
+  const [tab, setTabState] = useState<Tab>(initialTab === "new" || initialTab === "test" ? initialTab : "list");
   const [testKey, setTestKey] = useState(0);
   const setTab = (t: Tab) => {
     setTabState(t);
@@ -419,7 +417,6 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
       </div>
 
       {tab === "test" && <RuleTester propertyId={propertyId} refreshKey={testKey} />}
-      {tab === "food" && <FoodLists propertyId={propertyId} />}
 
       {/* 규칙 폼 */}
       {tab === "new" && (

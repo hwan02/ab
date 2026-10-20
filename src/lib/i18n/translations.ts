@@ -123,6 +123,12 @@ const translations = {
     ja: "Inbox",
     zh: "Inbox",
   },
+  "nav.places": {
+    ko: "장소",
+    en: "Places",
+    ja: "スポット",
+    zh: "地点",
+  },
   "nav.autoReply": {
     ko: "자동응답",
     en: "Auto-reply",

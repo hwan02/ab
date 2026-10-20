@@ -36,6 +36,7 @@ export interface FoodPlace {
   hours_note: string | null;
   hours_note_en: string | null;
   maps_url: string | null;
+  photo_url?: string | null;
   note: string | null;
   sort_order: number;
   hidden: boolean;
@@ -62,6 +63,7 @@ export interface GPlace {
   googleMapsUri?: string;
   regularOpeningHours?: { periods?: { open: GPeriodPoint; close?: GPeriodPoint }[] };
   businessStatus?: string;
+  photos?: { name: string }[];
 }
 
 /** 수집 때 부르는 검색 묶음. 아침·야식은 이 결과들의 영업시간으로 고른다. */
@@ -84,6 +86,7 @@ export const FIELD_MASK = [
   "places.googleMapsUri",
   "places.regularOpeningHours.periods",
   "places.businessStatus",
+  "places.photos",
 ].join(",");
 
 export const RADIUS_M = 1200; // 도보 15분 남짓
@@ -172,7 +175,7 @@ export function classify(
   enNames: Map<string, string>,
   origin: { lat: number; lng: number },
   limit = 10
-): Omit<FoodPlace, "note" | "hidden">[] {
+): (Omit<FoodPlace, "note" | "hidden"> & { photo_name: string | null })[] {
   const ok = (p: GPlace) => (p.businessStatus ?? "OPERATIONAL") === "OPERATIONAL" && (p.userRatingCount ?? 0) >= 20 && !!p.displayName?.text;
   const score = (p: GPlace) => (p.rating ?? 0) * Math.log10(10 + (p.userRatingCount ?? 0));
   const allFood = dedupe([...results.restaurant, ...results.korean]).filter(ok);
@@ -184,7 +187,7 @@ export function classify(
     cafe: results.cafe.filter(ok),
     bar: results.bar.filter(ok),
   };
-  const out: Omit<FoodPlace, "note" | "hidden">[] = [];
+  const out: (Omit<FoodPlace, "note" | "hidden"> & { photo_name: string | null })[] = [];
   for (const { key } of SITUATIONS) {
     const sorted = [...pick[key]].sort((a, b) => score(b) - score(a)).slice(0, limit);
     sorted.forEach((p, i) => {
@@ -201,6 +204,7 @@ export function classify(
         hours_note: h.ko,
         hours_note_en: h.en,
         maps_url: p.googleMapsUri ?? null,
+        photo_name: p.photos?.[0]?.name ?? null,
         sort_order: i,
       });
     });
@@ -224,8 +228,8 @@ function dedupe(list: GPlace[]): GPlace[] {
 
 export const FOOD_LIST_SIZE = 5;
 
-/** 한 상황의 목록을 답장 문장으로. 링크는 넣지 않는다(예약 전 게스트에게 막히므로). */
-export function renderFoodList(places: FoodPlace[], lang: Lang, size = FOOD_LIST_SIZE): string {
+/** 한 상황의 목록을 답장 문장으로. 지도 링크는 links=true(예약 확정 게스트)일 때만. */
+export function renderFoodList(places: FoodPlace[], lang: Lang, size = FOOD_LIST_SIZE, links = false): string {
   const visible = places.filter((p) => !p.hidden).sort((a, b) => a.sort_order - b.sort_order).slice(0, size);
   if (visible.length === 0) return "";
   const ko = lang === "ko";
@@ -238,20 +242,23 @@ export function renderFoodList(places: FoodPlace[], lang: Lang, size = FOOD_LIST
       const hours = ko ? p.hours_note : p.hours_note_en ?? p.hours_note;
       if (hours) parts.push(hours);
       if (p.note && ko) parts.push(p.note);
-      return `${i + 1}. ${parts.join(" · ")}`;
+      const line = `${i + 1}. ${parts.join(" · ")}`;
+      return links && p.maps_url ? `${line}\n   ${p.maps_url}` : line;
     })
     .join("\n");
 }
 
 /** 답변 안의 {맛집:상황} 을 목록으로 바꾼다. 해당 상황 목록이 비어 있으면 그 변수만 지운다. */
-export function fillFoodVariables(text: string, places: FoodPlace[], lang: Lang): string {
+export function fillFoodVariables(text: string, places: FoodPlace[], lang: Lang, links = false): string {
   return text
     .replace(FOOD_TOKEN_RE, (_m, label: string) => {
       const key = situationByLabel(label);
       if (!key) return "";
       return renderFoodList(
         places.filter((p) => p.situation === key),
-        lang
+        lang,
+        FOOD_LIST_SIZE,
+        links
       );
     })
     .replace(/\n{3,}/g, "\n\n")

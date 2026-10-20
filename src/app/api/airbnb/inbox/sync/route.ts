@@ -400,12 +400,13 @@ async function applyRules(supabase: Admin, mailId: string, properties: PropertyR
       wifiPassword: property.wifi_password,
       address: property.address,
     });
+    // 예약 확정 전 게스트에게는 링크·사진이 막혀 메시지가 걸러질 수 있으므로 링크는 확정 예약 스레드에만 붙인다.
+    const booked = !(await inquiryThread(supabase, mail));
     if (hasFoodVariable(text)) {
       const { data: food } = await supabase.from("food_places").select("*").eq("property_id", property.id).eq("hidden", false);
-      text = fillFoodVariables(text, (food ?? []) as FoodPlace[], picked.answerLang);
+      text = fillFoodVariables(text, (food ?? []) as FoodPlace[], picked.answerLang, booked);
     }
-    // 예약 확정 전 게스트에게는 링크·사진이 막혀 메시지가 걸러질 수 있으므로 사진 링크는 확정 예약 스레드에만 붙인다.
-    if (rule.photo_url && !(await inquiryThread(supabase, mail))) {
+    if (rule.photo_url && booked) {
       text = withPhotoLink(text, rule, appBaseUrl(), picked.answerLang);
     }
     await supabase.from("airbnb_inbound_mails").update({ matched_rule_id: rule.id, draft_reply: text, status: "drafted" }).eq("id", mail.id);

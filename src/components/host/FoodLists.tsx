@@ -52,7 +52,7 @@ export default function FoodLists({ propertyId }: { propertyId: string }) {
     const json = await res.json().catch(() => ({}));
     setCollecting(false);
     if (!res.ok) return flash(json.error ?? "수집 실패");
-    flash(`새로 ${json.added}곳, 갱신 ${json.updated}곳`);
+    flash(`새로 ${json.added}곳, 갱신 ${json.updated}곳${json.photos ? `, 사진 ${json.photos}장` : ""}`);
     load();
   };
 
@@ -119,7 +119,7 @@ export default function FoodLists({ propertyId }: { propertyId: string }) {
         <div className="flex items-center gap-2">
           {notice && <span className="text-xs text-rose-600">{notice}</span>}
           <Button size="sm" variant={rows.length ? "secondary" : "primary"} loading={collecting} onClick={collect}>
-            {rows.length ? "다시 수집" : "주변 맛집 수집"}
+            {rows.length ? "다시 수집" : "주변 장소 수집"}
           </Button>
         </div>
       </div>
@@ -139,6 +139,11 @@ export default function FoodLists({ propertyId }: { propertyId: string }) {
                     ▼
                   </button>
                 </div>
+                {r.photo_url ? (
+                  <img src={r.photo_url} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <div className="h-14 w-14 shrink-0 rounded-lg bg-gray-100" />
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
                     <span className="truncate text-sm font-medium text-gray-900">{r.name}</span>
@@ -153,9 +158,16 @@ export default function FoodLists({ propertyId }: { propertyId: string }) {
                     className="mt-1 w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-xs text-gray-600 hover:border-gray-200 focus:border-rose-300 focus:outline-none"
                   />
                 </div>
-                <button onClick={() => remove(r)} className="shrink-0 text-xs text-gray-400 hover:text-red-500">
-                  빼기
-                </button>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  {r.maps_url && (
+                    <a href={r.maps_url} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:text-gray-700">
+                      지도
+                    </a>
+                  )}
+                  <button onClick={() => remove(r)} className="text-xs text-gray-400 hover:text-red-500">
+                    빼기
+                  </button>
+                </div>
               </div>
             ))}
             <div className="flex gap-2 px-4 py-2.5">
@@ -187,7 +199,7 @@ export default function FoodLists({ propertyId }: { propertyId: string }) {
 
           <div className="mt-6 rounded-xl bg-gray-50 px-4 py-3">
             <p className="mb-1 text-xs text-gray-500">
-              답변에 <code className="rounded bg-white px-1">{`{맛집:${label}}`}</code> 을 넣으면 위에서 5곳이 이렇게 나갑니다
+              답변에 <code className="rounded bg-white px-1">{`{맛집:${label}}`}</code> 을 넣으면 위에서 5곳이 이렇게 나갑니다 (예약 확정 게스트에게는 지도 링크도)
             </p>
             <p className="whitespace-pre-wrap text-sm text-gray-800">{preview || "없음"}</p>
           </div>
