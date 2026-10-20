@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { ANSWER_LANG_LABELS, detectLanguage, matchRule, pickAnswerWithLang, renderAnswer, withPhotoLink, type ReplyRule } from "@/lib/airbnb/rules";
 import type { AirbnbReplyRule, Property } from "@/types/database";
 import { fillFoodVariables, type FoodPlace } from "@/lib/food/places";
+import { fillGroupVariables, type FoodGroup, type FoodGroupItem } from "@/lib/food/groups";
 
 type PropertyBits = Pick<Property, "id" | "name" | "wifi_ssid" | "wifi_password" | "checkin_time" | "checkout_time" | "address">;
 
@@ -18,6 +19,8 @@ export default function RuleTester({ propertyId, refreshKey = 0 }: { propertyId:
   const [property, setProperty] = useState<PropertyBits | null>(null);
   const [rules, setRules] = useState<AirbnbReplyRule[]>([]);
   const [food, setFood] = useState<FoodPlace[]>([]);
+  const [groups, setGroups] = useState<FoodGroup[]>([]);
+  const [groupItems, setGroupItems] = useState<FoodGroupItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [guestName, setGuestName] = useState("민지");
@@ -28,12 +31,17 @@ export default function RuleTester({ propertyId, refreshKey = 0 }: { propertyId:
       const [{ data: p }, { data: r }, { data: f }] = await Promise.all([
         supabase.from("properties").select("id, name, wifi_ssid, wifi_password, checkin_time, checkout_time, address").eq("id", propertyId).single(),
         supabase.from("airbnb_reply_rules").select("*").eq("property_id", propertyId).order("priority", { ascending: false }).order("created_at", { ascending: true }),
-        supabase.from("food_places").select("*").eq("property_id", propertyId).eq("hidden", false),
+        supabase.from("food_places").select("*").eq("property_id", propertyId),
       ]);
+      const { data: g } = await supabase.from("food_groups").select("*").eq("property_id", propertyId);
+      const gids = ((g ?? []) as FoodGroup[]).map((x) => x.id);
+      const { data: it } = gids.length ? await supabase.from("food_group_items").select("*").in("group_id", gids) : { data: [] };
       if (cancelled) return;
       setProperty((p as PropertyBits) ?? null);
       setRules((r as AirbnbReplyRule[]) ?? []);
       setFood((f as FoodPlace[]) ?? []);
+      setGroups((g as FoodGroup[]) ?? []);
+      setGroupItems((it as FoodGroupItem[]) ?? []);
       setLoading(false);
     })();
     return () => {
@@ -58,10 +66,10 @@ export default function RuleTester({ propertyId, refreshKey = 0 }: { propertyId:
       wifiPassword: property?.wifi_password,
       address: property?.address,
     });
-    const withFood = fillFoodVariables(text, food, picked.answerLang);
+    const withFood = fillGroupVariables(fillFoodVariables(text, food.filter((x) => !x.hidden), picked.answerLang), groups, groupItems, food, picked.answerLang);
     const withLink = withPhotoLink(withFood, m.rule, typeof window !== "undefined" ? window.location.origin : null, picked.answerLang);
     return { matched: m.rule, text: withLink, detected, answerLang: picked.answerLang };
-  }, [message, rules, property, guestName, food]);
+  }, [message, rules, property, guestName, food, groups, groupItems]);
 
   if (loading) return <div className="p-8 text-sm text-gray-500">불러오는 중...</div>;
 

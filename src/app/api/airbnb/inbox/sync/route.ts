@@ -21,6 +21,7 @@ import { matchRule, renderAnswer, type ReplyRule, pickAnswerWithLang, withPhotoL
 import { matchProperty, twinKey, type MatchReason, isInquiryThread } from "@/lib/airbnb/sync";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fillFoodVariables, hasFoodVariable, type FoodPlace } from "@/lib/food/places";
+import { fillGroupVariables, hasGroupVariable, type FoodGroup, type FoodGroupItem } from "@/lib/food/groups";
 import { PRODUCT_NAME } from "@/lib/airbnb/brand";
 
 export const dynamic = "force-dynamic";
@@ -405,6 +406,15 @@ async function applyRules(supabase: Admin, mailId: string, properties: PropertyR
     if (hasFoodVariable(text)) {
       const { data: food } = await supabase.from("food_places").select("*").eq("property_id", property.id).eq("hidden", false);
       text = fillFoodVariables(text, (food ?? []) as FoodPlace[], picked.answerLang, booked);
+    }
+    if (hasGroupVariable(text)) {
+      const [{ data: g }, { data: f }] = await Promise.all([
+        supabase.from("food_groups").select("*").eq("property_id", property.id),
+        supabase.from("food_places").select("*").eq("property_id", property.id),
+      ]);
+      const gids = ((g ?? []) as FoodGroup[]).map((x) => x.id);
+      const { data: it } = gids.length ? await supabase.from("food_group_items").select("*").in("group_id", gids) : { data: [] };
+      text = fillGroupVariables(text, (g ?? []) as FoodGroup[], (it ?? []) as FoodGroupItem[], (f ?? []) as FoodPlace[], picked.answerLang, booked);
     }
     if (rule.photo_url && booked) {
       text = withPhotoLink(text, rule, appBaseUrl(), picked.answerLang);
