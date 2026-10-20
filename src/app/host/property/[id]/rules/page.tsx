@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/Select";
 import { cn } from "@/lib/utils";
 import { ANSWER_VARIABLES, matchRule, pickAnswer, renderAnswer, suggestKeywords, type ReplyRule } from "@/lib/airbnb/rules";
 import type { AirbnbReplyRule, Property } from "@/types/database";
+import { PRODUCT_NAME } from "@/lib/airbnb/brand";
 
 type PropertyBits = Pick<
   Property,
@@ -240,8 +241,8 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">자동응답 규칙</h1>
-          <p className="mt-1 text-sm text-gray-500">게스트 메시지에 키워드가 들어 있으면 등록한 답변을 그대로 보냅니다.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{PRODUCT_NAME} 자동응답 규칙</h1>
+          <p className="mt-1 text-sm text-gray-500">에어비앤비 게스트 메시지에 키워드가 들어 있으면 등록한 답변을 그대로 보냅니다.</p>
         </div>
         {notice && <span className="text-xs text-rose-600">{notice}</span>}
       </div>

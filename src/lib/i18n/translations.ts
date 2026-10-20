@@ -118,10 +118,10 @@ const translations = {
     zh: "礼宾服务",
   },
   "nav.autoReply": {
-    ko: "자동응답 규칙",
-    en: "Auto-reply rules",
-    ja: "自動返信ルール",
-    zh: "自动回复规则",
+    ko: "포포톡 자동응답",
+    en: "PopoTalk auto-reply",
+    ja: "ポポトーク自動返信",
+    zh: "PopoTalk 自动回复",
   },
   "nav.chat": {
     ko: "채팅",

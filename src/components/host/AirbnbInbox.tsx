@@ -220,7 +220,7 @@ export default function AirbnbInbox({ initialMails, properties, rules }: Props) 
                         href={`/host/property/${mail.property_id}/rules?q=${encodeURIComponent((mail.message_text ?? "").slice(0, 300))}`}
                         className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 hover:underline"
                       >
-                        + 이 메시지로 자동응답 규칙 만들기
+                        + 이 메시지로 포포톡 규칙 만들기
                       </Link>
                     )}
                     {mail.sent_reply && (

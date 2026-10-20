@@ -16,6 +16,7 @@ import { parseAirbnbMail, type ParsedAirbnbMail } from "@/lib/airbnb/mail/parse"
 import { isAirbnbReplyAddress, sendAirbnbReply } from "@/lib/airbnb/mail/smtp";
 import { matchRule, pickAnswer, renderAnswer, type ReplyRule } from "@/lib/airbnb/rules";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { PRODUCT_NAME } from "@/lib/airbnb/brand";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -398,7 +399,7 @@ async function notifySlack(parsed: ParsedAirbnbMail, propertyName: string | null
 
   let tail = "";
   if (outcome.kind === "auto_sent") {
-    tail = `\n\n🤖 *자동 발송됨* (규칙: ${outcome.ruleName})\n${outcome.text.slice(0, 600)}`;
+    tail = `\n\n🤖 *${PRODUCT_NAME} 자동 발송됨* (규칙: ${outcome.ruleName})\n${outcome.text.slice(0, 600)}`;
   } else if (outcome.kind === "ready") {
     tail = `\n\n✍️ *답변 준비됨* (규칙: ${outcome.ruleName})${outcome.note ? ` · ${outcome.note}` : ""} — 수신함에서 확인 후 보내세요\n${outcome.text.slice(0, 600)}`;
   } else if (outcome.kind === "needs_reply") {
@@ -410,7 +411,7 @@ async function notifySlack(parsed: ParsedAirbnbMail, propertyName: string | null
     `\n>${preview}` +
     tail +
     (parsed.threadUrl ? `\n<${parsed.threadUrl}|에어비앤비에서 보기>` : "") +
-    (appUrl ? ` · <${appUrl}/host/airbnb|수신함>` : "");
+    (appUrl ? ` · <${appUrl}/host/airbnb|${PRODUCT_NAME} 수신함>` : "");
 
   try {
     await fetch(webhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
@@ -475,7 +476,7 @@ async function handleReplyFailure(
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
   if (webhookUrl) {
     const text =
-      `⚠️ 에어비앤비 메일 회신 실패 — ${reason}` +
+      `⚠️ ${PRODUCT_NAME} 메일 회신 실패 — ${reason}` +
       (target
         ? `\n*${target.guest_name ?? "게스트"}* 님에게 보낸 답장이 전달되지 않았습니다. 수신함에서 에어비앤비 링크로 직접 보내 주세요.\n>${(target.sent_reply ?? "").slice(0, 200)}`
         : "\n어느 답장인지 특정하지 못했습니다. 최근 보낸 답장을 에어비앤비에서 확인해 주세요.");

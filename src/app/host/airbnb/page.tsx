@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import Header from "@/components/layout/Header";
 import AirbnbInbox from "@/components/host/AirbnbInbox";
 import type { AirbnbInboundMail, Property } from "@/types/database";
+import { PRODUCT_NAME } from "@/lib/airbnb/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -39,8 +40,8 @@ export default async function HostAirbnbPage() {
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">에어비앤비 수신함</h1>
-            <p className="mt-1 text-sm text-gray-500">게스트 메시지와 자동응답 결과입니다. 매칭되지 않은 메시지는 직접 답하거나 규칙으로 만들 수 있습니다.</p>
+            <h1 className="text-2xl font-bold text-gray-900">{PRODUCT_NAME} 수신함</h1>
+            <p className="mt-1 text-sm text-gray-500">에어비앤비 게스트 메시지와 자동응답 결과입니다. 매칭되지 않은 메시지는 직접 답하거나 규칙으로 만들 수 있습니다.</p>
           </div>
           {propertyList.length === 1 && (
             <Link href={`/host/property/${propertyList[0].id}/rules`} className="text-sm font-medium text-rose-600 hover:underline">
