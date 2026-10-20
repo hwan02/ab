@@ -69,3 +69,68 @@ test("본문이 없는 알림(제목만)은 kind 와 스레드만 채운다", ()
   assert.equal(parsed.threadId, "5555555555");
   assert.equal(parsed.messageText, null);
 });
+
+// ---------------------------------------------------------------------------
+// 실제 에어비앤비 메일 구조(2026-10, 한국어 계정)를 본뜬 픽스처
+// ---------------------------------------------------------------------------
+
+test("실제 숙박 문의: 이름, 해시태그 숙소명, 리스팅 번호, 스레드, 본문, 날짜", async () => {
+  const { parsed } = await parseFixture("inquiry-ko-real.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.guestName, "하나");
+  assert.equal(parsed.listingName, "#홍대입구역 #최대6인 #짐보관서비스 #연희•연남동 #공항철도 #인천공항 1시간 #홈씨어터");
+  assert.equal(parsed.listingId, "1679457331224179554");
+  assert.equal(parsed.threadId, "2695603474");
+  assert.equal(parsed.messageText, "이 숙소 정말 마음에 듭니다. 혹시 체크인 전에 짐을 맡길 수 있을까요?\n오후 1시쯤 도착할 것 같아요.");
+  assert.equal(parsed.checkIn, "2027-01-01");
+  assert.equal(parsed.checkOut, "2027-01-03");
+  assert.doesNotMatch(parsed.snippet, /opentrack|https?:/);
+});
+
+test("실제 예약 확정: 이름(제목), 예약코드, 스레드, 날짜", async () => {
+  const { parsed } = await parseFixture("reservation-confirmed-ko-real.eml");
+  assert.equal(parsed.kind, "reservation_confirmed");
+  assert.equal(parsed.guestName, "Wai Peng");
+  assert.equal(parsed.reservationCode, "HMS3QZHCEQ");
+  assert.equal(parsed.threadId, "2694546297");
+  assert.equal(parsed.checkIn, "2027-01-25");
+  assert.equal(parsed.checkOut, "2027-02-02");
+  assert.equal(parsed.messageText, null);
+});
+
+test("실제 예약 요청: 이름(본문), 예약코드, 제목의 기간으로 날짜, 스레드 없음", async () => {
+  const { parsed } = await parseFixture("reservation-request-ko-real.eml");
+  assert.equal(parsed.kind, "reservation_request");
+  assert.equal(parsed.guestName, "螢");
+  assert.equal(parsed.reservationCode, "HMZZMA4MS5");
+  assert.equal(parsed.checkIn, "2026-12-23");
+  assert.equal(parsed.checkOut, "2026-12-27");
+  assert.equal(parsed.threadId, null);
+  assert.equal(parsed.listingId, "1679457331224179554");
+});
+
+test("실제 취소: 이름, 예약코드, 리스팅 번호", async () => {
+  const { parsed } = await parseFixture("cancelled-ko-real.eml");
+  assert.equal(parsed.kind, "reservation_cancelled");
+  assert.equal(parsed.guestName, "Yoyo");
+  assert.equal(parsed.reservationCode, "HM3SEZ3J95");
+  assert.equal(parsed.listingId, "1679457331224179554");
+  assert.match(parsed.listingName ?? "", /^#홍대입구역/);
+});
+
+test("연말을 넘기는 기간 '2026년 12월 30일~1월 2일' 은 다음 해로 계산", () => {
+  const parsed = parseAirbnbMail({
+    subject: "대기 중: 2026년 12월 30일~1월 2일 #숙소 예약 요청",
+    from: "Airbnb <automated@airbnb.com>",
+    text: "누군가님의 예약 요청에 답하세요.",
+  });
+  assert.equal(parsed.checkIn, "2026-12-30");
+  assert.equal(parsed.checkOut, "2027-01-02");
+});
+
+test("실제 숙박 문의(가입 연도 없이 '본인 인증 완료 / 도시' 프로필): 프로필 줄은 본문에서 제외", async () => {
+  const { parsed } = await parseFixture("inquiry-ko-real-profile.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.guestName, "두리");
+  assert.equal(parsed.messageText, "안녕하세요. 욕실이 방 안에 있는지 여쭤봐도 될까요?");
+});

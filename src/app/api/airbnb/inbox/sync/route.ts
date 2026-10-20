@@ -58,7 +58,11 @@ async function run(opts: RunOptions) {
     return NextResponse.json({ error: "IMAP fetch failed", detail: message }, { status: 502 });
   }
 
-  const parsedRows = mails.map((m) => ({ mail: m, parsed: parseAirbnbMail(m) })).filter((r) => r.parsed.isAirbnb);
+  // 커뮤니티/마케팅 발신과 분류 불가(계정 활동, 대금 지급 등) 메일은 저장하지 않는다.
+  const parsedRows = mails
+    .filter((m) => !/hostcommunity|marketing|newsletter/i.test(m.from))
+    .map((m) => ({ mail: m, parsed: parseAirbnbMail(m) }))
+    .filter((r) => r.parsed.isAirbnb && r.parsed.kind !== "other");
 
   if (opts.dryRun) {
     return NextResponse.json({
@@ -155,14 +159,29 @@ async function run(opts: RunOptions) {
   return NextResponse.json({ fetched: mails.length, airbnb: parsedRows.length, inserted, drafted });
 }
 
-function matchProperty(listingName: string | null, properties: { id: string; name: string }[]) {
+/**
+ * 메일의 숙소 제목과 properties.name 을 맞춘다.
+ * 에어비앤비 제목은 "#홍대입구역 #최대6인 ..." 해시태그 나열이고, 앱의 숙소명은 "[포포스테이 홍대점] #홍대입구역 #인천공항 1시간 ..." 처럼
+ * 일부 태그만 겹치므로, 완전 일치 → 포함 → 해시태그 겹침 수 순으로 본다. 숙소가 하나뿐이면 그냥 그 숙소.
+ */
+export function matchProperty(listingName: string | null, properties: { id: string; name: string }[]) {
+  if (properties.length === 1) return properties[0];
   if (!listingName) return null;
   const needle = listingName.toLowerCase();
-  return (
+  const exact =
     properties.find((p) => p.name.toLowerCase() === needle) ??
-    properties.find((p) => needle.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(needle)) ??
-    null
-  );
+    properties.find((p) => needle.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(needle));
+  if (exact) return exact;
+
+  const tags = (s: string) => new Set((s.toLowerCase().match(/#[^\s#]+/g) ?? []).map((t) => t.replace(/\s+/g, "")));
+  const mailTags = tags(needle);
+  if (mailTags.size === 0) return null;
+  let best: { p: { id: string; name: string }; score: number } | null = null;
+  for (const p of properties) {
+    const score = [...tags(p.name)].filter((t) => mailTags.has(t)).length;
+    if (score >= 2 && (!best || score > best.score)) best = { p, score };
+  }
+  return best?.p ?? null;
 }
 
 const KIND_LABEL: Record<ParsedAirbnbMail["kind"], string> = {
