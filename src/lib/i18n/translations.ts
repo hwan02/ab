@@ -117,6 +117,12 @@ const translations = {
     ja: "コンシェルジュ",
     zh: "礼宾服务",
   },
+  "nav.autoReply": {
+    ko: "자동응답 규칙",
+    en: "Auto-reply rules",
+    ja: "自動返信ルール",
+    zh: "自动回复规则",
+  },
   "nav.chat": {
     ko: "채팅",
     en: "Chat",

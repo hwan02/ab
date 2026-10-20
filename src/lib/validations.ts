@@ -3,10 +3,12 @@ import type { NearbyPlace } from "@/types/database";
 
 export const propertyFormSchema = z.object({
   name: z.string().trim().min(1, "propertyForm.nameRequired"),
-  description: z.string().trim().optional().default(""),
+  airbnb_listing_title: z.string().trim().optional().default(""),
   address: z.string().trim().optional().default(""),
   wifi_ssid: z.string().trim().optional().default(""),
   wifi_password: z.string().trim().optional().default(""),
+  checkin_time: z.string().trim().optional().default(""),
+  checkout_time: z.string().trim().optional().default(""),
   checkin_guide: z.string().trim().optional().default(""),
   checkout_guide: z.string().trim().optional().default(""),
   house_rules: z.string().trim().optional().default(""),

@@ -11,27 +11,16 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAirbnbReplyAddress, sendAirbnbReply } from "@/lib/airbnb/mail/smtp";
+import { canAccessMails, identify } from "@/lib/airbnb/authz";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-async function authorize(req: NextRequest): Promise<boolean> {
-  const secret = process.env.CRON_SECRET;
-  const header = req.headers.get("authorization") ?? "";
-  if (secret && header === `Bearer ${secret}`) return true;
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return !!user && !!process.env.NEXT_PUBLIC_ADMIN_EMAIL && user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-}
-
 export async function POST(req: NextRequest) {
-  if (!(await authorize(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await identify(req);
+  if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let body: { id?: string; text?: string } = {};
   try {
@@ -40,6 +29,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "JSON body required" }, { status: 400 });
   }
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  if (!(await canAccessMails(actor, [body.id]))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const supabase = createAdminClient();
   const { data: row, error } = await supabase

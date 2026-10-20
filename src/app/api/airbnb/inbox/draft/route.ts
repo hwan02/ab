@@ -8,27 +8,16 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { draftPendingMails } from "@/lib/airbnb/draft";
+import { canAccessMails, identify } from "@/lib/airbnb/authz";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-async function authorize(req: NextRequest): Promise<boolean> {
-  const secret = process.env.CRON_SECRET;
-  const header = req.headers.get("authorization") ?? "";
-  if (secret && header === `Bearer ${secret}`) return true;
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return !!user && !!process.env.NEXT_PUBLIC_ADMIN_EMAIL && user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-}
-
 export async function POST(req: NextRequest) {
-  if (!(await authorize(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await identify(req);
+  if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let body: { ids?: string[]; limit?: number } = {};
   try {
@@ -37,9 +26,15 @@ export async function POST(req: NextRequest) {
     // body 없이 호출 가능
   }
 
+  const ids = Array.isArray(body.ids) ? body.ids.filter((v): v is string => typeof v === "string") : undefined;
+  // 호스트는 자기 숙소 메일만, 그리고 id 를 지정한 경우만 (전체 생성은 cron/admin)
+  if (actor.kind === "host" && (!ids || !(await canAccessMails(actor, ids)))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const result = await draftPendingMails(createAdminClient(), {
-      ids: Array.isArray(body.ids) ? body.ids.filter((v): v is string => typeof v === "string") : undefined,
+      ids,
       limit: typeof body.limit === "number" ? body.limit : undefined,
     });
     return NextResponse.json(result);

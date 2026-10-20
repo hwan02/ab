@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -20,8 +21,8 @@ const KIND_LABEL: Record<AirbnbMailKind, string> = {
 };
 
 const STATUS_LABEL: Record<AirbnbInboundStatus, { text: string; className: string }> = {
-  new: { text: "새 메시지", className: "bg-rose-100 text-rose-700" },
-  drafted: { text: "초안 준비됨", className: "bg-amber-100 text-amber-700" },
+  new: { text: "답변 필요", className: "bg-rose-100 text-rose-700" },
+  drafted: { text: "답변 준비됨", className: "bg-amber-100 text-amber-700" },
   replied: { text: "답장 완료", className: "bg-emerald-100 text-emerald-700" },
   ignored: { text: "무시", className: "bg-gray-100 text-gray-500" },
 };
@@ -35,15 +36,18 @@ function formatReceived(iso: string | null): string {
 interface Props {
   initialMails: AirbnbInboundMail[];
   properties: Pick<Property, "id" | "name">[];
+  rules: { id: string; name: string }[];
 }
 
-export default function AirbnbInbox({ initialMails, properties }: Props) {
+export default function AirbnbInbox({ initialMails, properties, rules }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [mails, setMails] = useState<AirbnbInboundMail[]>(initialMails);
   const [filter, setFilter] = useState<Filter>("todo");
   const [expanded, setExpanded] = useState<string | null>(initialMails[0]?.id ?? null);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const ruleName = useCallback((id: string | null) => (id ? rules.find((r) => r.id === id)?.name ?? null : null), [rules]);
 
   const propertyName = useCallback(
     (id: string | null) => (id ? properties.find((p) => p.id === id)?.name ?? null : null),
@@ -179,6 +183,10 @@ export default function AirbnbInbox({ initialMails, properties }: Props) {
                       <span className="text-xs text-gray-500">{KIND_LABEL[mail.kind]}</span>
                       {place && <span className="text-xs text-gray-400">· {place}</span>}
                       <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", status.className)}>{status.text}</span>
+                      {mail.auto_sent && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">🤖 자동 발송</span>}
+                      {mail.matched_rule_id && ruleName(mail.matched_rule_id) && (
+                        <span className="text-[11px] text-gray-400">규칙: {ruleName(mail.matched_rule_id)}</span>
+                      )}
                     </div>
                     <p className={cn("mt-1 text-sm text-gray-600", !isOpen && "line-clamp-2")}>
                       {mail.message_text ?? mail.snippet ?? mail.subject}
@@ -203,9 +211,17 @@ export default function AirbnbInbox({ initialMails, properties }: Props) {
                         onChange={(v) => patch(mail.id, { draft_reply: v })}
                         onSave={(v) => saveDraft(mail.id, v)}
                         onCopy={copy}
-                        onRegenerate={() => regenerate(mail.id)}
+                        onRegenerate={process.env.NEXT_PUBLIC_AIRBNB_AI_DRAFT === "on" ? () => regenerate(mail.id) : undefined}
                         onSend={mail.reply_to && mail.status !== "replied" ? () => sendByMail(mail) : undefined}
                       />
+                    )}
+                    {mail.kind === "message" && !mail.matched_rule_id && mail.property_id && mail.status !== "replied" && (
+                      <Link
+                        href={`/host/property/${mail.property_id}/rules?q=${encodeURIComponent((mail.message_text ?? "").slice(0, 300))}`}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 hover:underline"
+                      >
+                        + 이 메시지로 자동응답 규칙 만들기
+                      </Link>
                     )}
                     {mail.sent_reply && (
                       <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
@@ -270,7 +286,8 @@ function DraftEditor({
   onChange: (v: string) => void;
   onSave: (v: string) => void;
   onCopy: (v: string) => void;
-  onRegenerate: () => void;
+  /** AI 초안 경로(선택). 키워드 규칙만 쓸 때는 넘기지 않는다. */
+  onRegenerate?: () => void;
   /** 회신 주소가 있을 때만 전달됨. 메일 회신으로 바로 보낸다. */
   onSend?: () => void;
 }) {
@@ -278,16 +295,18 @@ function DraftEditor({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-xs font-medium text-gray-700">답장 초안</span>
-        <button onClick={onRegenerate} disabled={busy} className="text-xs text-rose-500 hover:underline disabled:opacity-50">
-          {draft ? "다시 생성" : "초안 생성"}
-        </button>
+        <span className="text-xs font-medium text-gray-700">보낼 답변</span>
+        {onRegenerate && (
+          <button onClick={onRegenerate} disabled={busy} className="text-xs text-rose-500 hover:underline disabled:opacity-50">
+            AI 초안 생성
+          </button>
+        )}
       </div>
       <Textarea
         value={draft}
         onChange={(e) => onChange(e.target.value)}
         rows={5}
-        placeholder={busy ? "초안을 만드는 중..." : "아직 초안이 없습니다. '초안 생성'을 누르세요."}
+        placeholder={busy ? "처리 중..." : "매칭된 규칙이 없습니다. 직접 입력하거나 아래에서 규칙을 만드세요."}
       />
       <div className="mt-2 flex justify-end gap-1">
         <Button size="sm" variant="ghost" disabled={!draft || busy} onClick={() => onSave(draft)}>

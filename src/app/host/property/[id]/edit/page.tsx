@@ -3,7 +3,8 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { PropertyForm } from "@/components/property/PropertyForm";
+import { PropertyForm, type PropertyFormData } from "@/components/property/PropertyForm";
+import { removePhotoByUrl, uploadMainPhoto } from "@/lib/propertyPhoto";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -46,19 +47,7 @@ export default function EditPropertyPage({
     fetchProperty();
   }, [id]);
 
-  async function handleSubmit(formData: {
-    name: string;
-    description: string;
-    address: string;
-    wifi_ssid: string;
-    wifi_password: string;
-    checkin_guide: string;
-    checkout_guide: string;
-    house_rules: string;
-    photos: File[];
-    existingPhotos: string[];
-    deletedPhotos: string[];
-  }) {
+  async function handleSubmit(formData: PropertyFormData) {
     setIsLoading(true);
     setError("");
 
@@ -72,58 +61,22 @@ export default function EditPropertyPage({
         return;
       }
 
-      // Delete removed photos from storage
-      if (formData.deletedPhotos.length > 0) {
-        const pathsToDelete = formData.deletedPhotos
-          .map((url) => {
-            const match = url.match(/property-photos\/(.+)$/);
-            return match ? match[1] : null;
-          })
-          .filter((p): p is string => p !== null);
-
-        if (pathsToDelete.length > 0) {
-          await supabase.storage
-            .from("property-photos")
-            .remove(pathsToDelete);
-        }
-      }
-
-      // Upload new photos
-      const newPhotoUrls: string[] = [];
-      for (const photo of formData.photos) {
-        const fileExt = photo.name.split(".").pop();
-        const filePath = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("property-photos")
-          .upload(filePath, photo);
-
-        if (uploadError) {
-          console.error("Photo upload error:", uploadError);
-          continue;
-        }
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage
-          .from("property-photos")
-          .getPublicUrl(filePath);
-
-        newPhotoUrls.push(publicUrl);
-      }
-
-      // Merge: existing (in order) + newly uploaded
-      const photoUrls = [...formData.existingPhotos, ...newPhotoUrls];
+      // 메인 이미지: 지웠거나 교체했으면 기존 파일 삭제, 새 파일은 업로드
+      await removePhotoByUrl(supabase, formData.removedPhoto);
+      const uploaded = formData.mainPhoto ? await uploadMainPhoto(supabase, user.id, formData.mainPhoto) : null;
+      const mainUrl = uploaded ?? formData.existingPhoto;
 
       const { error: updateError } = await supabase
         .from("properties")
         .update({
           name: formData.name,
-          description: formData.description || null,
+          airbnb_listing_title: formData.airbnb_listing_title || null,
           address: formData.address || null,
-          photos: photoUrls.length > 0 ? photoUrls : null,
+          photos: mainUrl ? [mainUrl] : null,
           wifi_ssid: formData.wifi_ssid || null,
           wifi_password: formData.wifi_password || null,
+          checkin_time: formData.checkin_time || null,
+          checkout_time: formData.checkout_time || null,
           checkin_guide: formData.checkin_guide || null,
           checkout_guide: formData.checkout_guide || null,
           house_rules: formData.house_rules || null,

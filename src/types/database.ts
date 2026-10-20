@@ -40,6 +40,10 @@ export interface Property {
   address_en: string | null;
   address_ja: string | null;
   address_zh: string | null;
+  airbnb_listing_title: string | null;
+  checkin_time: string | null;
+  checkout_time: string | null;
+  auto_reply_mode: "off" | "confirm" | "auto";
   created_at: string;
 }
 
@@ -244,6 +248,23 @@ export interface AirbnbInboundMail {
   reply_to: string | null;
   sent_reply: string | null;
   sent_at: string | null;
+  matched_rule_id: string | null;
+  auto_sent: boolean;
   raw_text: string | null;
   created_at: string;
+}
+
+export interface AirbnbReplyRule {
+  id: string;
+  property_id: string;
+  name: string;
+  keywords: string[];
+  answer: string;
+  answer_en: string | null;
+  priority: number;
+  enabled: boolean;
+  hit_count: number;
+  last_hit_at: string | null;
+  created_at: string;
+  updated_at: string;
 }

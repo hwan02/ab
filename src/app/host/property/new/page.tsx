@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { PropertyForm } from "@/components/property/PropertyForm";
+import { PropertyForm, type PropertyFormData } from "@/components/property/PropertyForm";
 import { Card } from "@/components/ui/Card";
 import { useI18n } from "@/lib/i18n/context";
+import { uploadMainPhoto } from "@/lib/propertyPhoto";
 
 export default function NewPropertyPage() {
   const router = useRouter();
@@ -14,19 +15,7 @@ export default function NewPropertyPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(data: {
-    name: string;
-    description: string;
-    address: string;
-    wifi_ssid: string;
-    wifi_password: string;
-    checkin_guide: string;
-    checkout_guide: string;
-    house_rules: string;
-    photos: File[];
-    existingPhotos: string[];
-    deletedPhotos: string[];
-  }) {
+  async function handleSubmit(data: PropertyFormData) {
     setIsLoading(true);
     setError("");
 
@@ -40,54 +29,35 @@ export default function NewPropertyPage() {
         return;
       }
 
-      const photoUrls: string[] = [];
+      const mainUrl = data.mainPhoto ? await uploadMainPhoto(supabase, user.id, data.mainPhoto) : null;
 
-      if (data.photos.length > 0) {
-        for (const photo of data.photos) {
-          const fileExt = photo.name.split(".").pop();
-          const filePath = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from("property-photos")
-            .upload(filePath, photo);
-
-          if (uploadError) {
-            console.error("Photo upload error:", uploadError);
-            continue;
-          }
-
-          const {
-            data: { publicUrl },
-          } = supabase.storage
-            .from("property-photos")
-            .getPublicUrl(filePath);
-
-          photoUrls.push(publicUrl);
-        }
-      }
-
-      const { error: insertError } = await supabase
+      const { data: inserted, error: insertError } = await supabase
         .from("properties")
         .insert({
           host_id: user.id,
           name: data.name,
-          description: data.description || null,
+          airbnb_listing_title: data.airbnb_listing_title || null,
           address: data.address || null,
-          photos: photoUrls.length > 0 ? photoUrls : null,
+          photos: mainUrl ? [mainUrl] : null,
           wifi_ssid: data.wifi_ssid || null,
           wifi_password: data.wifi_password || null,
+          checkin_time: data.checkin_time || null,
+          checkout_time: data.checkout_time || null,
           checkin_guide: data.checkin_guide || null,
           checkout_guide: data.checkout_guide || null,
           house_rules: data.house_rules || null,
-        });
+        })
+        .select("id")
+        .single();
 
-      if (insertError) {
+      if (insertError || !inserted) {
         setError(t("host.registerFailed"));
         console.error("Insert error:", insertError);
         return;
       }
 
-      router.push("/host");
+      // 등록 직후 자동응답 규칙 화면으로 안내
+      router.push(`/host/property/${inserted.id}/rules`);
     } catch (err) {
       console.error("Unexpected error:", err);
       setError(t("common.unexpectedError"));
@@ -100,15 +70,11 @@ export default function NewPropertyPage() {
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">{t("host.newProperty")}</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {t("host.newPropertyDesc")}
-        </p>
+        <p className="mt-1 text-sm text-gray-500">게스트 메시지에 답할 때 필요한 정보만 입력하면 됩니다. 등록 후 자동응답 규칙을 설정합니다.</p>
       </div>
 
       {error && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
       <Card>
