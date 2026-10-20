@@ -38,7 +38,7 @@ export default function LandingPage() {
         </div>
 
         <img
-          src="/podong.png"
+          src="/podong.webp"
           alt="포동이"
           className="mb-6 h-52 w-52 object-contain drop-shadow-lg"
         />

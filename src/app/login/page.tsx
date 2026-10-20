@@ -43,7 +43,7 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-lg px-6">
         <div className="rounded-3xl bg-white/85 px-10 py-14 shadow-xl shadow-gray-200/50 ring-1 ring-gray-100 backdrop-blur-md sm:px-14 sm:py-16">
           <div className="mb-10 text-center">
-            <img src="/podong.png" alt="포동이" className="mx-auto mb-8 h-56 w-56 object-contain drop-shadow-lg sm:h-64 sm:w-64" />
+            <img src="/podong.webp" alt="포동이" className="mx-auto mb-8 h-56 w-56 object-contain drop-shadow-lg sm:h-64 sm:w-64" />
             <h1 className="flex justify-center"><Logo size="lg" /></h1>
           </div>
 
