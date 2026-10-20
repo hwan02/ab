@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
@@ -11,10 +11,17 @@ import type { User } from "@supabase/supabase-js";
 export default function Header() {
   const { locale, setLocale, t } = useI18n();
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // 호스트 화면(/host…)은 한국어 고정: 언어 전환 UI 를 숨기고 locale 을 ko 로 맞춘다.
+  const isHostRoute = pathname?.startsWith("/host") ?? false;
+  useEffect(() => {
+    if (isHostRoute && locale !== "ko") setLocale("ko");
+  }, [isHostRoute, locale, setLocale]);
 
   useEffect(() => {
     const getUser = async () => {
@@ -72,22 +79,24 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Language switcher (compact) */}
-          <div className="hidden items-center gap-0.5 rounded-full border border-gray-200 p-0.5 sm:flex">
-            {LOCALES.map((loc) => (
-              <button
-                key={loc.code}
-                onClick={() => setLocale(loc.code)}
-                className={`rounded-full px-2 py-1 text-xs font-medium transition-all ${
-                  locale === loc.code
-                    ? "bg-rose-500 text-white"
-                    : "text-gray-500 hover:bg-gray-100"
-                }`}
-              >
-                {loc.flag}
-              </button>
-            ))}
-          </div>
+          {/* Language switcher (compact) — hidden on host routes */}
+          {!isHostRoute && (
+            <div className="hidden items-center gap-0.5 rounded-full border border-gray-200 p-0.5 sm:flex">
+              {LOCALES.map((loc) => (
+                <button
+                  key={loc.code}
+                  onClick={() => setLocale(loc.code)}
+                  className={`rounded-full px-2 py-1 text-xs font-medium transition-all ${
+                    locale === loc.code
+                      ? "bg-rose-500 text-white"
+                      : "text-gray-500 hover:bg-gray-100"
+                  }`}
+                >
+                  {loc.flag}
+                </button>
+              ))}
+            </div>
+          )}
 
           {user && (
             <div className="relative" ref={dropdownRef}>
@@ -117,27 +126,29 @@ export default function Header() {
                     </div>
                   )}
 
-                  {/* Mobile language switcher */}
-                  <div className="border-b border-gray-100 px-4 py-2 sm:hidden">
-                    <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-gray-400">
-                      {t("login.language")}
-                    </p>
-                    <div className="flex gap-1">
-                      {LOCALES.map((loc) => (
-                        <button
-                          key={loc.code}
-                          onClick={() => setLocale(loc.code)}
-                          className={`rounded-md px-2 py-1 text-xs font-medium transition-all ${
-                            locale === loc.code
-                              ? "bg-rose-500 text-white"
-                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                          }`}
-                        >
-                          {loc.flag}
-                        </button>
-                      ))}
+                  {/* Mobile language switcher — hidden on host routes */}
+                  {!isHostRoute && (
+                    <div className="border-b border-gray-100 px-4 py-2 sm:hidden">
+                      <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-gray-400">
+                        {t("login.language")}
+                      </p>
+                      <div className="flex gap-1">
+                        {LOCALES.map((loc) => (
+                          <button
+                            key={loc.code}
+                            onClick={() => setLocale(loc.code)}
+                            className={`rounded-md px-2 py-1 text-xs font-medium transition-all ${
+                              locale === loc.code
+                                ? "bg-rose-500 text-white"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            {loc.flag}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Mobile nav links */}
                   <div className="border-b border-gray-100 sm:hidden">
@@ -163,18 +174,17 @@ export default function Header() {
                     </Link>
                   </div>
 
-                  {user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
-                    <Link
-                      href="/host"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-gray-50"
-                    >
-                      <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                      </svg>
-                      {t("home.hostMode")}
-                    </Link>
-                  )}
+                  {/* 호스트 모드: 로그인한 사용자 전원에게 노출 */}
+                  <Link
+                    href="/host"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                  >
+                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                    </svg>
+                    {t("home.hostMode")}
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"

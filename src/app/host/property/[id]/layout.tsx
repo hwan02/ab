@@ -195,7 +195,16 @@ const navItems = [
  * 숙소 메뉴에서 숨길 항목. 메시지 자동응답 운영에 필요 없는 기능은 메뉴에서만 빼고 페이지와 데이터는 그대로 둔다.
  * 다시 보이게 하려면 여기서 지우면 된다.
  */
-const HIDDEN_SEGMENTS = new Set(["announcements", "podong"]);
+const HIDDEN_SEGMENTS = new Set([
+  "announcements",
+  "podong",
+  "guests",
+  "nearby",
+  "emergency",
+  "guides",
+  "cleaning",
+  "chat",
+]);
 const visibleNavItems = navItems.filter((item) => !HIDDEN_SEGMENTS.has(item.segment));
 
 export default async function PropertyLayout({
