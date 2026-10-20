@@ -29,6 +29,21 @@ test("영업시간: 자정 넘는 마감은 야식, 9시 이전 오픈은 아침
   assert.deepEqual(hoursNote(allday, "latenight"), { ko: "24시간", en: "Open 24h" });
 });
 
+test("시간 표기: 자정·새벽·다음날 아침·저녁", () => {
+  const closeAt = (openDay: number, closeDay: number, h: number, m = 0) => place("x", { regularOpeningHours: { periods: [{ open: pt(openDay, 17), close: pt(closeDay, h, m) }] } });
+  assert.equal(hoursNote(closeAt(1, 2, 0), "latenight").ko, "밤 12시까지");
+  assert.equal(hoursNote(closeAt(1, 2, 2), "latenight").ko, "새벽 2시까지");
+  assert.equal(hoursNote(closeAt(1, 2, 10), "latenight").ko, "다음날 아침 10시까지");
+  assert.equal(hoursNote(closeAt(1, 1, 19), "best").ko, "저녁 7시까지");
+  assert.equal(hoursNote(closeAt(1, 1, 22, 30), "best").ko, "밤 10시 30분까지");
+});
+
+test("cleanName 은 '|' 로 이은 다국어 이름에서 첫 이름만", async () => {
+  const { cleanName } = await import("./places.ts");
+  assert.equal(cleanName("연남동 히포 브런치하우스 | Yeonnam Brunch Cafe Hippo | 延南洞早午餐"), "연남동 히포 브런치하우스");
+  assert.equal(cleanName("White Rabbit"), "White Rabbit");
+});
+
 test("walkMinutes 는 직선거리에 골목 보정을 해 분으로", () => {
   const m = walkMinutes({ lat: 37.5665, lng: 126.932 }, { latitude: 37.5665, longitude: 126.9408 });
   assert.ok(m >= 10 && m <= 14, `got ${m}`);

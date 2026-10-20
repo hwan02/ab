@@ -129,11 +129,18 @@ export function isBreakfast(p: GPlace): boolean {
 }
 
 const fmtKo = (min: number) => {
-  const h = Math.floor((min % 1440) / 60);
-  const m = min % 60;
-  const label = min >= 1440 || h < 5 ? "새벽" : h < 12 ? "아침" : h < 18 ? "오후" : "밤";
-  const hh = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${label} ${hh}시${m ? ` ${m}분` : ""}`;
+  const nextDay = min >= 1440;
+  const t = min % 1440;
+  const h = Math.floor(t / 60);
+  const m = t % 60;
+  const mm = m ? ` ${m}분` : "";
+  if (h === 0 && m === 0) return "밤 12시";
+  if (h < 5) return `새벽 ${h === 0 ? 12 : h}시${mm}`;
+  if (h < 12) return `${nextDay ? "다음날 " : ""}아침 ${h}시${mm}`;
+  if (h === 12) return `낮 12시${mm}`;
+  if (h < 18) return `오후 ${h - 12}시${mm}`;
+  if (h < 21) return `저녁 ${h - 12}시${mm}`;
+  return `밤 ${h - 12}시${mm}`;
 };
 const fmtEn = (min: number) => {
   const h = Math.floor((min % 1440) / 60);
@@ -185,8 +192,8 @@ export function classify(
       out.push({
         situation: key,
         google_place_id: p.id,
-        name: p.displayName!.text,
-        name_en: enNames.get(p.id) ?? null,
+        name: cleanName(p.displayName!.text),
+        name_en: enNames.has(p.id) ? cleanName(enNames.get(p.id)!) : null,
         category: p.primaryTypeDisplayName?.text ?? null,
         walk_minutes: p.location ? walkMinutes(origin, p.location) : null,
         rating: p.rating ?? null,
@@ -199,6 +206,11 @@ export function classify(
     });
   }
   return out;
+}
+
+/** "연남동 히포 | Hippo Brunchhaus | 延南洞…" 처럼 여러 언어를 이어 붙인 이름은 첫 이름만. */
+export function cleanName(name: string): string {
+  return name.split(/\s+\|\s+/)[0].trim();
 }
 
 function dedupe(list: GPlace[]): GPlace[] {
