@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RuleTester from "@/components/host/RuleTester";
+import FoodLists from "@/components/host/FoodLists";
+import { FOOD_VARIABLES } from "@/lib/food/places";
 import { removePhotoByUrl, uploadMainPhoto } from "@/lib/propertyPhoto";
 import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/Card";
@@ -84,10 +86,11 @@ function isMissingColumnError(error: { code?: string; message?: string }, column
   return columns.some((c) => msg.includes(c));
 }
 
-type Tab = "list" | "new" | "test";
+type Tab = "list" | "new" | "test" | "food";
 const TABS: { key: Tab; label: string }[] = [
   { key: "list", label: "목록" },
   { key: "new", label: "규칙 추가" },
+  { key: "food", label: "맛집" },
   { key: "test", label: "미리보기" },
 ];
 
@@ -115,7 +118,7 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const initialTab = searchParams.get("tab");
-  const [tab, setTabState] = useState<Tab>(initialTab === "new" || initialTab === "test" ? initialTab : "list");
+  const [tab, setTabState] = useState<Tab>(initialTab === "new" || initialTab === "test" || initialTab === "food" ? initialTab : "list");
   const [testKey, setTestKey] = useState(0);
   const setTab = (t: Tab) => {
     setTabState(t);
@@ -416,6 +419,7 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
       </div>
 
       {tab === "test" && <RuleTester propertyId={propertyId} refreshKey={testKey} />}
+      {tab === "food" && <FoodLists propertyId={propertyId} />}
 
       {/* 규칙 폼 */}
       {tab === "new" && (
@@ -456,6 +460,11 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
             <div className="mt-1.5 flex flex-wrap gap-1">
               {ANSWER_VARIABLES.map((v) => (
                 <button key={v} type="button" onClick={() => insertVariable(v)} className="rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[11px] text-gray-600 hover:bg-gray-50">
+                  {v}
+                </button>
+              ))}
+              {FOOD_VARIABLES.map((v) => (
+                <button key={v} type="button" onClick={() => insertVariable(v)} className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700 hover:bg-amber-100">
                   {v}
                 </button>
               ))}

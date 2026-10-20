@@ -20,6 +20,7 @@ import { isAirbnbReplyAddress, sendAirbnbReply } from "@/lib/airbnb/mail/smtp";
 import { matchRule, renderAnswer, type ReplyRule, pickAnswerWithLang, withPhotoLink } from "@/lib/airbnb/rules";
 import { matchProperty, twinKey, type MatchReason, isInquiryThread } from "@/lib/airbnb/sync";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fillFoodVariables, hasFoodVariable, type FoodPlace } from "@/lib/food/places";
 import { PRODUCT_NAME } from "@/lib/airbnb/brand";
 
 export const dynamic = "force-dynamic";
@@ -399,6 +400,10 @@ async function applyRules(supabase: Admin, mailId: string, properties: PropertyR
       wifiPassword: property.wifi_password,
       address: property.address,
     });
+    if (hasFoodVariable(text)) {
+      const { data: food } = await supabase.from("food_places").select("*").eq("property_id", property.id).eq("hidden", false);
+      text = fillFoodVariables(text, (food ?? []) as FoodPlace[], picked.answerLang);
+    }
     // 예약 확정 전 게스트에게는 링크·사진이 막혀 메시지가 걸러질 수 있으므로 사진 링크는 확정 예약 스레드에만 붙인다.
     if (rule.photo_url && !(await inquiryThread(supabase, mail))) {
       text = withPhotoLink(text, rule, appBaseUrl(), picked.answerLang);
