@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "POPO's stay",
-    short_name: "POPO",
-    description: "숙소 게스트를 위한 컨시어지 서비스",
+    name: "포포톡",
+    short_name: "포포톡",
+    description: "에어비앤비 게스트 메시지 자동응답",
     start_url: "/",
     display: "standalone",
     background_color: "#f9fafb",
