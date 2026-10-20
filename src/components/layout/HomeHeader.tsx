@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
 import { LOCALES } from "@/lib/i18n/translations";
 import { useHostLocale } from "@/components/layout/useHostLocale";
-import { PRODUCT_NAME } from "@/lib/airbnb/brand";
+import Logo from "@/components/brand/Logo";
 
 interface HomeHeaderProps {
   userName: string | null;
@@ -69,9 +69,8 @@ export default function HomeHeader({ userName, avatarUrl, showHostLink }: HomeHe
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2 text-2xl text-rose-500" style={{ fontFamily: "var(--font-brand)" }}>
-          <img src="/popo.png" alt="POPO" className="h-9 w-9 object-contain" />
-          {PRODUCT_NAME}
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold text-rose-500">
+          <Logo />
         </Link>
         <div className="flex items-center gap-2">
           {/* Global nav links */}

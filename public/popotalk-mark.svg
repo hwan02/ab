@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="g" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FB7185"/>
+      <stop offset="1" stop-color="#F43F5E"/>
+    </linearGradient>
+  </defs>
+  <!-- 말풍선 -->
+  <path d="M32 8C18.2 8 7 17.6 7 29.5c0 6.3 3.2 12 8.4 15.9L13 54.5c-.3 1.2.9 2.2 2 1.6l10.3-5.3c2.1.5 4.3.7 6.7.7 13.8 0 25-9.6 25-21.5S45.8 8 32 8z" fill="url(#g)"/>
+  <!-- 햄스터 귀 느낌의 작은 원 두 개 -->
+  <circle cx="22.5" cy="9.5" r="5" fill="#FDA4AF"/>
+  <circle cx="41.5" cy="9.5" r="5" fill="#FDA4AF"/>
+  <!-- 말풍선 안 점 세 개 -->
+  <circle cx="22" cy="30" r="3.4" fill="#fff"/>
+  <circle cx="32" cy="30" r="3.4" fill="#fff"/>
+  <circle cx="42" cy="30" r="3.4" fill="#fff"/>
+</svg>
