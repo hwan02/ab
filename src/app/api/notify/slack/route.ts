@@ -1,13 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
+import { identify } from "@/lib/airbnb/authz";
+
+/**
+ * 게스트 활동(채팅, 요청, 숙박 신청)을 Slack 웹훅으로 알린다.
+ *
+ * 권한: 로그인 세션 또는 Authorization: Bearer $CRON_SECRET 이 있어야 한다.
+ *       호출처(채팅방, 물품/예약 요청, 숙박 신청, 숙소 둘러보기)는 모두 로그인한 게스트만 쓰는 화면이다.
+ * 입력: 문자열 필드 길이 합계 5,000자까지.
+ */
+
+const MAX_TOTAL_CHARS = 5000;
+
+function str(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
 
 export async function POST(request: NextRequest) {
+  const actor = await identify(request);
+  if (!actor) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
   if (!webhookUrl) {
     return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
   }
 
-  const body = await request.json();
-  const { senderName, messageType, content, propertyName, chatUrl } = body;
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+  const raw = (body ?? {}) as Record<string, unknown>;
+  const senderName = str(raw.senderName);
+  const messageType = str(raw.messageType);
+  const content = str(raw.content);
+  const propertyName = str(raw.propertyName);
+  const chatUrl = str(raw.chatUrl);
+
+  const totalChars = senderName.length + messageType.length + content.length + propertyName.length + chatUrl.length;
+  if (totalChars > MAX_TOTAL_CHARS) {
+    return NextResponse.json({ error: `Too long (max ${MAX_TOTAL_CHARS} chars)` }, { status: 413 });
+  }
 
   const typeLabel: Record<string, string> = {
     text: "💬 메시지",
@@ -21,7 +56,7 @@ export async function POST(request: NextRequest) {
 
   const label = typeLabel[messageType] || "💬 메시지";
 
-  let preview = content || "";
+  let preview = content;
   if (messageType !== "text" && content) {
     try {
       const parsed = JSON.parse(content);
@@ -45,8 +80,9 @@ export async function POST(request: NextRequest) {
     preview = preview.slice(0, 100) + "…";
   }
 
+  const link = /^https?:\/\//.test(chatUrl) ? `\n<${chatUrl}|채팅 열기>` : "";
   const slackMessage = {
-    text: `${label} — *${senderName || "게스트"}*${propertyName ? ` (${propertyName})` : ""}\n>${preview}${chatUrl ? `\n<${chatUrl}|채팅 열기>` : ""}`,
+    text: `${label} — *${senderName || "게스트"}*${propertyName ? ` (${propertyName})` : ""}\n>${preview}${link}`,
   };
 
   try {

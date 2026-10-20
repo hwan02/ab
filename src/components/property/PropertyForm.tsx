@@ -1,122 +1,91 @@
 "use client";
 
-import { useState, useRef, useCallback, type FormEvent, type ChangeEvent, type DragEvent } from "react";
+import { useState, type FormEvent, type ChangeEvent } from "react";
 import { useI18n } from "@/lib/i18n/context";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { propertyFormSchema, getFieldErrors } from "@/lib/validations";
+import { looksLikeHashtagTitle } from "@/lib/airbnb/sync";
 import type { Property } from "@/types/database";
 
-type ManagedPhoto =
-  | { type: "existing"; url: string }
-  | { type: "new"; file: File; preview: string };
+/** 번역표에 없는 검증 메시지. 호스트 화면은 한국어라 여기서 바로 보여 준다. */
+const LOCAL_MESSAGES: Record<string, string> = {
+  "propertyForm.listingTitleRequired": "에어비앤비 리스팅 제목을 입력해주세요. 이 제목으로 알림 메일의 숙소를 찾습니다.",
+};
+
+/**
+ * 숙소 등록/수정 폼.
+ * 게스트 메시지 자동응답에 필요한 항목만 보여 준다. 소개글, 다국어 번역, 사진 여러 장 같은 나머지는 숨기고
+ * (DB 값은 그대로 둔다), 사진은 메인 이미지 한 장만 받는다.
+ */
+
+export interface PropertyFormData {
+  name: string;
+  airbnb_listing_title: string;
+  address: string;
+  wifi_ssid: string;
+  wifi_password: string;
+  checkin_time: string;
+  checkout_time: string;
+  checkin_guide: string;
+  checkout_guide: string;
+  house_rules: string;
+  /** 새로 고른 메인 이미지. 없으면 null. */
+  mainPhoto: File | null;
+  /** 기존 메인 이미지 URL. 지웠거나 없으면 null. */
+  existingPhoto: string | null;
+  /** 기존 메인 이미지를 지웠는지 (교체 포함). */
+  removedPhoto: string | null;
+}
 
 interface PropertyFormProps {
   initialData?: Partial<Property>;
-  onSubmit: (data: {
-    name: string;
-    description: string;
-    address: string;
-    wifi_ssid: string;
-    wifi_password: string;
-    checkin_guide: string;
-    checkout_guide: string;
-    house_rules: string;
-    photos: File[];
-    existingPhotos: string[];
-    deletedPhotos: string[];
-  }) => Promise<void>;
+  onSubmit: (data: PropertyFormData) => Promise<void>;
   isLoading: boolean;
 }
 
 function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
   const { t } = useI18n();
   const [name, setName] = useState(initialData?.name ?? "");
-  const [description, setDescription] = useState(
-    initialData?.description ?? ""
-  );
+  const [listingTitle, setListingTitle] = useState(initialData?.airbnb_listing_title ?? "");
   const [address, setAddress] = useState(initialData?.address ?? "");
   const [wifiSsid, setWifiSsid] = useState(initialData?.wifi_ssid ?? "");
-  const [wifiPassword, setWifiPassword] = useState(
-    initialData?.wifi_password ?? ""
-  );
-  const [checkinGuide, setCheckinGuide] = useState(
-    initialData?.checkin_guide ?? ""
-  );
-  const [checkoutGuide, setCheckoutGuide] = useState(
-    initialData?.checkout_guide ?? ""
-  );
-  const [houseRules, setHouseRules] = useState(
-    initialData?.house_rules ?? ""
-  );
+  const [wifiPassword, setWifiPassword] = useState(initialData?.wifi_password ?? "");
+  const [checkinTime, setCheckinTime] = useState(initialData?.checkin_time ?? "");
+  const [checkoutTime, setCheckoutTime] = useState(initialData?.checkout_time ?? "");
+  const [checkinGuide, setCheckinGuide] = useState(initialData?.checkin_guide ?? "");
+  const [checkoutGuide, setCheckoutGuide] = useState(initialData?.checkout_guide ?? "");
+  const [houseRules, setHouseRules] = useState(initialData?.house_rules ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Photo management
-  const initialPhotos: ManagedPhoto[] = (initialData?.photos ?? []).map(
-    (url) => ({ type: "existing" as const, url })
-  );
-  const [managedPhotos, setManagedPhotos] = useState<ManagedPhoto[]>(initialPhotos);
-  const [deletedPhotos, setDeletedPhotos] = useState<string[]>([]);
-  const dragIndexRef = useRef<number | null>(null);
+  const initialPhoto = initialData?.photos?.[0] ?? null;
+  const [existingPhoto, setExistingPhoto] = useState<string | null>(initialPhoto);
+  const [removedPhoto, setRemovedPhoto] = useState<string | null>(null);
+  const [mainPhoto, setMainPhoto] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
 
   function handlePhotoChange(e: ChangeEvent<HTMLInputElement>) {
-    if (e.target.files) {
-      const newPhotos: ManagedPhoto[] = Array.from(e.target.files).map(
-        (file) => ({
-          type: "new" as const,
-          file,
-          preview: URL.createObjectURL(file),
-        })
-      );
-      setManagedPhotos((prev) => [...prev, ...newPhotos]);
-      e.target.value = "";
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (preview) URL.revokeObjectURL(preview);
+    setMainPhoto(file);
+    setPreview(URL.createObjectURL(file));
+    if (existingPhoto) {
+      setRemovedPhoto(existingPhoto);
+      setExistingPhoto(null);
     }
+    e.target.value = "";
   }
 
-  function removePhoto(index: number) {
-    setManagedPhotos((prev) => {
-      const photo = prev[index];
-      if (photo.type === "existing") {
-        setDeletedPhotos((d) => [...d, photo.url]);
-      } else {
-        URL.revokeObjectURL(photo.preview);
-      }
-      return prev.filter((_, i) => i !== index);
-    });
-  }
-
-  function movePhoto(fromIndex: number, toIndex: number) {
-    if (toIndex < 0 || toIndex >= managedPhotos.length) return;
-    setManagedPhotos((prev) => {
-      const next = [...prev];
-      const [moved] = next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, moved);
-      return next;
-    });
-  }
-
-  const handleDragStart = useCallback((index: number) => {
-    dragIndexRef.current = index;
-  }, []);
-
-  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>, dropIndex: number) => {
-      e.preventDefault();
-      const dragIndex = dragIndexRef.current;
-      if (dragIndex === null || dragIndex === dropIndex) return;
-      movePhoto(dragIndex, dropIndex);
-      dragIndexRef.current = null;
-    },
-    [managedPhotos.length]
-  );
-
-  function getPhotoSrc(photo: ManagedPhoto): string {
-    return photo.type === "existing" ? photo.url : photo.preview;
+  function removePhoto() {
+    if (preview) URL.revokeObjectURL(preview);
+    setMainPhoto(null);
+    setPreview(null);
+    if (existingPhoto) {
+      setRemovedPhoto(existingPhoto);
+      setExistingPhoto(null);
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -124,10 +93,12 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
 
     const result = propertyFormSchema.safeParse({
       name,
-      description,
+      airbnb_listing_title: listingTitle,
       address,
       wifi_ssid: wifiSsid,
       wifi_password: wifiPassword,
+      checkin_time: checkinTime,
+      checkout_time: checkoutTime,
       checkin_guide: checkinGuide,
       checkout_guide: checkoutGuide,
       house_rules: houseRules,
@@ -137,32 +108,53 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
       const fieldErrors = getFieldErrors(result.error);
       const translated: Record<string, string> = {};
       for (const [key, msg] of Object.entries(fieldErrors)) {
-        translated[key] = t(msg as Parameters<typeof t>[0]);
+        translated[key] = LOCAL_MESSAGES[msg] ?? t(msg as Parameters<typeof t>[0]);
       }
       setErrors(translated);
       return;
     }
-
     setErrors({});
 
-    const existingPhotos = managedPhotos
-      .filter((p): p is ManagedPhoto & { type: "existing" } => p.type === "existing")
-      .map((p) => p.url);
-
-    const newPhotos = managedPhotos
-      .filter((p): p is ManagedPhoto & { type: "new" } => p.type === "new")
-      .map((p) => p.file);
-
-    await onSubmit({
-      ...result.data,
-      photos: newPhotos,
-      existingPhotos,
-      deletedPhotos,
-    });
+    await onSubmit({ ...result.data, mainPhoto, existingPhoto, removedPhoto });
   }
+
+  const shownPhoto = preview ?? existingPhoto;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* 메인 이미지 */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-gray-700">메인 이미지</label>
+        <div className="flex items-start gap-4">
+          <div className="relative h-28 w-40 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+            {shownPhoto ? (
+              <img src={shownPhoto} alt="메인 이미지" className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-gray-300">
+                <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+                </svg>
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              disabled={isLoading}
+              className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-rose-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-rose-600 hover:file:bg-rose-100 disabled:opacity-50"
+            />
+            {shownPhoto && (
+              <button type="button" onClick={removePhoto} disabled={isLoading} className="text-xs text-gray-500 hover:text-red-600">
+                이미지 제거
+              </button>
+            )}
+            <p className="text-xs text-gray-400">한 장만 등록됩니다. 숙소 목록과 게스트 화면에 표시됩니다.</p>
+          </div>
+        </div>
+      </div>
+
       <Input
         label={t("propertyForm.nameLabel")}
         placeholder={t("propertyForm.namePlaceholder")}
@@ -172,14 +164,27 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
         disabled={isLoading}
       />
 
-      <Textarea
-        label={t("propertyForm.descLabel")}
-        placeholder={t("propertyForm.descPlaceholder")}
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        rows={4}
-        disabled={isLoading}
-      />
+      <div>
+        <Input
+          label="에어비앤비 리스팅 제목 *"
+          placeholder="#홍대입구역 #최대6인 #짐보관서비스 ... (에어비앤비에 올린 제목 그대로)"
+          value={listingTitle}
+          onChange={(e) => setListingTitle(e.target.value)}
+          error={errors.airbnb_listing_title}
+          disabled={isLoading}
+        />
+        {listingTitle.trim() && !looksLikeHashtagTitle(listingTitle) ? (
+          <p className="mt-1 text-xs text-amber-600">
+            에어비앤비 리스팅 제목은 보통 &quot;#홍대입구역 #최대6인 …&quot; 처럼 해시태그로 시작합니다. 에어비앤비에 올린 제목을 그대로 붙여 넣었는지
+            확인해 주세요. 제목이 다르면 이 숙소의 메시지를 찾지 못합니다.
+          </p>
+        ) : (
+          <p className="mt-1 text-xs text-gray-400">
+            에어비앤비 알림 메일에 적힌 숙소 제목과 맞춰 이 숙소의 메시지를 찾습니다. 에어비앤비 리스팅 제목을 복사해 붙여 주세요. 숙소가
+            여러 개면 제목이 서로 달라야 합니다.
+          </p>
+        )}
+      </div>
 
       <Input
         label={t("propertyForm.addressLabel")}
@@ -191,7 +196,7 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
-          label="Wi-Fi SSID"
+          label="Wi-Fi 이름"
           placeholder={t("propertyForm.wifiSsidPlaceholder")}
           value={wifiSsid}
           onChange={(e) => setWifiSsid(e.target.value)}
@@ -204,6 +209,11 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
           onChange={(e) => setWifiPassword(e.target.value)}
           disabled={isLoading}
         />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Input label="체크인 시간" placeholder="오후 3:00" value={checkinTime} onChange={(e) => setCheckinTime(e.target.value)} disabled={isLoading} />
+        <Input label="체크아웃 시간" placeholder="오전 11:00" value={checkoutTime} onChange={(e) => setCheckoutTime(e.target.value)} disabled={isLoading} />
       </div>
 
       <Textarea
@@ -232,88 +242,6 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
         rows={4}
         disabled={isLoading}
       />
-
-      <div className="w-full">
-        <label className="mb-1.5 block text-sm font-medium text-gray-700">
-          {t("propertyForm.photosLabel")}
-        </label>
-        {managedPhotos.length > 0 && (
-          <p className="mb-2 text-xs text-gray-400">
-            {t("propertyForm.dragToReorder")}
-          </p>
-        )}
-        {managedPhotos.length > 0 && (
-          <div className="mb-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {managedPhotos.map((photo, i) => (
-              <div
-                key={photo.type === "existing" ? photo.url : photo.preview}
-                draggable
-                onDragStart={() => handleDragStart(i)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, i)}
-                className="group relative aspect-square cursor-grab active:cursor-grabbing"
-              >
-                <img
-                  src={getPhotoSrc(photo)}
-                  alt={`${t("propertyForm.photoAlt")} ${i + 1}`}
-                  className="h-full w-full rounded-lg object-cover border border-gray-200"
-                />
-                {/* Delete button */}
-                <button
-                  type="button"
-                  onClick={() => removePhoto(i)}
-                  disabled={isLoading}
-                  className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-sm hover:bg-red-600 disabled:opacity-50"
-                  aria-label={t("propertyForm.deletePhoto")}
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                  </svg>
-                </button>
-                {/* Mobile move buttons */}
-                <div className="absolute bottom-1 left-1 flex gap-0.5 sm:hidden">
-                  {i > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => movePhoto(i, i - 1)}
-                      disabled={isLoading}
-                      className="flex h-6 w-6 items-center justify-center rounded bg-black/50 text-white"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-                      </svg>
-                    </button>
-                  )}
-                  {i < managedPhotos.length - 1 && (
-                    <button
-                      type="button"
-                      onClick={() => movePhoto(i, i + 1)}
-                      disabled={isLoading}
-                      className="flex h-6 w-6 items-center justify-center rounded bg-black/50 text-white"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-                {/* Order badge */}
-                <span className="absolute left-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-[10px] font-medium text-white">
-                  {i + 1}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handlePhotoChange}
-          disabled={isLoading}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-rose-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-rose-600 hover:file:bg-rose-100 disabled:opacity-50"
-        />
-      </div>
 
       <div className="flex justify-end pt-4">
         <Button type="submit" loading={isLoading}>

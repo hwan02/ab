@@ -40,3 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+
+# serwist (service worker build output)
+public/sw*
+
+# 예시 env 는 커밋
+!.env.example
+.claude/launch.json

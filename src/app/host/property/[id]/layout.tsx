@@ -24,6 +24,15 @@ const navItems = [
     ),
   },
   {
+    labelKey: "nav.autoReply",
+    segment: "rules",
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+      </svg>
+    ),
+  },
+  {
     labelKey: "guest.manage",
     segment: "guests",
     icon: (
@@ -182,6 +191,22 @@ const navItems = [
   },
 ];
 
+/**
+ * 숙소 메뉴에서 숨길 항목. 메시지 자동응답 운영에 필요 없는 기능은 메뉴에서만 빼고 페이지와 데이터는 그대로 둔다.
+ * 다시 보이게 하려면 여기서 지우면 된다.
+ */
+const HIDDEN_SEGMENTS = new Set([
+  "announcements",
+  "podong",
+  "guests",
+  "nearby",
+  "emergency",
+  "guides",
+  "cleaning",
+  "chat",
+]);
+const visibleNavItems = navItems.filter((item) => !HIDDEN_SEGMENTS.has(item.segment));
+
 export default async function PropertyLayout({
   children,
   params,
@@ -214,7 +239,7 @@ export default async function PropertyLayout({
   const propertyName = (property as { name: string }).name;
 
   return (
-    <HostLayoutShell propertyId={id} propertyName={propertyName} navItems={navItems}>
+    <HostLayoutShell propertyId={id} propertyName={propertyName} navItems={visibleNavItems}>
       {children}
     </HostLayoutShell>
   );

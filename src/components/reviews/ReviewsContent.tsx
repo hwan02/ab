@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -15,6 +15,7 @@ interface ReviewsContentProps {
 export default function ReviewsContent({ reviews, currentUserId }: ReviewsContentProps) {
   const { t } = useI18n();
   const router = useRouter();
+  const pathname = usePathname();
   const [showForm, setShowForm] = useState(false);
   const [content, setContent] = useState("");
   const [rating, setRating] = useState(5);
@@ -106,7 +107,7 @@ export default function ReviewsContent({ reviews, currentUserId }: ReviewsConten
         <button
           onClick={() => {
             if (!currentUserId) {
-              router.push("/login");
+              router.push(`/login?next=${encodeURIComponent(pathname)}`);
               return;
             }
             setShowForm(!showForm);

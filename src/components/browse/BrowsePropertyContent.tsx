@@ -10,10 +10,10 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import PhotoGallery from "@/components/property/PhotoGallery";
-import type { Property } from "@/types/database";
+import type { PropertyPublic } from "@/types/database";
 
 interface BrowsePropertyContentProps {
-  property: Property;
+  property: PropertyPublic;
   hasPendingRequest: boolean;
 }
 
@@ -24,7 +24,6 @@ export default function BrowsePropertyContent({
   const { t, locale } = useI18n();
   const supabase = createClient();
   const name = lp(property, "name", locale);
-  const address = lp(property, "address", locale);
   const description = lp(property, "description", locale);
 
   const [checkIn, setCheckIn] = useState("");
@@ -121,9 +120,6 @@ export default function BrowsePropertyContent({
         {/* Property Info */}
         <div className="mt-6">
           <h2 className="text-xl font-bold text-gray-900">{name}</h2>
-          {address && (
-            <p className="mt-1 text-sm text-gray-500">{address}</p>
-          )}
           {description && (
             <div className="mt-3 whitespace-pre-wrap text-gray-700">
               {hasDbTranslation(property, "description", locale) ? description : <AutoTranslate text={description} />}

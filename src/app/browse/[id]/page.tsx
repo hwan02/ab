@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import BrowsePropertyContent from "@/components/browse/BrowsePropertyContent";
-import type { Property } from "@/types/database";
+import type { PropertyPublic } from "@/types/database";
 import type { GuestRequest } from "@/types/database";
 
 export default async function BrowsePropertyPage({
@@ -17,14 +17,16 @@ export default async function BrowsePropertyPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect(`/login?next=${encodeURIComponent(`/browse/${id}`)}`);
   }
 
+  // 공개 뷰: 아직 등록되지 않은 게스트가 보는 페이지라 RLS 가 걸린 properties 대신 뷰를 읽는다
+  // (와이파이·주소 없음 → 클라이언트 컴포넌트로 넘어가지 않는다).
   const { data: property } = await supabase
-    .from("properties")
+    .from("properties_public")
     .select("*")
     .eq("id", id)
-    .single<Property>();
+    .maybeSingle<PropertyPublic>();
 
   if (!property) {
     redirect("/");

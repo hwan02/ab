@@ -1,0 +1,43 @@
+From: Airbnb <automated@airbnb.com>
+To: cohost@kakao.com
+Subject: =?UTF-8?B?7ZmN6ri464+Z64uY7J20IOuplOyLnOyngOulvCDrs7TrgrTsirXri4jri6Q=?=
+Date: Mon, 20 Oct 2026 09:12:33 +0900
+Message-ID: <msg-ko-0001@airbnb.com>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="b1"
+
+--b1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+홍길동님이 메시지를 보냈습니다
+
+숙소: 포포스테이 서촌 한옥
+
+메시지:
+안녕하세요! 내일 체크인인데 짐을 먼저 맡길 수 있을까요?
+오후 1시쯤 도착할 것 같아요.
+
+답장하기
+https://www.airbnb.co.kr/messaging/thread/1234567890?c=.pi80.pkaG9zdA
+
+체크인: 2026년 10월 21일
+체크아웃: 2026년 10월 23일
+예약 코드: HMABCD1234
+
+본 메일은 발신 전용입니다.
+Airbnb, Inc.
+--b1
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+<html><body>
+<p><strong>홍길동</strong>님이 메시지를 보냈습니다</p>
+<p>숙소: 포포스테이 서촌 한옥</p>
+<p>메시지:</p>
+<blockquote>안녕하세요! 내일 체크인인데 짐을 먼저 맡길 수 있을까요?<br>오후 1시쯤 도착할 것 같아요.</blockquote>
+<a href="https://www.airbnb.co.kr/messaging/thread/1234567890?c=.pi80.pkaG9zdA">답장하기</a>
+<p>체크인: 2026년 10월 21일<br>체크아웃: 2026년 10월 23일<br>예약 코드: HMABCD1234</p>
+<p>본 메일은 발신 전용입니다.</p>
+</body></html>
+--b1--

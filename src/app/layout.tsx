@@ -11,8 +11,13 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "POPO's stay",
-  description: "숙소 게스트를 위한 컨시어지 서비스",
+  title: "포포톡",
+  description: "에어비앤비 게스트 메시지 자동응답",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "포포톡",
+  },
 };
 
 export const viewport: Viewport = {
@@ -20,6 +25,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
+  themeColor: "#3b82f6",
 };
 
 export default function RootLayout({

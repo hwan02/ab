@@ -18,11 +18,12 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
   const supabase = await createClient();
 
   const [propertyResult, guidesResult] = await Promise.all([
+    // 공개 뷰: 청소 담당자에게 비로그인 링크로 공유되므로 RLS 가 걸린 properties 대신 뷰에서 이름만 읽는다.
     supabase
-      .from("properties")
+      .from("properties_public")
       .select("name")
       .eq("id", id)
-      .single<Pick<Property, "name">>(),
+      .maybeSingle<Pick<Property, "name">>(),
     supabase
       .from("cleaning_guides")
       .select("*")

@@ -117,6 +117,12 @@ const translations = {
     ja: "コンシェルジュ",
     zh: "礼宾服务",
   },
+  "nav.autoReply": {
+    ko: "포포톡 자동응답",
+    en: "PopoTalk auto-reply",
+    ja: "ポポトーク自動返信",
+    zh: "PopoTalk 自动回复",
+  },
   "nav.chat": {
     ko: "채팅",
     en: "Chat",

@@ -29,19 +29,15 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Restrict /host routes: require login + admin only
-  if (request.nextUrl.pathname.startsWith("/host")) {
-    if (!user) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      return NextResponse.redirect(url);
-    }
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-    if (user.email !== adminEmail) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/";
-      return NextResponse.redirect(url);
-    }
+  // /host 는 로그인만 필요. 숙소는 host_id 로, 수신함과 규칙은 RLS 로 각자 것만 보인다.
+  // 로그인 뒤 원래 가려던 호스트 경로로 돌아오도록 ?next= 를 붙인다(로그인 페이지 → 콜백으로 전달).
+  if (request.nextUrl.pathname.startsWith("/host") && !user) {
+    const { pathname, search } = request.nextUrl;
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    url.searchParams.set("next", `${pathname}${search}`);
+    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;
