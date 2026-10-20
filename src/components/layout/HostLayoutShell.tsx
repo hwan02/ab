@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/context";
 import type { TranslationKey } from "@/lib/i18n/translations";
+import { useHostLocale } from "@/components/layout/useHostLocale";
 
 interface NavItem {
   labelKey: string;
@@ -26,13 +27,11 @@ export default function HostLayoutShell({
   children,
 }: HostLayoutShellProps) {
   const pathname = usePathname();
-  const { locale, setLocale, t } = useI18n();
+  const { t } = useI18n();
   const isChatPage = pathname.endsWith("/chat");
 
-  // 호스트 화면은 한국어 고정 (숙소 상세 페이지에는 Header 가 없으므로 여기서 맞춘다)
-  useEffect(() => {
-    if (locale !== "ko") setLocale("ko");
-  }, [locale, setLocale]);
+  // 호스트 화면은 한국어 고정 (숙소 상세 페이지에는 Header 가 없으므로 여기서 맞춘다). 저장된 게스트 언어는 보존.
+  useHostLocale(true);
 
   // Chat page: full-screen without shell
   if (isChatPage) {

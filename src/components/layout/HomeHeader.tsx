@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/context";
 import { LOCALES } from "@/lib/i18n/translations";
+import { useHostLocale } from "@/components/layout/useHostLocale";
 
 interface HomeHeaderProps {
   userName: string | null;
@@ -22,11 +23,9 @@ export default function HomeHeader({ userName, avatarUrl, showHostLink }: HomeHe
   const [emailNotif, setEmailNotif] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // 호스트 화면(/host…)은 한국어 고정: 언어 전환 UI 를 숨기고 locale 을 ko 로 맞춘다.
+  // 호스트 화면(/host…)은 한국어 고정: 언어 전환 UI 를 숨기고 표시 locale 만 ko 로 맞춘다(저장값은 보존).
   const isHostRoute = pathname?.startsWith("/host") ?? false;
-  useEffect(() => {
-    if (isHostRoute && locale !== "ko") setLocale("ko");
-  }, [isHostRoute, locale, setLocale]);
+  useHostLocale(isHostRoute);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {

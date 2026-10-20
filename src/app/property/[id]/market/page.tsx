@@ -15,7 +15,7 @@ export default async function MarketPage({ params }: MarketPageProps) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/property/${id}/market`)}`);
 
   const { data: orders } = await supabase
     .from("market_orders")

@@ -17,7 +17,7 @@ export default async function BrowsePropertyPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect(`/login?next=${encodeURIComponent(`/browse/${id}`)}`);
   }
 
   const { data: property } = await supabase
