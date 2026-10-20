@@ -3,7 +3,7 @@
  *
  * POST /api/places/migrate-photos
  *   인증: 로그인 세션이면서 관리자(NEXT_PUBLIC_ADMIN_EMAIL)만. 구글 API 비용이 드는 일괄 작업이라
- *        호스트 개별 권한이 아니라 관리자로 제한한다.
+ *        호스트 개별 권한이 아니라 관리자로 제한한다. 비관리자 호스트가 버튼을 누르면 403 과 한국어 안내가 간다.
  *   body: { property_id: string }
  *
  * DB·스토리지 쓰기는 서비스 롤(createAdminClient)로 한다.
@@ -14,7 +14,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+// 서버 전용 키(GOOGLE_MAPS_SERVER_KEY)가 있으면 그것을, 없으면 클라이언트 번들에도 들어가는 NEXT_PUBLIC 키를 쓴다.
+// NEXT_PUBLIC_ 키는 어차피 공개돼 있으므로 '서버 키 보호'는 서버 전용 키를 설정해야 실효가 있다.
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_SERVER_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://popostay.vercel.app";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -48,7 +50,8 @@ export async function POST(req: NextRequest) {
   }
   const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
   if (!adminEmail || user.email !== adminEmail) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // 호출처(host nearby 페이지)는 이 문구를 그대로 화면에 보여 준다.
+    return NextResponse.json({ error: "관리자만 사진을 가져올 수 있습니다" }, { status: 403 });
   }
 
   try {

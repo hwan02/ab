@@ -7,24 +7,12 @@ import LocalizedPropertyDetails from "@/components/property/LocalizedPropertyDet
 import WeatherWidget from "@/components/property/WeatherWidget";
 import PropertyGuideSection from "@/components/property/PropertyGuideSection";
 import { T } from "@/components/i18n/T";
-import type { Property, PropertyGuide } from "@/types/database";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { Property, PropertyGuide, PropertyPublic, PrivatePropertyKey } from "@/types/database";
 
 interface PropertyPageProps {
   params: Promise<{ id: string }>;
 }
-
-/** properties_public 뷰에는 없는 비공개 컬럼. 호스트 본인·등록 게스트만 properties 테이블에서 읽는다. */
-type PrivatePropertyKey =
-  | "wifi_ssid"
-  | "wifi_password"
-  | "address"
-  | "address_en"
-  | "address_ja"
-  | "address_zh"
-  | "airbnb_listing_title"
-  | "auto_reply_mode";
-
-type PropertyPublic = Omit<Property, PrivatePropertyKey>;
 
 const EMPTY_PRIVATE: Pick<Property, PrivatePropertyKey> = {
   wifi_ssid: null,
@@ -36,6 +24,15 @@ const EMPTY_PRIVATE: Pick<Property, PrivatePropertyKey> = {
   airbnb_listing_title: null,
   auto_reply_mode: "confirm",
 };
+
+/** 서비스 롤 키가 없는 환경(로컬 등)에서는 세션 클라이언트로 되돌아간다. */
+function safeAdminClient() {
+  try {
+    return createAdminClient();
+  } catch {
+    return null;
+  }
+}
 
 export default async function PropertyPage({ params }: PropertyPageProps) {
   const { id } = await params;
@@ -66,11 +63,14 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
 
   // 비공개 정보: properties 테이블은 RLS 로 호스트 본인·체류 기간 안의 등록 게스트에게만 행이 보인다.
   // 행이 안 보이면(비로그인, 미등록, 기간 만료) 공개 정보만으로 그린다.
+  // 관리자(NEXT_PUBLIC_ADMIN_EMAIL)는 레이아웃(isWithinStayPeriod)과 같은 기준으로 서비스 롤로 읽는다.
   const user = userResult.data.user;
   let property: Property = { ...publicProperty, ...EMPTY_PRIVATE };
   let canViewPrivate = false;
   if (user) {
-    const { data: privateProperty } = await supabase
+    const isAdmin = !!process.env.NEXT_PUBLIC_ADMIN_EMAIL && user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+    const reader = isAdmin ? safeAdminClient() ?? supabase : supabase;
+    const { data: privateProperty } = await reader
       .from("properties")
       .select("*")
       .eq("id", id)

@@ -20,7 +20,7 @@ export default function DevToolbar() {
   useEffect(() => {
     const supabase = createClient();
     supabase
-      .from("properties")
+      .from("properties_public")
       .select("id, name")
       .order("created_at", { ascending: false })
       .then(({ data }) => {

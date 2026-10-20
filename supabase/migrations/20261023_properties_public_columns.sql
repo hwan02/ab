@@ -8,12 +8,20 @@
 --   2) properties 테이블의 SELECT 는 호스트 본인 또는 property_guests 에 등록돼 체류 기간 안인
 --      게스트만. 와이파이·주소는 이 경로로만 읽힌다.
 --
--- 적용 전에 properties 를 직접 읽는 공개 페이지가 properties_public 으로 바뀌어 있어야 한다.
--- 이 마이그레이션과 같이 바뀐 것: src/app/property/[id]/page.tsx, src/app/property/[id]/layout.tsx.
--- 아직 테이블을 직접 읽는 곳(비로그인/비게스트에게는 빈 결과가 된다):
---   src/app/page.tsx(숙소 목록), src/app/cleaning/[id]/page.tsx(name),
---   src/app/property/[id]/nearby/page.tsx(latitude, longitude), src/app/browse/[id]/page.tsx,
---   src/components/dev/DevToolbar.tsx → 모두 .from("properties_public") 로 바꾸면 된다.
+-- 이 마이그레이션과 같은 커밋에서 properties 를 직접 읽던 공개 경로가 모두 properties_public 으로 바뀌었다:
+--   src/app/property/[id]/page.tsx, src/app/property/[id]/layout.tsx, src/app/page.tsx(숙소 목록),
+--   src/app/cleaning/[id]/page.tsx, src/app/property/[id]/nearby/page.tsx, src/app/browse/[id]/page.tsx,
+--   src/components/dev/DevToolbar.tsx.
+-- properties 테이블을 그대로 읽는 곳은 호스트 전용(/host/*, host_id 조건) 또는 서비스 롤 경로뿐이다.
+--
+-- 제품 결정 필요(이 마이그레이션은 손대지 않음): checkin_guide/checkout_guide/house_rules 는 기존처럼 공개 뷰에
+-- 포함된다. 체크인 가이드에 도어락 비밀번호를 적는 운영이라면 와이파이와 같은 급이므로 뷰에서 빼야 한다.
+
+-- 0) 좌표 컬럼: 저장소 마이그레이션에는 없고 대시보드에서 추가된 것으로 보여, 빈 DB(db reset)에서도
+--    뷰가 만들어지도록 보장한다. 이미 있으면(타입이 numeric 이어도) 아무것도 하지 않는다.
+ALTER TABLE public.properties
+  ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
 
 -- 1) 게스트 등록 여부 (SECURITY DEFINER: property_guests 정책이 properties 를 참조하므로
 --    properties 정책에서 property_guests 를 그대로 참조하면 정책 재귀가 난다)

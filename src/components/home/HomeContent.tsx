@@ -5,11 +5,11 @@ import { useI18n } from "@/lib/i18n/context";
 import { lp } from "@/lib/i18n/localize";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { Property } from "@/types/database";
+import type { PropertyPublic } from "@/types/database";
 
 interface HomeContentProps {
   isHost: boolean;
-  properties: Property[];
+  properties: PropertyPublic[];
 }
 
 export default function HomeContent({
@@ -69,11 +69,10 @@ export default function HomeContent({
   );
 }
 
-function PropertyCard({ property }: { property: Property }) {
+function PropertyCard({ property }: { property: PropertyPublic }) {
   const { locale } = useI18n();
   const photoUrl = property.photos?.[0];
   const name = lp(property, "name", locale);
-  const address = lp(property, "address", locale);
 
   return (
     <Link href={`/property/${property.id}`}>
@@ -98,11 +97,6 @@ function PropertyCard({ property }: { property: Property }) {
           <h3 className="truncate text-base font-semibold text-gray-900">
             {name}
           </h3>
-          {address && (
-            <p className="mt-1 truncate text-sm text-gray-500">
-              {address}
-            </p>
-          )}
         </div>
       </Card>
     </Link>

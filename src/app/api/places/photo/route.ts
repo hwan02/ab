@@ -9,7 +9,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+// 서버 전용 키(GOOGLE_MAPS_SERVER_KEY)가 있으면 우선. NEXT_PUBLIC 키는 번들에 노출돼 있어 로그인 검사만으로는
+// '서버 키 무단 사용'을 막지 못하므로, 실제 보호는 서버 전용 키를 두고 NEXT_PUBLIC 키에 HTTP 리퍼러 제한을 걸어야 한다.
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_SERVER_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 export const dynamic = "force-dynamic";
 
