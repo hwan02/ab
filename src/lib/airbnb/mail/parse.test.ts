@@ -190,3 +190,86 @@ test("회신 실패 알림 메일은 other", () => {
   });
   assert.equal(parsed.kind, "other");
 });
+
+// ---------------------------------------------------------------------------
+// 게스트 문장이 종료 마커(체크인/게스트/날짜/Reply)처럼 보여도 본문이 잘리지 않아야 한다.
+// 실제 구조 픽스처를 복제해 본문만 바꾼 것. 본문 종료는 버튼 줄("답장 보내기", "예약 사전 승인 또는 거절")에서만.
+// ---------------------------------------------------------------------------
+
+test("게스트 메시지: '답장이…', '체크인 시간이…', '체크아웃은…' 문장은 본문으로 유지", async () => {
+  const { parsed } = await parseFixture("guest-message-ko-checkin-sentence.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.guestName, "유나");
+  assert.equal(parsed.messageText, "답장이 늦어서 죄송해요. 체크인 시간이 몇시인가요?\n체크아웃은 늦게 해도 되나요?");
+  assert.equal(parsed.checkIn, "2026-05-11");
+  assert.equal(parsed.checkOut, "2026-05-12");
+});
+
+test("게스트 메시지: '게스트 4명인데…', '예약 코드는…' 문장은 본문으로 유지", async () => {
+  const { parsed } = await parseFixture("guest-message-ko-guests-sentence.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.messageText, "게스트 4명인데 괜찮나요?\n예약 코드는 어디서 확인하나요?");
+});
+
+test("게스트 메시지: '12월 23일에…', '2026년 12월 27일 오전에…' 문장은 본문으로 유지", async () => {
+  const { parsed } = await parseFixture("guest-message-ko-date-sentence.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.messageText, "12월 23일에 도착해요.\n2026년 12월 27일 오전에 체크아웃하고 싶은데 가능할까요?");
+  // 본문 안의 날짜가 아니라 체크인/체크아웃 표의 날짜를 쓴다.
+  assert.equal(parsed.checkIn, "2026-05-11");
+  assert.equal(parsed.checkOut, "2026-05-12");
+});
+
+test("게스트 메시지(영어 문장): 'Reply soon please', 'Check-in at…', 'Accept if…' 는 본문으로 유지", async () => {
+  const { parsed } = await parseFixture("guest-message-en-reply-sentence.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.messageText, "Reply soon please\nCheck-in at 2pm okay? Guests will be 3. Accept if possible.");
+});
+
+test("숙박 문의(프로필 블록 뒤 본문): '체크인 전에…', '게스트 4명인데…' 문장은 본문으로 유지하고 버튼에서 끊는다", async () => {
+  const { parsed } = await parseFixture("inquiry-ko-real-checkin-sentence.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.guestName, "하나");
+  assert.equal(parsed.messageText, "체크인 전에 짐을 맡길 수 있나요?\n게스트 4명인데 괜찮나요? 1월 1일 저녁에 도착해요.");
+  assert.equal(parsed.checkIn, "2027-01-01");
+  assert.equal(parsed.checkOut, "2027-01-03");
+});
+
+test("숙박 문의('본인 인증 완료 · 후기 N개' + 도시 '홍콩'): 도시 줄 뒤의 '체크인 시간이…' 문장은 본문", async () => {
+  const { parsed } = await parseFixture("inquiry-ko-real-city-checkin-sentence.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.guestName, "HELEN");
+  assert.equal(parsed.messageText, "체크인 시간이 몇시인가요? 5월 28일에 도착해요.");
+});
+
+test("버튼 줄은 정확히 버튼 문구일 때만, 섹션 제목은 제목 형태일 때만 본문을 끊는다", () => {
+  const from = "에어비앤비 <express@airbnb.com>";
+  const text = [
+    "#숙소 예약(5월 11일~12일)",
+    "",
+    "유나",
+    "예약자",
+    "",
+    "답장 부탁드려요. 체크인  체크아웃 시간 알려주세요.",
+    "Reply please, view message when you can.",
+    "",
+    "답장 보내기",
+    "이 이메일에 직접 회신하여 답장하실 수도 있습니다.",
+    "",
+    "체크인  체크아웃",
+    "2026년 5월 11일  2026년 5월 12일",
+    "게스트",
+    "성인 1명",
+  ].join("\n");
+  const parsed = parseAirbnbMail({ subject: "RE: #숙소 예약(5월 11일~12일)", from, text });
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.messageText, "답장 부탁드려요. 체크인  체크아웃 시간 알려주세요.\nReply please, view message when you can.");
+
+  // 버튼 줄이 없어도 제목 형태의 "체크인  체크아웃" 줄에서는 끊는다.
+  const noButton = parseAirbnbMail({
+    subject: "RE: #숙소 예약(5월 11일~12일)",
+    from,
+    text: ["유나", "예약자", "", "체크인 시간이 몇시인가요?", "", "체크인  체크아웃", "2026년 5월 11일  2026년 5월 12일"].join("\n"),
+  });
+  assert.equal(noButton.messageText, "체크인 시간이 몇시인가요?");
+});
