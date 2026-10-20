@@ -15,27 +15,13 @@ export default async function HostPage() {
     redirect("/login");
   }
 
-  await supabase.from("profiles").update({ role: "host" }).eq("id", user.id);
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("name")
-    .eq("id", user.id)
-    .single();
-
-  const { data: properties } = await supabase
-    .from("properties")
-    .select("*")
-    .eq("host_id", user.id)
-    .order("created_at", { ascending: false });
-
-  // 숙소별 '답변 필요' 수: 게스트 메시지 중 아직 호스트가 보내지 않은 것(new / drafted). RLS 로 자기 숙소 메일만 읽힌다.
-  const { data: pending } = await supabase
-    .from("airbnb_inbound_mails")
-    .select("property_id")
-    .eq("kind", "message")
-    .in("status", ["new", "drafted"])
-    .not("property_id", "is", null);
+  // 세 쿼리는 서로 독립이라 병렬로 보낸다. (매 방문마다 하던 profiles.role 갱신은 뺐다)
+  const [{ data: profile }, { data: properties }, { data: pending }] = await Promise.all([
+    supabase.from("profiles").select("name").eq("id", user.id).single(),
+    supabase.from("properties").select("*").eq("host_id", user.id).order("created_at", { ascending: false }),
+    // 숙소별 '답변 필요' 수: 게스트 메시지 중 아직 호스트가 보내지 않은 것(new / drafted). RLS 로 자기 숙소 메일만 읽힌다.
+    supabase.from("airbnb_inbound_mails").select("property_id").eq("kind", "message").in("status", ["new", "drafted"]).not("property_id", "is", null),
+  ]);
   const pendingCounts: Record<string, number> = {};
   for (const row of (pending ?? []) as { property_id: string }[]) {
     pendingCounts[row.property_id] = (pendingCounts[row.property_id] ?? 0) + 1;
