@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useI18n } from "@/lib/i18n/context";
 import { lp, hasDbTranslation } from "@/lib/i18n/localize";
@@ -16,6 +16,7 @@ interface PropertyInfoProps {
 export default function PropertyInfo({ property }: PropertyInfoProps) {
   const { t, locale } = useI18n();
   const [showWifiQR, setShowWifiQR] = useState(false);
+  const qrRef = useRef<SVGSVGElement>(null);
   const address = lp(property, "address", locale);
   const checkinGuide = lp(property, "checkin_guide", locale);
   const checkoutGuide = lp(property, "checkout_guide", locale);
@@ -79,11 +80,45 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
             <Modal open={showWifiQR} onClose={() => setShowWifiQR(false)} title={`WiFi ${t("property.wifiQR")}`}>
               <div className="flex flex-col items-center gap-4 py-2">
                 <QRCodeSVG
+                  ref={qrRef}
                   value={`WIFI:T:WPA;S:${property.wifi_ssid};P:${property.wifi_password};;`}
                   size={200}
                   level="M"
                 />
                 <p className="text-sm text-gray-500">{property.wifi_ssid}</p>
+                <button
+                  onClick={() => {
+                    const svg = qrRef.current;
+                    if (!svg) return;
+                    const svgData = new XMLSerializer().serializeToString(svg);
+                    const canvas = document.createElement("canvas");
+                    const scale = 3;
+                    canvas.width = 200 * scale;
+                    canvas.height = 200 * scale;
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) return;
+                    const img = new Image();
+                    img.onload = () => {
+                      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                      canvas.toBlob((blob) => {
+                        if (!blob) return;
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `WiFi-QR-${property.wifi_ssid}.png`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }, "image/png");
+                    };
+                    img.src = `data:image/svg+xml;base64,${btoa(svgData)}`;
+                  }}
+                  className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                  </svg>
+                  {t("common.save")}
+                </button>
               </div>
             </Modal>
           )}
