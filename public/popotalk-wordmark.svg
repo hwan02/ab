@@ -1,34 +1,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 150" fill="none">
   <defs>
     <linearGradient id="wg" x1="0" y1="0" x2="400" y2="150" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FB7185"/>
-      <stop offset="1" stop-color="#E11D48"/>
+      <stop stop-color="#FDA4AF"/>
+      <stop offset="1" stop-color="#FB7185"/>
     </linearGradient>
   </defs>
-  <g stroke="url(#wg)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round">
-    <!-- 포 (1) -->
-    <path d="M16 24 H104"/>
-    <path d="M38 24 V62"/>
-    <path d="M82 24 V62"/>
-    <path d="M16 62 H104"/>
-    <path d="M60 80 V100"/>
-    <path d="M12 116 H108"/>
-
-    <!-- 포 (2) -->
-    <path d="M150 24 H238"/>
-    <path d="M172 24 V62"/>
-    <path d="M216 24 V62"/>
-    <path d="M150 62 H238"/>
-    <path d="M194 80 V100"/>
-    <path d="M146 116 H242"/>
-
-    <!-- 톡 : ㅌ / ㅗ / ㄱ -->
-    <path d="M292 12 H372"/>
-    <path d="M292 12 V60"/>
-    <path d="M292 36 H364"/>
-    <path d="M292 60 H372"/>
-    <path d="M332 74 V86"/>
-    <path d="M286 98 H378"/>
-    <path d="M300 118 H370 V138"/>
+  <g stroke="url(#wg)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 포 (1) 살짝 왼쪽으로 기울임 -->
+    <g transform="rotate(-4 60 72)">
+      <path d="M18 26 H102"/>
+      <path d="M40 26 V62"/>
+      <path d="M80 26 V62"/>
+      <path d="M18 62 H102"/>
+      <path d="M60 80 V98"/>
+      <path d="M14 114 H106"/>
+    </g>
+    <!-- 포 (2) 살짝 오른쪽으로, 조금 위로 -->
+    <g transform="translate(0 -6) rotate(3 194 72)">
+      <path d="M152 26 H236"/>
+      <path d="M174 26 V62"/>
+      <path d="M214 26 V62"/>
+      <path d="M152 62 H236"/>
+      <path d="M194 80 V98"/>
+      <path d="M148 114 H240"/>
+    </g>
+    <!-- 톡 -->
+    <g transform="rotate(-2 332 76)">
+      <path d="M294 14 H370"/>
+      <path d="M294 14 V60"/>
+      <path d="M294 37 H362"/>
+      <path d="M294 60 H370"/>
+      <path d="M332 74 V86"/>
+      <path d="M288 98 H376"/>
+      <path d="M302 118 H368 V136"/>
+    </g>
   </g>
+  <!-- 볼터치 같은 작은 점 둘 -->
+  <circle cx="122" cy="40" r="5" fill="#FECDD3"/>
+  <circle cx="258" cy="34" r="4" fill="#FECDD3"/>
 </svg>
