@@ -35,6 +35,8 @@ interface PropertyRow {
   auto_reply_mode: "off" | "confirm" | "auto";
 }
 
+const REACTION_RE = /에 반응\([^)]*\)했습니다\.?$|reacted (?:with )?.{0,4} to /i;
+
 type Outcome =
   | { kind: "auto_sent"; ruleName: string; text: string }
   | { kind: "ready"; ruleName: string; text: string; note?: string }
@@ -242,6 +244,12 @@ async function applyRules(supabase: Admin, mailId: string, properties: PropertyR
   if (!property) return { kind: "needs_reply", note: "숙소를 찾지 못함 (에어비앤비 리스팅 제목 확인)" };
   if (property.auto_reply_mode === "off") return { kind: "skipped" };
   if (!mail.message_text) return { kind: "needs_reply", note: "메시지 본문 없음" };
+
+  // 게스트가 이모지 반응만 한 경우("'…'에 반응(❤️)했습니다"): 답장할 내용이 없으니 무시 처리
+  if (REACTION_RE.test(mail.message_text.trim())) {
+    await supabase.from("airbnb_inbound_mails").update({ status: "ignored" }).eq("id", mail.id);
+    return { kind: "skipped" };
+  }
 
   let rule: ReplyRule | null = null;
   let text = mail.draft_reply ?? "";
