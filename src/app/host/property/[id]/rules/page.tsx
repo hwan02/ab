@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RuleTester from "@/components/host/RuleTester";
+import { removePhotoByUrl, uploadMainPhoto } from "@/lib/propertyPhoto";
 import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -87,7 +88,7 @@ type Tab = "list" | "new" | "test";
 const TABS: { key: Tab; label: string }[] = [
   { key: "list", label: "목록" },
   { key: "new", label: "규칙 추가" },
-  { key: "test", label: "테스트" },
+  { key: "test", label: "미리보기" },
 ];
 
 const SAMPLE_RULES: { name: string; keywords: string[]; answer: string }[] = [
@@ -139,6 +140,8 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
   const [othersOpen, setOthersOpen] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [priority, setPriority] = useState("0");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
@@ -185,6 +188,7 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
     setAnswerJa("");
     setOthersOpen(false);
     setPriority("0");
+    setPhotoUrl(null);
   };
 
   const otherAnswers: Record<OtherLang, string> = { en: answerEn, zh: answerZh, ja: answerJa };
@@ -230,6 +234,7 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
     setAnswerJa(rule.answer_ja ?? "");
     setOthersOpen(!!(rule.answer_en || rule.answer_zh || rule.answer_ja));
     setPriority(String(rule.priority));
+    setPhotoUrl(rule.photo_url ?? null);
     setTab("new");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -258,6 +263,7 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
       answer_zh: values.zh || null,
       answer_ja: values.ja || null,
       priority: Number(priority) || 0,
+      photo_url: photoUrl,
       updated_at: new Date().toISOString(),
     };
     const save = (row: Partial<typeof payload>) =>
@@ -265,6 +271,12 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
     let { error } = await save(payload);
     // 배포 순서: 마이그레이션(20261023_reply_rules_i18n.sql)을 먼저 적용해야 answer_zh/answer_ja 컬럼이 있다.
     // 아직 없는 DB(PGRST204: column does not exist)면 두 칸을 빼고 한 번 더 저장해 규칙 추가·수정 자체는 되게 한다.
+    let droppedPhoto = false;
+    if (error && isMissingColumnError(error, ["photo_url"])) {
+      const { photo_url: _p, ...noPhoto } = payload; // eslint-disable-line @typescript-eslint/no-unused-vars
+      ({ error } = await save(noPhoto));
+      droppedPhoto = !error;
+    }
     let droppedZhJa = false;
     if (error && isMissingColumnError(error, ["answer_zh", "answer_ja"])) {
       const { answer_zh: _zh, answer_ja: _ja, ...legacy } = payload; // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -275,6 +287,7 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
     if (error) return flash("저장 실패: " + error.message);
     let note = failed.length > 0 ? ` ${langNames(failed)} 번역 실패.` : "";
     if (droppedZhJa) note += " 중국어·일본어 답변은 저장되지 않았습니다(DB 마이그레이션 필요).";
+    if (droppedPhoto) note += " 사진은 저장되지 않았습니다(DB 마이그레이션 필요).";
     flash((editingId ? "규칙을 수정했습니다." : "규칙을 추가했습니다.") + note);
     resetForm();
     load();
@@ -308,6 +321,26 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
     const { error } = await supabase.from("properties").update({ auto_reply_mode: mode }).eq("id", propertyId);
     if (error) return flash("설정 실패: " + error.message);
     setProperty((p) => (p ? { ...p, auto_reply_mode: mode } : p));
+  };
+
+  const onPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const url = user ? await uploadMainPhoto(supabase, user.id, file) : null;
+    setUploading(false);
+    if (!url) return flash("사진 업로드 실패");
+    setPhotoUrl(url);
+  };
+
+  const removePhoto = async () => {
+    const old = photoUrl;
+    setPhotoUrl(null);
+    if (old && !rules.some((r) => r.photo_url === old && r.id !== editingId)) await removePhotoByUrl(supabase, old);
   };
 
   const insertVariable = (token: string) => setAnswer((a) => (a ? `${a} ${token}` : token));
@@ -429,6 +462,28 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
             </div>
           </div>
 
+          {/* 사진 (답장 끝에 링크로 붙는다) */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">사진</label>
+            {photoUrl ? (
+              <div className="flex items-center gap-3">
+                <img src={photoUrl} alt="" className="h-20 w-28 rounded-lg border border-gray-200 object-cover" />
+                <button type="button" onClick={removePhoto} className="text-xs text-gray-500 hover:text-red-600">
+                  삭제
+                </button>
+              </div>
+            ) : (
+              <input
+                type="file"
+                accept="image/*"
+                onChange={onPhotoChange}
+                disabled={uploading}
+                className="block text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-rose-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-rose-600 hover:file:bg-rose-100 disabled:opacity-50"
+              />
+            )}
+            {uploading && <p className="mt-1 text-xs text-gray-400">올리는 중...</p>}
+          </div>
+
           {/* 다른 언어 답변 */}
           <div className="rounded-lg border border-gray-200">
             <div className="flex items-center justify-between gap-2 px-3 py-2">
@@ -531,7 +586,10 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
               <div key={rule.id} className={cn(!rule.enabled && "bg-gray-50")}>
                 <div className="flex items-center gap-3 px-4 py-2.5">
                   <button onClick={() => setOpenId(open ? null : rule.id)} className="min-w-0 flex-1 text-left">
-                    <span className={cn("block truncate text-sm font-medium", rule.enabled ? "text-gray-900" : "text-gray-400")}>{rule.name}</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className={cn("truncate text-sm font-medium", rule.enabled ? "text-gray-900" : "text-gray-400")}>{rule.name}</span>
+                      {rule.photo_url && <span className="shrink-0 rounded bg-gray-100 px-1.5 text-[10px] text-gray-500">사진</span>}
+                    </span>
                     <span className="mt-0.5 block truncate text-xs text-gray-400">
                       {rule.keywords.slice(0, 4).join(", ")}
                       {rule.keywords.length > 4 && ` 외 ${rule.keywords.length - 4}개`}

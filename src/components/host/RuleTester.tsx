@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Textarea } from "@/components/ui/Textarea";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
-import { ANSWER_LANG_LABELS, detectLanguage, matchRule, pickAnswerWithLang, renderAnswer, type ReplyRule } from "@/lib/airbnb/rules";
+import { ANSWER_LANG_LABELS, detectLanguage, matchRule, pickAnswerWithLang, renderAnswer, withPhotoLink, type ReplyRule } from "@/lib/airbnb/rules";
 import type { AirbnbReplyRule, Property } from "@/types/database";
 
 type PropertyBits = Pick<Property, "id" | "name" | "wifi_ssid" | "wifi_password" | "checkin_time" | "checkout_time" | "address">;
@@ -54,7 +54,8 @@ export default function RuleTester({ propertyId, refreshKey = 0 }: { propertyId:
       wifiPassword: property?.wifi_password,
       address: property?.address,
     });
-    return { matched: m.rule, text, detected, answerLang: picked.answerLang };
+    const withLink = withPhotoLink(text, m.rule, typeof window !== "undefined" ? window.location.origin : null, picked.answerLang);
+    return { matched: m.rule, text: withLink, detected, answerLang: picked.answerLang };
   }, [message, rules, property, guestName]);
 
   if (loading) return <div className="p-8 text-sm text-gray-500">불러오는 중...</div>;

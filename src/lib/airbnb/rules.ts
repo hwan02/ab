@@ -34,6 +34,7 @@ export interface ReplyRule {
   answer_en: string | null;
   answer_zh?: string | null;
   answer_ja?: string | null;
+  photo_url?: string | null;
   priority: number;
   enabled: boolean;
 }
@@ -288,4 +289,16 @@ export function suggestKeywords(message: string): string[] {
   const uniq: string[] = [];
   for (const w of words) if (!uniq.includes(w)) uniq.push(w);
   return uniq.slice(0, 6);
+}
+
+const PHOTO_LABEL: Record<AnswerLang, string> = { ko: "사진", en: "Photo", zh: "照片", ja: "写真" };
+
+/**
+ * 규칙에 사진이 있으면 답장 끝에 짧은 사진 링크를 붙인다.
+ * 에어비앤비 메일 회신은 첨부 이미지를 스레드에 올리지 않으므로 링크로 보낸다. 링크는 /r/<규칙 id> → 사진으로 리디렉트.
+ */
+export function withPhotoLink(text: string, rule: Pick<ReplyRule, "id" | "photo_url">, baseUrl: string | null | undefined, lang: AnswerLang): string {
+  if (!rule.photo_url || !baseUrl) return text;
+  const link = `${baseUrl.replace(/\/$/, "")}/r/${rule.id}`;
+  return `${text}\n\n${PHOTO_LABEL[lang]}: ${link}`;
 }

@@ -280,6 +280,7 @@ export interface AirbnbReplyRule {
   answer_en: string | null;
   answer_zh: string | null;
   answer_ja: string | null;
+  photo_url?: string | null;
   priority: number;
   enabled: boolean;
   hit_count: number;

@@ -199,3 +199,11 @@ test("protectVariables/restoreVariables: 변수 토큰을 자리표시로 바꿨
 test("suggestKeywords 는 불용어를 빼고 앞에서부터 최대 6개", () => {
   assert.deepEqual(suggestKeywords("안녕하세요 혹시 체크인 전에 짐 보관 되나요?"), ["체크인", "전에", "보관"]);
 });
+
+test("withPhotoLink 는 사진이 있을 때만 언어별 라벨로 짧은 링크를 붙인다", async () => {
+  const { withPhotoLink } = await import("./rules.ts");
+  assert.equal(withPhotoLink("답", { id: "abc", photo_url: null }, "https://x.app", "ko"), "답");
+  assert.equal(withPhotoLink("답", { id: "abc", photo_url: "https://s/p.jpg" }, null, "ko"), "답");
+  assert.equal(withPhotoLink("답", { id: "abc", photo_url: "https://s/p.jpg" }, "https://x.app/", "ko"), "답\n\n사진: https://x.app/r/abc");
+  assert.equal(withPhotoLink("Hi", { id: "abc", photo_url: "https://s/p.jpg" }, "https://x.app", "en"), "Hi\n\nPhoto: https://x.app/r/abc");
+});

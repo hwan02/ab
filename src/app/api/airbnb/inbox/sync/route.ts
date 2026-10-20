@@ -17,7 +17,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchAirbnbMails } from "@/lib/airbnb/mail/imap";
 import { parseAirbnbMail, type ParsedAirbnbMail } from "@/lib/airbnb/mail/parse";
 import { isAirbnbReplyAddress, sendAirbnbReply } from "@/lib/airbnb/mail/smtp";
-import { matchRule, pickAnswer, renderAnswer, type ReplyRule } from "@/lib/airbnb/rules";
+import { matchRule, renderAnswer, type ReplyRule, pickAnswerWithLang, withPhotoLink } from "@/lib/airbnb/rules";
 import { matchProperty, twinKey, type MatchReason } from "@/lib/airbnb/sync";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PRODUCT_NAME } from "@/lib/airbnb/brand";
@@ -387,7 +387,8 @@ async function applyRules(supabase: Admin, mailId: string, properties: PropertyR
     const m = matchRule(mail.message_text, (rules ?? []) as ReplyRule[]);
     if (!m) return { kind: "needs_reply" };
     rule = m.rule;
-    text = renderAnswer(pickAnswer(rule, mail.message_text), {
+    const picked = pickAnswerWithLang(rule, mail.message_text);
+    text = renderAnswer(picked.text, {
       guestName: mail.guest_name,
       propertyName: property.name,
       checkIn: mail.check_in,
@@ -398,6 +399,7 @@ async function applyRules(supabase: Admin, mailId: string, properties: PropertyR
       wifiPassword: property.wifi_password,
       address: property.address,
     });
+    text = withPhotoLink(text, rule, appBaseUrl(), picked.answerLang);
     await supabase.from("airbnb_inbound_mails").update({ matched_rule_id: rule.id, draft_reply: text, status: "drafted" }).eq("id", mail.id);
   }
 
@@ -571,4 +573,10 @@ async function handleReplyFailure(
     );
   }
   return true;
+}
+
+function appBaseUrl(): string | null {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  return null;
 }
