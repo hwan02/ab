@@ -120,3 +120,14 @@ export function twinKey(threadId: string | null, messageText: string | null): st
 export function looksLikeHashtagTitle(title: string): boolean {
   return title.trim().startsWith("#");
 }
+
+/**
+ * 예약 확정 전(문의) 스레드인지. 에어비앤비는 예약 확정 전 게스트에게 링크·사진·동영상 전송을 막는다.
+ * - 문의 스레드 메일 제목: "… 숙박 문의", "RE: … 리스팅 예약(기간) 관련 문의"
+ * - 확정 예약 스레드 제목: "RE: … 예약(기간)" (문의 없음)
+ * 제목만으로 애매하면 같은 스레드에 '예약 확정' 메일이 있었는지(hasConfirmedReservation)로 판단한다.
+ */
+export function isInquiryThread(subject: string, hasConfirmedReservation: boolean): boolean {
+  if (hasConfirmedReservation) return false;
+  return /문의|inquiry/i.test(subject);
+}

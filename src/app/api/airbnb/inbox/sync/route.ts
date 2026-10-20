@@ -18,7 +18,7 @@ import { fetchAirbnbMails } from "@/lib/airbnb/mail/imap";
 import { parseAirbnbMail, type ParsedAirbnbMail } from "@/lib/airbnb/mail/parse";
 import { isAirbnbReplyAddress, sendAirbnbReply } from "@/lib/airbnb/mail/smtp";
 import { matchRule, renderAnswer, type ReplyRule, pickAnswerWithLang, withPhotoLink } from "@/lib/airbnb/rules";
-import { matchProperty, twinKey, type MatchReason } from "@/lib/airbnb/sync";
+import { matchProperty, twinKey, type MatchReason, isInquiryThread } from "@/lib/airbnb/sync";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PRODUCT_NAME } from "@/lib/airbnb/brand";
 
@@ -399,7 +399,10 @@ async function applyRules(supabase: Admin, mailId: string, properties: PropertyR
       wifiPassword: property.wifi_password,
       address: property.address,
     });
-    text = withPhotoLink(text, rule, appBaseUrl(), picked.answerLang);
+    // 예약 확정 전 게스트에게는 링크·사진이 막혀 메시지가 걸러질 수 있으므로 사진 링크는 확정 예약 스레드에만 붙인다.
+    if (rule.photo_url && !(await inquiryThread(supabase, mail))) {
+      text = withPhotoLink(text, rule, appBaseUrl(), picked.answerLang);
+    }
     await supabase.from("airbnb_inbound_mails").update({ matched_rule_id: rule.id, draft_reply: text, status: "drafted" }).eq("id", mail.id);
   }
 
@@ -579,4 +582,18 @@ function appBaseUrl(): string | null {
   if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
   return null;
+}
+
+async function inquiryThread(supabase: Admin, mail: { thread_id: string | null; subject: string }): Promise<boolean> {
+  let confirmed = false;
+  if (mail.thread_id) {
+    const { data } = await supabase
+      .from("airbnb_inbound_mails")
+      .select("id")
+      .eq("thread_id", mail.thread_id)
+      .eq("kind", "reservation_confirmed")
+      .limit(1);
+    confirmed = (data?.length ?? 0) > 0;
+  }
+  return isInquiryThread(mail.subject, confirmed);
 }

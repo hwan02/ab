@@ -90,3 +90,11 @@ test("looksLikeHashtagTitle", () => {
   assert.equal(looksLikeHashtagTitle("  #홍대"), true);
   assert.equal(looksLikeHashtagTitle("포포스테이 홍대점"), false);
 });
+
+test("isInquiryThread: 문의 제목은 예약 전, 예약 확정 메일이 있으면 예약 후", async () => {
+  const { isInquiryThread } = await import("./sync.ts");
+  assert.equal(isInquiryThread("RE: #홍대입구역 리스팅 예약(11월 29일 ~ 12월 4일) 관련 문의", false), true);
+  assert.equal(isInquiryThread("2026년 11월 29일 ~ 12월 4일 #홍대입구역 숙박 문의", false), true);
+  assert.equal(isInquiryThread("RE: #홍대입구역 #할인 예약(5월 11일~12일)", false), false);
+  assert.equal(isInquiryThread("RE: #홍대입구역 리스팅 예약(5월 28일~30일) 관련 문의", true), false);
+});
