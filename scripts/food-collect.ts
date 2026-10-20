@@ -14,7 +14,7 @@ if (!propertyId) {
   console.log(`숙소: ${data!.name}`);
 }
 const r = await collectFood(admin, propertyId, process.env.GOOGLE_MAPS_SERVER_KEY!);
-console.log(`새로 ${r.added}곳, 갱신 ${r.updated}곳\n`);
+console.log(`새로 ${r.added}곳, 갱신 ${r.updated}곳, 사진 ${r.photos}장\n`);
 const { data } = await admin.from("food_places").select("*").eq("property_id", propertyId);
 for (const s of SITUATIONS) {
   const list = ((data ?? []) as FoodPlace[]).filter((p) => p.situation === s.key);
