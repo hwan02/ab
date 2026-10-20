@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { cn } from "@/lib/utils";
@@ -14,9 +13,11 @@ import type { AirbnbInboundMail, AirbnbMailKind } from "@/types/database";
  *  - 답변 필요: 게스트 메시지(kind=message) 중 new / drafted
  *  - 처리됨: 게스트 메시지 중 replied / ignored
  *  - 전체: 예약 확정·취소·후기 같은 알림도 회색으로 함께
+ * 초안 저장·무시·되돌리기는 /api/airbnb/inbox/update, 발송은 /api/airbnb/inbox/send 를 거친다(권한은 서버가 검사).
  */
 
 type Tab = "todo" | "done" | "all";
+type EditableStatus = "new" | "drafted" | "ignored";
 
 const KIND_LABEL: Record<Exclude<AirbnbMailKind, "message">, string> = {
   reservation_request: "예약 요청",
@@ -56,6 +57,15 @@ export function formatSeoul(iso: string | null): string {
 export const isPending = (m: AirbnbInboundMail) => m.kind === "message" && (m.status === "new" || m.status === "drafted");
 const isDone = (m: AirbnbInboundMail) => m.kind === "message" && (m.status === "replied" || m.status === "ignored");
 
+async function postJson(url: string, body: unknown): Promise<{ res: Response; json: Record<string, unknown> }> {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  return { res, json };
+}
+
+const errorOf = (json: Record<string, unknown>, fallback: string) =>
+  (typeof json.detail === "string" && json.detail) || (typeof json.error === "string" && json.error) || fallback;
+
 interface Props {
   initialMails: AirbnbInboundMail[];
   /** 관리자 전역 수신함에서만: 행에 숙소 이름을 함께 보여 준다. */
@@ -63,12 +73,20 @@ interface Props {
 }
 
 export default function PropertyInbox({ initialMails, propertyNames }: Props) {
-  const supabase = useMemo(() => createClient(), []);
   const [mails, setMails] = useState<AirbnbInboundMail[]>(initialMails);
   const [tab, setTab] = useState<Tab>("todo");
   const [open, setOpen] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** 메일별로 DB 에 마지막으로 저장된 초안. 로컬 state 는 타이핑마다 바뀌므로 저장 여부는 이것과 비교한다. */
+  const savedDrafts = useRef<Record<string, string>>(Object.fromEntries(initialMails.map((m) => [m.id, m.draft_reply ?? ""])));
+
+  useEffect(() => {
+    return () => {
+      if (errorTimer.current) clearTimeout(errorTimer.current);
+    };
+  }, []);
 
   const pendingCount = mails.filter(isPending).length;
 
@@ -79,50 +97,42 @@ export default function PropertyInbox({ initialMails, propertyNames }: Props) {
 
   const fail = (msg: string) => {
     setError(msg);
-    setTimeout(() => setError(null), 3000);
+    if (errorTimer.current) clearTimeout(errorTimer.current);
+    errorTimer.current = setTimeout(() => setError(null), 3000);
   };
 
   const saveDraft = async (mail: AirbnbInboundMail, text: string) => {
-    if ((mail.draft_reply ?? "") === text) return;
-    const { error: e } = await supabase.from("airbnb_inbound_mails").update({ draft_reply: text || null }).eq("id", mail.id);
-    if (e) fail("저장 실패: " + e.message);
+    if ((savedDrafts.current[mail.id] ?? "") === text) return;
+    const { res, json } = await postJson("/api/airbnb/inbox/update", { id: mail.id, draft_reply: text });
+    if (!res.ok) return fail("저장 실패: " + errorOf(json, String(res.status)));
+    savedDrafts.current[mail.id] = text;
   };
 
-  const ignore = async (mail: AirbnbInboundMail) => {
+  const setStatus = async (mail: AirbnbInboundMail, status: EditableStatus) => {
     setBusy(mail.id);
-    const { error: e } = await supabase.from("airbnb_inbound_mails").update({ status: "ignored" }).eq("id", mail.id);
+    const { res, json } = await postJson("/api/airbnb/inbox/update", { id: mail.id, status });
     setBusy(null);
-    if (e) return fail("실패: " + e.message);
-    patch(mail.id, { status: "ignored" });
-  };
-
-  const restore = async (mail: AirbnbInboundMail) => {
-    const status = mail.draft_reply ? "drafted" : "new";
-    setBusy(mail.id);
-    const { error: e } = await supabase.from("airbnb_inbound_mails").update({ status }).eq("id", mail.id);
-    setBusy(null);
-    if (e) return fail("실패: " + e.message);
+    if (!res.ok) return fail("실패: " + errorOf(json, String(res.status)));
     patch(mail.id, { status });
   };
 
+  const ignore = (mail: AirbnbInboundMail) => setStatus(mail, "ignored");
+  const restore = (mail: AirbnbInboundMail) => setStatus(mail, mail.draft_reply ? "drafted" : "new");
+
   const send = async (mail: AirbnbInboundMail) => {
     const text = (mail.draft_reply ?? "").trim();
-    if (!text) return fail("보낼 답변을 써 주세요.");
     if (!confirm(`${mail.guest_name ?? "게스트"}님에게 보낼까요?\n\n${text.slice(0, 200)}${text.length > 200 ? "…" : ""}`)) return;
     setBusy(mail.id);
     try {
-      const res = await fetch("/api/airbnb/inbox/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: mail.id, text }),
-      });
-      const json = await res.json();
+      const { res, json } = await postJson("/api/airbnb/inbox/send", { id: mail.id, text });
       if (res.status === 409) {
         patch(mail.id, { status: "replied" });
-        throw new Error(json.error ?? "이미 발송된 메일입니다.");
+        throw new Error(errorOf(json, "이미 발송된 메일입니다."));
       }
-      if (!res.ok) throw new Error(json.detail ?? json.error ?? "실패");
-      patch(mail.id, { status: "replied", replied_at: json.sentAt, sent_reply: text, sent_at: json.sentAt });
+      if (!res.ok) throw new Error(errorOf(json, "실패"));
+      const sentAt = typeof json.sentAt === "string" ? json.sentAt : new Date().toISOString();
+      savedDrafts.current[mail.id] = text;
+      patch(mail.id, { status: "replied", replied_at: sentAt, sent_reply: text, sent_at: sentAt, draft_reply: text });
     } catch (e) {
       fail("발송 실패: " + (e instanceof Error ? e.message : String(e)));
     } finally {
@@ -166,6 +176,9 @@ export default function PropertyInbox({ initialMails, propertyNames }: Props) {
             const isMessage = mail.kind === "message";
             const chip = isMessage ? statusChip(mail) : null;
             const propertyName = propertyNames ? propertyNames[mail.property_id ?? ""] ?? mail.listing_name ?? "숙소 미확정" : null;
+            const isBusy = busy === mail.id;
+            const editable = isMessage && (mail.status === "new" || mail.status === "drafted");
+            const text = mail.message_text ?? mail.snippet ?? mail.subject;
             return (
               <li key={mail.id} className={cn(!isMessage && "bg-gray-50")}>
                 <button
@@ -181,9 +194,7 @@ export default function PropertyInbox({ initialMails, propertyNames }: Props) {
                       {propertyName && <span className="truncate text-xs text-gray-400">{propertyName}</span>}
                       <span className="shrink-0 text-xs text-gray-400">{formatSeoul(mail.received_at)}</span>
                     </div>
-                    <p className={cn("mt-0.5 truncate text-sm", isMessage ? "text-gray-600" : "text-gray-400")}>
-                      {mail.message_text ?? mail.snippet ?? mail.subject}
-                    </p>
+                    <p className={cn("mt-0.5 truncate text-sm", isMessage ? "text-gray-600" : "text-gray-400")}>{text}</p>
                   </div>
                   {chip ? (
                     <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-xs font-medium", chip.className)}>{chip.text}</span>
@@ -196,7 +207,7 @@ export default function PropertyInbox({ initialMails, propertyNames }: Props) {
 
                 {isOpen && (
                   <div className="space-y-4 border-t border-gray-100 px-4 py-4">
-                    <p className="whitespace-pre-wrap text-sm text-gray-800">{mail.message_text ?? mail.snippet ?? mail.subject}</p>
+                    <p className="whitespace-pre-wrap text-sm text-gray-800">{text}</p>
 
                     {isMessage && mail.status === "replied" && (
                       <div className="rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700">
@@ -208,27 +219,35 @@ export default function PropertyInbox({ initialMails, propertyNames }: Props) {
                       </div>
                     )}
 
-                    {isMessage && mail.status !== "replied" && (
-                      <ReplyBox mail={mail} busy={busy === mail.id} onChange={(v) => patch(mail.id, { draft_reply: v })} onBlur={(v) => saveDraft(mail, v)} onSend={() => send(mail)} />
+                    {editable && (
+                      <ReplyBox
+                        mail={mail}
+                        busy={isBusy}
+                        onChange={(v) => patch(mail.id, { draft_reply: v })}
+                        onBlur={(v) => saveDraft(mail, v)}
+                        onSend={() => send(mail)}
+                      />
                     )}
 
-                    {(!isMessage || mail.status === "replied") && mail.thread_url && (
+                    {!editable && mail.thread_url && (
                       <a href={mail.thread_url} target="_blank" rel="noopener noreferrer" className="inline-block text-sm font-medium text-gray-700 hover:underline">
                         에어비앤비에서 열기
                       </a>
                     )}
 
-                    {isMessage && mail.status !== "replied" && (
+                    {isMessage && mail.status === "ignored" && (
+                      <div className="text-xs text-gray-500">
+                        <button type="button" onClick={() => restore(mail)} disabled={isBusy} className="hover:text-gray-900 hover:underline">
+                          되돌리기
+                        </button>
+                      </div>
+                    )}
+
+                    {editable && (
                       <div className="flex gap-4 text-xs text-gray-500">
-                        {mail.status === "ignored" ? (
-                          <button type="button" onClick={() => restore(mail)} disabled={busy === mail.id} className="hover:text-gray-900 hover:underline">
-                            되돌리기
-                          </button>
-                        ) : (
-                          <button type="button" onClick={() => ignore(mail)} disabled={busy === mail.id} className="hover:text-gray-900 hover:underline">
-                            무시
-                          </button>
-                        )}
+                        <button type="button" onClick={() => ignore(mail)} disabled={isBusy} className="hover:text-gray-900 hover:underline">
+                          무시
+                        </button>
                         {mail.property_id && (
                           <Link
                             href={`/host/property/${mail.property_id}/rules?q=${encodeURIComponent((mail.message_text ?? "").slice(0, 300))}`}

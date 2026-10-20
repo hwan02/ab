@@ -58,14 +58,9 @@ export default function RulesTestPage({ params }: { params: Promise<{ id: string
 
   if (loading) return <div className="p-8 text-sm text-gray-500">불러오는 중...</div>;
 
-  const enabledCount = rules.filter((r) => r.enabled).length;
-
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gray-900">테스트</h1>
-        <span className="text-xs text-gray-400">사용 중인 규칙 {enabledCount}개</span>
-      </div>
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">테스트</h1>
 
       <Textarea label="게스트 메시지" placeholder="예) 혹시 와이파이 비밀번호가 뭔가요?" value={message} onChange={(e) => setMessage(e.target.value)} rows={3} />
 
@@ -91,7 +86,7 @@ export default function RulesTestPage({ params }: { params: Promise<{ id: string
             {result.matched ? (
               <p className="whitespace-pre-wrap text-sm text-gray-900">{result.text}</p>
             ) : (
-              <p className="text-sm text-gray-400">없음 — 수신함에 ‘답변 필요’로 남습니다</p>
+              <p className="text-sm text-gray-400">없음</p>
             )}
           </div>
         </div>

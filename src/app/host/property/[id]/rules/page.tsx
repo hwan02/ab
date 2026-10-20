@@ -28,8 +28,8 @@ const MODE_OPTIONS: { value: PropertyBits["auto_reply_mode"]; label: string }[] 
 
 type OtherLang = Exclude<AnswerLang, "ko">;
 const OTHER_LANGS: OtherLang[] = ["en", "zh", "ja"];
-const OTHER_LANG_FIELD: Record<OtherLang, "answer_en" | "answer_zh" | "answer_ja"> = { en: "answer_en", zh: "answer_zh", ja: "answer_ja" };
-const OTHER_LANG_BADGE: Record<OtherLang, string> = { en: "EN", zh: "中", ja: "日" };
+/** 규칙 목록 행에 보여 줄 키워드 수. 나머지는 +N 으로 접는다. */
+const KEYWORD_PREVIEW = 5;
 
 /**
  * 한국어 답변을 한 언어로 번역한다. 변수 토큰({게스트이름} 등)은 자리표시로 바꿨다가 복원하고,
@@ -420,7 +420,7 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input label="우선순위 (높을수록 먼저)" type="number" value={priority} onChange={(e) => setPriority(e.target.value)} />
+            <Input label="우선순위" type="number" value={priority} onChange={(e) => setPriority(e.target.value)} />
           </div>
 
           <div className="flex justify-end gap-2">
@@ -457,25 +457,18 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
             <Card key={rule.id} className={cn("p-4", !rule.enabled && "opacity-60")}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-900">{rule.name}</span>
-                    <span className="text-[11px] text-gray-400">우선순위 {rule.priority}</span>
-                    {rule.hit_count > 0 && <span className="text-[11px] text-gray-400">· 발송 {rule.hit_count}회</span>}
-                    {!rule.enabled && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500">꺼짐</span>}
-                    {OTHER_LANGS.filter((l) => rule[OTHER_LANG_FIELD[l]]?.trim()).map((l) => (
-                      <span key={l} className="rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700" title={`${ANSWER_LANG_LABELS[l]} 답변 있음`}>
-                        {OTHER_LANG_BADGE[l]}
-                      </span>
-                    ))}
-                  </div>
+                  <p className="truncate text-sm font-semibold text-gray-900">{rule.name}</p>
                   <div className="mt-1 flex flex-wrap gap-1">
-                    {rule.keywords.map((k) => (
-                      <span key={k} className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] text-rose-700">
+                    {rule.keywords.slice(0, KEYWORD_PREVIEW).map((k) => (
+                      <span key={k} className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600">
                         {k}
                       </span>
                     ))}
+                    {rule.keywords.length > KEYWORD_PREVIEW && (
+                      <span className="px-1 py-0.5 text-[11px] text-gray-400">+{rule.keywords.length - KEYWORD_PREVIEW}</span>
+                    )}
                   </div>
-                  <p className="mt-1.5 line-clamp-2 text-sm text-gray-600">{rule.answer}</p>
+                  <p className="mt-1.5 truncate text-sm text-gray-600">{rule.answer}</p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-600">
