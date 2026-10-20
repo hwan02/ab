@@ -60,6 +60,8 @@ interface MailSummary {
 
 interface Notification {
   mail: MailSummary;
+  /** 매핑된 숙소. Slack 링크를 그 숙소의 수신함으로 보내는 데 쓴다. */
+  propertyId: string | null;
   propertyName: string | null;
   outcome: Outcome;
   /** 숙소 매핑 결과. 매핑됐으면 생략. */
@@ -188,7 +190,9 @@ async function run(opts: RunOptions) {
           merged += 1;
           // 회신 주소가 생겼으니 '자동 발송' 모드면 이제 보낼 수 있다
           const outcome = await applyRules(supabase, twin.id, propertyList);
-          if (outcome.kind === "auto_sent") outcomes.push({ mail: summarize(parsed), propertyName: property?.name ?? null, outcome });
+          if (outcome.kind === "auto_sent") {
+            outcomes.push({ mail: summarize(parsed), propertyId: property?.id ?? null, propertyName: property?.name ?? null, outcome });
+          }
         }
       }
       continue;
@@ -229,7 +233,7 @@ async function run(opts: RunOptions) {
       const id = data[0].id as string;
       if (key) seen.set(key, { id, reply_to: mail.replyTo });
       const outcome = await applyRules(supabase, id, propertyList);
-      outcomes.push({ mail: summarize(parsed), propertyName: property?.name ?? null, outcome, mapping });
+      outcomes.push({ mail: summarize(parsed), propertyId: property?.id ?? null, propertyName: property?.name ?? null, outcome, mapping });
     }
   }
 
@@ -314,6 +318,7 @@ async function remapUnmapped(supabase: Admin, properties: PropertyRow[], outcome
         snippet: row.snippet,
         threadUrl: row.thread_url,
       },
+      propertyId: match.property.id,
       propertyName: match.property.name,
       outcome,
     });
@@ -457,7 +462,7 @@ const KIND_LABEL: Record<ParsedAirbnbMail["kind"], string> = {
   other: "📨 에어비앤비 알림",
 };
 
-async function notifySlack({ mail, propertyName, outcome, mapping }: Notification) {
+async function notifySlack({ mail, propertyId, propertyName, outcome, mapping }: Notification) {
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
   if (!webhookUrl) return;
 
@@ -484,7 +489,9 @@ async function notifySlack({ mail, propertyName, outcome, mapping }: Notificatio
     tail += `\n\n🙋 *답변 필요* — 매칭되는 규칙이 없습니다${outcome.note ? ` (${outcome.note})` : ""}`;
   }
 
-  const inboxUrl = appUrl ? `${appUrl}/host/airbnb${mapping ? "?property=unmapped" : ""}` : null;
+  // 숙소가 매핑된 메일은 그 숙소의 수신함으로, 미확정 메일은 관리자 전역 수신함으로.
+  const inboxPath = propertyId ? `/host/property/${propertyId}/inbox` : `/host/airbnb${mapping ? "?property=unmapped" : ""}`;
+  const inboxUrl = appUrl ? `${appUrl}${inboxPath}` : null;
   const text =
     `${KIND_LABEL[mail.kind]} — *${mail.guestName ?? "게스트"}*${where ? ` (${where})` : ""}` +
     `\n>${preview}` +

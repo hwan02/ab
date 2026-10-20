@@ -3,16 +3,17 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import Header from "@/components/layout/Header";
-import AirbnbInbox from "@/components/host/AirbnbInbox";
+import PropertyInbox from "@/components/host/PropertyInbox";
 import { UNMAPPED_FILTER } from "@/lib/airbnb/sync";
+import { cn } from "@/lib/utils";
 import type { AirbnbInboundMail, Property } from "@/types/database";
 import { PRODUCT_NAME } from "@/lib/airbnb/brand";
 
 export const dynamic = "force-dynamic";
 
 /**
- * 수신함. ?property=<숙소 id> 로 숙소를 고르고, 관리자는 ?property=unmapped 로 숙소가 안 붙은 메일만 본다.
- * 호스트는 자기 숙소만 고를 수 있고(RLS 로 메일도 자기 숙소 것만), 모르는 값은 '전체'로 본다.
+ * 관리자(NEXT_PUBLIC_ADMIN_EMAIL) 전용 전체 수신함. 호스트는 숙소별 수신함(/host/property/[id]/inbox)을 쓴다.
+ * ?property=<숙소 id> 로 숙소를 고르고, ?property=unmapped 로 숙소가 안 붙은 메일만 본다.
  */
 export default async function HostAirbnbPage({ searchParams }: { searchParams: Promise<{ property?: string | string[] }> }) {
   const supabase = await createClient();
@@ -23,55 +24,50 @@ export default async function HostAirbnbPage({ searchParams }: { searchParams: P
   if (!user) redirect("/login");
 
   const isAdmin = !!process.env.NEXT_PUBLIC_ADMIN_EMAIL && user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  if (!isAdmin) redirect("/host");
 
-  // 관리자는 매핑 안 된 메일까지 전부, 호스트는 RLS 대로 자기 숙소 메일만
-  const reader = isAdmin ? createAdminClient() : supabase;
-
-  const { data: properties } = isAdmin
-    ? await reader.from("properties").select("id, name").order("name")
-    : await supabase.from("properties").select("id, name").eq("host_id", user.id).order("name");
+  const reader = createAdminClient();
+  const { data: properties } = await reader.from("properties").select("id, name").order("name");
   const propertyList = (properties ?? []) as Pick<Property, "id" | "name">[];
 
   const raw = (await searchParams).property;
   const requested = Array.isArray(raw) ? raw[0] : raw;
   let selected = "";
-  if (requested === UNMAPPED_FILTER && isAdmin) selected = UNMAPPED_FILTER;
+  if (requested === UNMAPPED_FILTER) selected = UNMAPPED_FILTER;
   else if (requested && propertyList.some((p) => p.id === requested)) selected = requested;
 
   let mailQuery = reader.from("airbnb_inbound_mails").select("*");
   if (selected === UNMAPPED_FILTER) mailQuery = mailQuery.is("property_id", null);
   else if (selected) mailQuery = mailQuery.eq("property_id", selected);
+  const { data: mails } = await mailQuery.order("received_at", { ascending: false, nullsFirst: false }).limit(200);
 
-  const [{ data: mails }, { data: rules }] = await Promise.all([
-    mailQuery.order("received_at", { ascending: false, nullsFirst: false }).limit(100),
-    reader.from("airbnb_reply_rules").select("id, name"),
-  ]);
-
-  const rulesLinkProperty = selected && selected !== UNMAPPED_FILTER ? selected : propertyList.length === 1 ? propertyList[0].id : null;
+  const filters: { value: string; label: string }[] = [
+    { value: "", label: "전체" },
+    ...propertyList.map((p) => ({ value: p.id, label: p.name })),
+    { value: UNMAPPED_FILTER, label: "숙소 미확정" },
+  ];
+  const propertyNames = Object.fromEntries(propertyList.map((p) => [p.id, p.name]));
 
   return (
     <div className="min-h-dvh bg-gray-50">
       <Header />
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{PRODUCT_NAME} 수신함</h1>
-            <p className="mt-1 text-sm text-gray-500">에어비앤비 게스트 메시지와 자동응답 결과입니다. 매칭되지 않은 메시지는 직접 답하거나 규칙으로 만들 수 있습니다.</p>
-          </div>
-          {rulesLinkProperty && (
-            <Link href={`/host/property/${rulesLinkProperty}/rules`} className="text-sm font-medium text-rose-600 hover:underline">
-              자동응답 규칙 관리 →
+        <h1 className="mb-4 text-2xl font-bold text-gray-900">{PRODUCT_NAME} 전체 수신함</h1>
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {filters.map((f) => (
+            <Link
+              key={f.value || "all"}
+              href={f.value ? `/host/airbnb?property=${encodeURIComponent(f.value)}` : "/host/airbnb"}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium",
+                selected === f.value ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+              )}
+            >
+              {f.label}
             </Link>
-          )}
+          ))}
         </div>
-        <AirbnbInbox
-          key={selected || "all"}
-          initialMails={(mails ?? []) as AirbnbInboundMail[]}
-          properties={propertyList}
-          rules={(rules ?? []) as { id: string; name: string }[]}
-          selectedProperty={selected}
-          isAdmin={isAdmin}
-        />
+        <PropertyInbox key={selected || "all"} initialMails={(mails ?? []) as AirbnbInboundMail[]} propertyNames={propertyNames} />
       </main>
     </div>
   );
