@@ -282,22 +282,6 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
     load();
   };
 
-  const importFaqs = async () => {
-    const { data: faqs } = await supabase.from("faqs").select("question, answer");
-    if (!faqs || faqs.length === 0) return flash("가져올 FAQ가 없습니다.");
-    const rows = faqs.map((f) => ({
-      property_id: propertyId,
-      name: f.question.slice(0, 40),
-      keywords: suggestKeywords(f.question),
-      answer: f.answer,
-      enabled: false,
-    }));
-    const { error } = await supabase.from("airbnb_reply_rules").insert(rows);
-    if (error) return flash("가져오기 실패: " + error.message);
-    flash(`FAQ ${rows.length}개를 꺼진 상태로 가져왔습니다.`);
-    load();
-  };
-
   const setMode = async (mode: PropertyBits["auto_reply_mode"]) => {
     if (mode === property?.auto_reply_mode) return;
     const { error } = await supabase.from("properties").update({ auto_reply_mode: mode }).eq("id", propertyId);
@@ -440,9 +424,6 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">규칙 {rules.length}개</h2>
         <div className="flex gap-1">
-          <Button size="sm" variant="ghost" onClick={importFaqs}>
-            FAQ에서 가져오기
-          </Button>
           <Button size="sm" variant="ghost" onClick={addSamples}>
             기본 규칙 추가
           </Button>
