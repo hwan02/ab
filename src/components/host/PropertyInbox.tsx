@@ -250,7 +250,7 @@ export default function PropertyInbox({ initialMails, propertyNames }: Props) {
                         </button>
                         {mail.property_id && (
                           <Link
-                            href={`/host/property/${mail.property_id}/rules?q=${encodeURIComponent((mail.message_text ?? "").slice(0, 300))}`}
+                            href={`/host/property/${mail.property_id}/rules?tab=new&q=${encodeURIComponent((mail.message_text ?? "").slice(0, 300))}`}
                             className="hover:text-gray-900 hover:underline"
                           >
                             이 메시지로 규칙 만들기

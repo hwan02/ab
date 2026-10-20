@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, use } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import RuleTester from "@/components/host/RuleTester";
 import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -82,19 +83,26 @@ function isMissingColumnError(error: { code?: string; message?: string }, column
   return columns.some((c) => msg.includes(c));
 }
 
+type Tab = "list" | "new" | "test";
+const TABS: { key: Tab; label: string }[] = [
+  { key: "list", label: "목록" },
+  { key: "new", label: "규칙 추가" },
+  { key: "test", label: "테스트" },
+];
+
 const SAMPLE_RULES: { name: string; keywords: string[]; answer: string }[] = [
   {
-    name: "와이파이 안내",
+    name: "와이파이",
     keywords: ["와이파이", "wifi", "wi-fi", "인터넷", "비밀번호"],
     answer: "{게스트이름}님 안녕하세요! 와이파이 이름은 {와이파이이름}, 비밀번호는 {와이파이비밀번호} 입니다. 편하게 이용하세요 :)",
   },
   {
-    name: "체크인 안내",
+    name: "체크인 시간",
     keywords: ["체크인", "입실", "몇 시", "check in", "check-in"],
     answer: "{게스트이름}님 안녕하세요! 체크인은 {체크인시간}부터 가능합니다. 도착하시면 메시지 주세요 :)",
   },
   {
-    name: "체크아웃 안내",
+    name: "체크아웃 시간",
     keywords: ["체크아웃", "퇴실", "check out", "check-out"],
     answer: "체크아웃은 {체크아웃시간}까지입니다. 이용해 주셔서 감사합니다!",
   },
@@ -103,7 +111,15 @@ const SAMPLE_RULES: { name: string; keywords: string[]; answer: string }[] = [
 export default function RulesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: propertyId } = use(params);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const initialTab = searchParams.get("tab");
+  const [tab, setTabState] = useState<Tab>(initialTab === "new" || initialTab === "test" ? initialTab : "list");
+  const [testKey, setTestKey] = useState(0);
+  const setTab = (t: Tab) => {
+    setTabState(t);
+    router.replace(`/host/property/${propertyId}/rules${t === "list" ? "" : `?tab=${t}`}`, { scroll: false });
+  };
 
   const [property, setProperty] = useState<PropertyBits | null>(null);
   const [rules, setRules] = useState<AirbnbReplyRule[]>([]);
@@ -214,6 +230,7 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
     setAnswerJa(rule.answer_ja ?? "");
     setOthersOpen(!!(rule.answer_en || rule.answer_zh || rule.answer_ja));
     setPriority(String(rule.priority));
+    setTab("new");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -261,6 +278,8 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
     flash((editingId ? "규칙을 수정했습니다." : "규칙을 추가했습니다.") + note);
     resetForm();
     load();
+    setTestKey((k) => k + 1);
+    setTab("list");
   };
 
   const toggleRule = async (rule: AirbnbReplyRule) => {
@@ -342,8 +361,32 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
         </div>
       </div>
 
+      {/* 탭 */}
+      <div className="mb-5 flex gap-6 border-b border-gray-200">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => {
+              if (t.key === "new" && tab !== "new") resetForm();
+              setTab(t.key);
+            }}
+            className={cn(
+              "-mb-px border-b-2 pb-2.5 text-sm font-medium transition-colors",
+              tab === t.key ? "border-rose-500 text-gray-900" : "border-transparent text-gray-400 hover:text-gray-700"
+            )}
+          >
+            {t.key === "new" && editingId ? "규칙 수정" : t.label}
+            {t.key === "list" && <span className="ml-1 text-xs text-gray-400">{rules.length}</span>}
+          </button>
+        ))}
+      </div>
+
+      {tab === "test" && <RuleTester propertyId={propertyId} refreshKey={testKey} />}
+
       {/* 규칙 폼 */}
-      <Card className="mb-6" title={editingId ? "규칙 수정" : "규칙 추가"}>
+      {tab === "new" && (
+      <Card className="mb-6">
         <form onSubmit={saveRule} className="space-y-4">
           <Input label="규칙 이름" placeholder="예) 와이파이 안내" value={name} onChange={(e) => setName(e.target.value)} />
 
@@ -426,7 +469,14 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
 
           <div className="flex justify-end gap-2">
             {editingId && (
-              <Button type="button" variant="ghost" onClick={resetForm}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  resetForm();
+                  setTab("list");
+                }}
+              >
                 취소
               </Button>
             )}
@@ -436,10 +486,12 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
           </div>
         </form>
       </Card>
+      )}
 
       {/* 목록 */}
+      {tab === "list" && (
+      <>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-gray-900">규칙 {rules.length}개</h2>
         <div className="flex items-center gap-2">
           <input
             value={query}
@@ -450,8 +502,21 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
             placeholder="검색"
             className="h-8 w-40 rounded-lg border border-gray-200 px-2.5 text-sm focus:border-rose-400 focus:outline-none"
           />
-          <Button size="sm" variant="ghost" onClick={addSamples}>
-            기본 규칙 추가
+        </div>
+        <div className="flex items-center gap-1">
+          {rules.length === 0 && (
+            <Button size="sm" variant="ghost" onClick={addSamples}>
+              기본 규칙 넣기
+            </Button>
+          )}
+          <Button
+            size="sm"
+            onClick={() => {
+              resetForm();
+              setTab("new");
+            }}
+          >
+            + 규칙 추가
           </Button>
         </div>
       </div>
@@ -522,6 +587,8 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
             다음
           </button>
         </div>
+      )}
+      </>
       )}
     </div>
   );

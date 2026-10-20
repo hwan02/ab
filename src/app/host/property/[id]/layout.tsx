@@ -221,9 +221,10 @@ const HIDDEN_SEGMENTS = new Set([
   "guides",
   "cleaning",
   "chat",
+  "test",
 ]);
-/** 메뉴 순서: 수신함 · 자동응답 · 테스트 · 숙소 정보 */
-const NAV_ORDER = ["inbox", "rules", "test", "edit"];
+/** 메뉴 순서: 수신함 · 자동응답 · 숙소 정보 (테스트는 자동응답 안의 탭) */
+const NAV_ORDER = ["inbox", "rules", "edit"];
 const visibleNavItems = navItems
   .filter((item) => !HIDDEN_SEGMENTS.has(item.segment))
   .sort((a, b) => NAV_ORDER.indexOf(a.segment) - NAV_ORDER.indexOf(b.segment));
