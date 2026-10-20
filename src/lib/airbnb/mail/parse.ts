@@ -78,7 +78,7 @@ export function parseAirbnbMail(input: RawMailInput): ParsedAirbnbMail {
 
   const isAirbnb = AIRBNB_SENDER_RE.test(from) || /airbnb/i.test(subject) || /airbnb\.com/i.test(html);
 
-  const kind = classify(subject, text);
+  const kind = classify(subject, text, from);
   const guestName = extractGuestName(subject, lines);
   const listingName = extractListingName(lines);
   const listingId = extractListingId(rawText + "\n" + html);
@@ -138,9 +138,19 @@ export function cleanLines(text: string): string[] {
 // 분류
 // ---------------------------------------------------------------------------
 
-function classify(subject: string, text: string): AirbnbMailKind {
+function classify(subject: string, text: string, from: string): AirbnbMailKind {
   const s = subject.toLowerCase();
   const head = text.slice(0, 600).toLowerCase();
+
+  // 게스트 일반 메시지: express@airbnb.com 발신, 제목 "RE: #숙소제목 예약(5월 11일~12일)",
+  // 본문에 "예약자" 역할 줄과 "답장 보내기" 버튼. 제목만으로는 구분이 안 되므로 먼저 본다.
+  if (
+    (/^re:/i.test(s) && /예약\s*\(/.test(s)) ||
+    /답장 보내기|이 이메일에 직접 회신|reply to this email/i.test(text) ||
+    (/express@airbnb/i.test(from) && /^(?:예약자|게스트|guest)$/m.test(text))
+  ) {
+    return "message";
+  }
 
   if (/취소|cancel/.test(s)) return "reservation_cancelled";
   if (/후기|리뷰|review/.test(s)) return "review";
@@ -201,6 +211,18 @@ function extractGuestName(subject: string, lines: string[]): string | null {
     }
   }
   const head = lines.slice(0, 40);
+
+  // 게스트 메시지 포맷: 이름 줄 바로 다음에 "예약자"/"게스트" 역할 줄이 온다.
+  const roleIdx = head.findIndex((l) => ROLE_LINE_RE.test(l));
+  if (roleIdx > 0) {
+    for (let i = roleIdx - 1; i >= 0; i--) {
+      if (head[i] === "") continue;
+      const name = cleanName(head[i]);
+      if (name && name.length <= 40 && !/[#\d:：]/.test(name)) return name;
+      break;
+    }
+  }
+
   for (const re of BODY_NAME_PATTERNS) {
     for (const line of head) {
       const m = re.exec(line);
@@ -279,14 +301,22 @@ const END_MARKERS: RegExp[] = [
   /^(?:예약 사전 승인|사전 승인|수락\/거절|답장|답장하기|메시지 보기|메시지 보내기|대화 보기|앱에서 보기)/,
   /^(?:Reply|View message|View in app|Pre-approve|Decline|Accept)/i,
   /^(?:체크인|체크아웃|게스트|예약 코드|자주 묻는 질문|고객지원|집 전체|개인실|Airbnb|에어비앤비|Airbnb Ireland)/,
+  /^이 이메일에 직접 회신|님이 호스팅하는 집/,
   /^#\S/, // 해시태그 숙소 제목
   /^\d{1,2}월 \d{1,2}일|^\d{4}년/,
   /24시간 이내에 응답/,
   /^(?:본 메일은|이 이메일은|This email was sent|You are receiving)/,
 ];
 
+/**
+ * 게스트 메시지 포맷의 역할 줄. 이름 아래, 본문 위.
+ * "게스트" 는 다른 포맷에서 인원수 섹션 제목("게스트 / 성인 5명")으로도 쓰여서 넣지 않는다.
+ */
+const ROLE_LINE_RE = /^(?:예약자|Booker|Guest)$/i;
+
 /** 본문의 시작 직전 줄. 우선순위 순. */
 const START_MARKERS: RegExp[] = [
+  ROLE_LINE_RE, // 게스트 메시지: "예나 / 예약자 / (본문) / 답장 보내기"
   /^에어비앤비 가입 연도/, // 숙박 문의: 프로필 블록의 마지막 줄
   /^본인 인증 완료/, // 가입 연도 줄이 없는 변형. 바로 아래에 "도시, 나라" 줄이 올 수 있다.
   /^(?:메시지|새 메시지|문의 내용|Message)[:：]?$/i,
@@ -308,7 +338,7 @@ function extractMessageBody(lines: string[], guestName: string | null): string |
     const idx = lines.findIndex((l) => re.test(l));
     if (idx !== -1) {
       start = idx + 1;
-      afterProfile = re === START_MARKERS[1];
+      afterProfile = re === START_MARKERS[2];
       break;
     }
   }

@@ -134,3 +134,13 @@ test("실제 숙박 문의(가입 연도 없이 '본인 인증 완료 / 도시' 
   assert.equal(parsed.guestName, "두리");
   assert.equal(parsed.messageText, "안녕하세요. 욕실이 방 안에 있는지 여쭤봐도 될까요?");
 });
+
+test("실제 게스트 메시지(express@, 'RE: #숙소 예약(5월 11일~12일)'): 종류, 이름, 본문, 날짜", async () => {
+  const { parsed } = await parseFixture("guest-message-ko-real.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.guestName, "유나");
+  assert.equal(parsed.messageText, "감사합니다 즐거운 여행 보낼게요!");
+  assert.match(parsed.listingName ?? "", /^#홍대입구역/);
+  assert.equal(parsed.checkIn, "2026-05-11");
+  assert.equal(parsed.checkOut, "2026-05-12");
+});
