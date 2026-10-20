@@ -305,16 +305,28 @@ function extractThread(text: string, html: string): { threadUrl: string | null; 
 // ---------------------------------------------------------------------------
 
 /**
- * 본문의 끝을 알리는 줄.
+ * 본문의 끝을 알리는 줄. 세 부류로 나눈다.
  *
  * 실제 메일에서는 게스트 본문 뒤에 반드시 버튼 줄("답장 보내기", "문의 확인하기", "예약 사전 승인 또는 거절",
- * "이 이메일에 직접 회신하여…")이 오고, 그 뒤에 숙소 제목(#…), 체크인/체크아웃 표가 온다.
- * 그래서 1차 종료는 버튼 줄이고, 섹션 제목/날짜 류는 "그 줄이 정확히 제목 형태(짧고 문장부호 없음)" 일 때만 종료로 본다.
- * 게스트가 "체크인 시간이 몇시인가요?", "게스트 4명인데 괜찮나요?", "12월 23일에 도착해요", "Reply soon please" 처럼
- * 쓴 문장은 본문으로 남긴다.
+ * "이 이메일에 직접 회신하여…")이 오고, 그 뒤에 숙소 제목(#…), 체크인/체크아웃 표가 오는 푸터 구간이 이어진다.
+ *
+ *   1. 푸터 시작 줄(FOOTER_START_MARKERS): 버튼 줄, 버튼 아래 안내문, 숙소 제목. 본문은 이 줄 앞에서 끝난다.
+ *      이 줄이 뒤에 있으면 그 앞은 전부 본문이다 — 게스트가 쓴 "체크인: 12월 23일 오후 3시에 가능할까요?",
+ *      "12월 23일 (수)" 같은 라벨/날짜 줄도 본문으로 남긴다.
+ *   2. 고정 문구(FIXED_END_MARKERS): "…님이 호스팅하는 집", "Airbnb Ireland", "본 메일은 발신 전용" 처럼
+ *      게스트가 쓸 수 없는 줄. 어디에 있든 본문 종료.
+ *   3. 구조 줄(STRUCTURE_MARKERS): 섹션 제목("체크인", "체크인  체크아웃", "게스트"), 라벨+날짜("체크인: 2026년 10월 21일"),
+ *      날짜만 있는 표 셀, 해시태그만으로 된 줄. 버튼 줄이 없는 변형 메일에서만 종료로 본다.
+ *      그 줄이 정확히 제목/표 셀 형태(줄 전체가 라벨과 날짜·시각 토큰뿐)일 때만 매치하고,
+ *      "체크인 시간이 몇시인가요?", "게스트 4명인데 괜찮나요?", "12월 23일에 도착해요" 같은 문장은 걸리지 않는다.
  */
 
-/** 버튼 문구. 텍스트 렌더링에서 같은 문구가 두 번 붙어 오기도 한다("예약 사전 승인 또는 거절예약 사전 승인 또는 거절"). */
+/**
+ * 버튼 문구. 텍스트 렌더링에서 같은 문구가 두 번 붙어 오기도 한다("예약 사전 승인 또는 거절예약 사전 승인 또는 거절").
+ * "수락", "거절", "Accept", "Decline" 같은 한 단어 버튼은 넣지 않는다: 게스트가 한 단어로 "거절" 이라고 쓴 줄과 구분할 수 없고,
+ * 실제 게스트 메시지/문의 메일의 버튼은 "답장 보내기 / 문의 확인하기 / 예약 사전 승인 또는 거절" 뿐이다
+ * (수락/거절 단독 버튼은 본문을 추출하지 않는 예약 요청 메일에만 있다).
+ */
 const BUTTON_LABELS = [
   // 한국어
   "답장 보내기",
@@ -327,8 +339,6 @@ const BUTTON_LABELS = [
   "사전 승인",
   "수락/거절",
   "수락 또는 거절",
-  "수락",
-  "거절",
   "메시지 보기",
   "메시지 보내기",
   "대화 보기",
@@ -344,16 +354,19 @@ const BUTTON_LABELS = [
   "Pre-approve or decline",
   "Pre-approve",
   "Accept or decline",
-  "Accept",
-  "Decline",
   "Respond",
 ];
 const BUTTON_ALT = BUTTON_LABELS.map(escapeRe).join("|");
-/** 줄 전체가 버튼 문구(1회 이상 반복)인 경우만. "답장이 늦어서 죄송해요" 같은 문장은 걸리지 않는다. */
+/** 줄 전체가 버튼 문구(1회 이상 반복)인 경우만. "답장이 늦어서 죄송해요", "Reply soon please" 같은 문장은 걸리지 않는다. */
 const BUTTON_LINE_RE = new RegExp(`^(?:${BUTTON_ALT})(?:\\s*(?:${BUTTON_ALT}))*$`, "i");
 
 /** 버튼 아래 안내문. 게스트가 쓸 일이 없는 고정 문구만. */
 const BUTTON_NOTE_RE = /^(?:이 이메일에 직접 회신|You can (?:also )?reply (?:directly )?to this email|Reply directly to this email)/i;
+
+/** 해시태그 숙소 제목. 해시태그 2개 이상("#홍대입구역 #최대6인 … #홈씨어터"). */
+const HASHTAG_TITLE_RE = /^#\S.*#/;
+/** 해시태그만으로 된 줄("#서촌한옥"). 해시태그 1개짜리 숙소명. 문장 토큰이 하나라도 섞이면 매치하지 않는다. */
+const HASHTAG_ONLY_LINE_RE = /^#\S+(?:\s+#\S+)*$/;
 
 /** 섹션 제목. 줄 전체가 제목 하나이거나 표 머리처럼 제목 두 개가 공백으로 이어진 경우("체크인  체크아웃")만. */
 const SECTION_TITLES = [
@@ -376,28 +389,37 @@ const SECTION_TITLES = [
 const SECTION_ALT = SECTION_TITLES.map(escapeRe).join("|");
 const SECTION_TITLE_RE = new RegExp(`^(?:${SECTION_ALT})(?:\\s+(?:${SECTION_ALT}))*$`, "i");
 
-/** "체크인: 2026년 10월 21일", "Check-in: Oct 24, 2026" 처럼 제목 뒤에 바로 날짜가 오는 라벨 줄. 문장이 아니다. */
-const SECTION_LABEL_DATE_RE =
-  /^(?:체크인|체크아웃|예약 코드|예약 번호|Check-in|Check-out|Reservation code)\s*[:：]\s*(?:\d{4}년|\d{1,2}월|\d{4}-\d{2}|HM[A-Z0-9]{8,10}\b|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2})/i;
+/** 날짜 셀. "12월 23일", "12월 23일 (수)", "2027년 1월 1일 (금)", "2026년 5월 11일 월요일". */
+const DATE_CELL = "(?:\\d{4}년\\s*)?\\d{1,2}월\\s*\\d{1,2}일(?:\\s*\\(?[월화수목금토일](?:요일)?\\)?)?";
+const MONTH_EN = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\\.?";
+/** 라벨 뒤에 올 수 있는 값: 한국어/영어/ISO 날짜, 예약 코드. */
+const LABEL_VALUE = `(?:${DATE_CELL}|\\d{4}-\\d{2}-\\d{2}|${MONTH_EN}\\s+\\d{1,2}(?:,?\\s+\\d{4})?|\\d{1,2}\\s+${MONTH_EN}(?:,?\\s+\\d{4})?|HM[A-Z0-9]{8,10})`;
+/** 날짜 뒤에 붙는 시각 토큰: "오후 3:00", "3:00 PM", "15:00". "오후 3시에" 처럼 문장으로 이어지는 꼴은 아니다. */
+const TIME_TOKEN = "(?:(?:오전|오후)\\s*\\d{1,2}:\\d{2}|\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)";
+const LABEL_DATE = `(?:체크인|체크아웃|예약 코드|예약 번호|Check-in|Check-out|Reservation code)\\s*[:：]\\s*${LABEL_VALUE}(?:\\s*,?\\s*${TIME_TOKEN})?`;
+/**
+ * "체크인: 2026년 10월 21일", "Check-in: Oct 24, 2026 · Check-out: Oct 26, 2026", "예약 코드: HMABCD1234" 처럼
+ * 줄 전체가 라벨+날짜(또는 예약 코드)뿐인 줄. 줄 끝까지 고정하므로 "체크인: 12월 23일 오후 3시에 가능할까요?",
+ * "Check-in: Dec 23 around 3pm ok?", "예약 번호: HMABCD1234 로 예약했는데…" 같은 문장은 걸리지 않는다.
+ */
+const SECTION_LABEL_DATE_RE = new RegExp(`^${LABEL_DATE}(?:\\s*[·,|/\\-–—~]?\\s*${LABEL_DATE})*$`, "i");
 
 /** 날짜만 있는 줄(표 셀). "12월 23일 (수)", "2027년 1월 1일 (금)   2027년 1월 3일 (일)", "2026년 5월 11일". */
-const DATE_CELL = "(?:\\d{4}년\\s*)?\\d{1,2}월\\s*\\d{1,2}일(?:\\s*\\([월화수목금토일]\\))?";
 const DATE_LINE_RE = new RegExp(`^${DATE_CELL}(?:\\s+${DATE_CELL})*$`);
 
-const END_MARKERS: RegExp[] = [
-  // 1차: 버튼 줄과 버튼 아래 안내문
-  BUTTON_LINE_RE,
-  BUTTON_NOTE_RE,
-  // 2차: 구조 줄. 정확히 제목/라벨/셀 형태일 때만.
-  SECTION_TITLE_RE,
-  SECTION_LABEL_DATE_RE,
-  DATE_LINE_RE,
-  /^#\S.*#/, // 해시태그 숙소 제목 (해시태그 2개 이상)
+/** 1. 푸터 시작 줄. 본문은 이 줄 앞에서 끝나고, 그 앞의 라벨/날짜 줄은 본문으로 남긴다. */
+const FOOTER_START_MARKERS: RegExp[] = [BUTTON_LINE_RE, BUTTON_NOTE_RE, HASHTAG_TITLE_RE];
+
+/** 2. 게스트가 쓸 수 없는 고정 문구. 어디에 있든 본문 종료. */
+const FIXED_END_MARKERS: RegExp[] = [
   /^[^\n]{1,40}님이 호스팅하는 집(?:\s*[-–—].*)?$/,
   /^Airbnb Ireland\b/,
   /^24시간 이내에 응답(?:해 주세요|하세요|해주세요)\.?$/,
   /^(?:본 메일은 발신 전용|이 이메일은 .*(?:발송|전송)되었|This email was sent|You are receiving this)/,
 ];
+
+/** 3. 구조 줄. 정확히 제목/라벨/셀 형태일 때만 매치하고, 버튼 줄이 뒤에 없을 때만 종료로 쓴다. */
+const STRUCTURE_MARKERS: RegExp[] = [SECTION_TITLE_RE, SECTION_LABEL_DATE_RE, DATE_LINE_RE, HASHTAG_ONLY_LINE_RE];
 
 /**
  * 게스트 메시지 포맷의 역할 줄. 이름 아래, 본문 위.
@@ -418,9 +440,12 @@ const START_MARKERS: RegExp[] = [
 const LOCATION_LINE_RE = /^[^,?!。.:]{2,40}, [^,?!。.:]{2,24}$/;
 
 function extractMessageBody(lines: string[], guestName: string | null, listingName: string | null): string | null {
-  const endMarkers = [...END_MARKERS];
-  if (listingName) endMarkers.push(new RegExp(`^${escapeRe(listingName)}$`));
-  const isEnd = (line: string) => endMarkers.some((re) => re.test(line));
+  const footerStart = [...FOOTER_START_MARKERS];
+  if (listingName) footerStart.push(new RegExp(`^${escapeRe(listingName)}$`));
+  const isFooterStart = (line: string) => footerStart.some((re) => re.test(line));
+  const isFixedEnd = (line: string) => FIXED_END_MARKERS.some((re) => re.test(line));
+  const isStructure = (line: string) => STRUCTURE_MARKERS.some((re) => re.test(line));
+  const isEnd = (line: string) => isFooterStart(line) || isFixedEnd(line) || isStructure(line);
 
   const markers = [...START_MARKERS];
   if (guestName) {
@@ -458,10 +483,37 @@ function extractMessageBody(lines: string[], guestName: string | null, listingNa
     if (start === -1) return null;
   }
 
-  const body: string[] = [];
+  // 본문의 끝. 고정 문구(또는 메일 끝)까지를 후보 구간으로 잡고,
+  //   - 그 안에 푸터 시작 줄(버튼/숙소 제목)이 있으면 거기서 끝낸다. 그 앞의 라벨/날짜 줄은 본문이다.
+  //   - 없으면(버튼 줄이 없는 변형 메일) 첫 구조 줄(섹션 제목, 라벨+날짜, 날짜 셀, 해시태그 줄)에서 끝낸다.
+  let end = lines.length;
   for (let i = start; i < lines.length; i++) {
+    if (isFixedEnd(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  let footerIdx = -1;
+  for (let i = start; i < end; i++) {
+    if (isFooterStart(lines[i])) {
+      footerIdx = i;
+      break;
+    }
+  }
+  if (footerIdx !== -1) {
+    end = footerIdx;
+  } else {
+    for (let i = start; i < end; i++) {
+      if (isStructure(lines[i])) {
+        end = i;
+        break;
+      }
+    }
+  }
+
+  const body: string[] = [];
+  for (let i = start; i < end; i++) {
     const line = lines[i];
-    if (isEnd(line)) break;
     if (line === "" && (body.length === 0 || body[body.length - 1] === "")) continue;
     body.push(line);
   }

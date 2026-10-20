@@ -154,8 +154,11 @@ test("숙박 문의('본인 인증 완료 · 후기 N개' + 쉼표 없는 도시
   const { parsed } = await parseFixture("inquiry-ko-real-city.eml");
   assert.equal(parsed.kind, "message");
   assert.equal(parsed.guestName, "HELEN");
-  assert.match(parsed.messageText ?? "", /^안녕하세요\. 5월 28일부터/);
-  assert.doesNotMatch(parsed.messageText ?? "", /홍콩|예약 사전 승인/);
+  // 두 번째 줄("5월 30일까지만…")이 날짜 마커에 잘리지 않고 전부 남아야 한다.
+  assert.equal(
+    parsed.messageText,
+    "안녕하세요. 5월 28일부터 6월 1일까지의 예약 가능 여부를 확인하고 싶지만, 5월 28일부터 클릭했을 때\n5월 30일까지만 예약할 수 있습니다. 감사합니다."
+  );
 });
 
 test("스레드 답장(호스트 본인 'You:' 메시지 포함): 게스트 메시지만 남기고 '문의 확인하기' 제외", async () => {
@@ -272,4 +275,89 @@ test("버튼 줄은 정확히 버튼 문구일 때만, 섹션 제목은 제목 �
     text: ["유나", "예약자", "", "체크인 시간이 몇시인가요?", "", "체크인  체크아웃", "2026년 5월 11일  2026년 5월 12일"].join("\n"),
   });
   assert.equal(noButton.messageText, "체크인 시간이 몇시인가요?");
+});
+
+// ---------------------------------------------------------------------------
+// 리뷰 재현 케이스: 라벨+날짜로 시작하는 문장, 한 단어 버튼 문구, 본문 안의 날짜 줄, 해시태그 1개짜리 숙소명
+// ---------------------------------------------------------------------------
+
+test("게스트 메시지: '체크인: 12월 23일 오후 3시에…', '예약 번호: HM… 로 예약했는데…' 라벨+날짜 문장은 본문으로 유지", async () => {
+  const { parsed } = await parseFixture("guest-message-ko-label-sentence.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.guestName, "유나");
+  assert.equal(
+    parsed.messageText,
+    "체크인: 12월 23일 오후 3시에 가능할까요?\n체크아웃: 12월 25일 10시 괜찮나요?\n예약 번호: HMABCD1234 로 예약했는데 변경 가능한가요?"
+  );
+  // 본문의 날짜가 아니라 표의 날짜
+  assert.equal(parsed.checkIn, "2026-05-11");
+  assert.equal(parsed.checkOut, "2026-05-12");
+});
+
+test("게스트 메시지(영어): 'Check-in: Dec 23 around 3pm ok?' 라벨+날짜 문장은 본문으로 유지", async () => {
+  const { parsed } = await parseFixture("guest-message-en-label-sentence.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(
+    parsed.messageText,
+    "Check-in: Dec 23 around 3pm ok?\nCheck-out: Dec 25 by 10:30 if possible.\nReservation code: HMABCD1234 was booked, can I change it?"
+  );
+});
+
+test("게스트 메시지: 한 단어 '거절' 줄은 버튼이 아니라 본문", async () => {
+  const { parsed } = await parseFixture("guest-message-ko-single-word-button.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.messageText, "조식은 괜찮아요\n거절\n감사합니다");
+});
+
+test("게스트 메시지(영어): 한 단어 'Accept' 줄은 버튼이 아니라 본문", async () => {
+  const { parsed } = await parseFixture("guest-message-en-single-word-button.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.messageText, "Accept\nthanks");
+});
+
+test("게스트 메시지: 버튼 줄 앞(본문 구간)의 날짜만 있는 줄 '12월 23일 (수)' 과 '체크인' 줄은 본문으로 유지", async () => {
+  const { parsed } = await parseFixture("guest-message-ko-date-line-in-body.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.messageText, "도착 예정일 알려드려요.\n12월 23일 (수)\n체크인\n오후 3시쯤 갈게요.");
+  assert.equal(parsed.checkIn, "2026-05-11");
+  assert.equal(parsed.checkOut, "2026-05-12");
+});
+
+test("버튼 줄이 없는 변형: 해시태그 1개짜리 숙소명 '#서촌한옥' 줄에서 끊는다", async () => {
+  const { parsed } = await parseFixture("guest-message-ko-single-hashtag-no-button.eml");
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.messageText, "질문 있어요 답변 부탁드려요");
+});
+
+test("리뷰 재현(인라인): 라벨+날짜로 시작하는 첫 줄이 본문이면 messageText 가 null 이 아니다", () => {
+  const from = "에어비앤비 <express@airbnb.com>";
+  const subject = "RE: #홍대입구역 #최대6인 예약(5월 11일~12일)";
+  const wrap = (...body: string[]) =>
+    parseAirbnbMail({
+      subject,
+      from,
+      text: ["Airbnb", "#홍대입구역 #최대6인 예약(5월 11일~12일)", "", "유나", "예약자", "", ...body, "", "답장 보내기", "이 이메일에 직접 회신하여 답장하실 수도 있습니다."].join("\n"),
+    }).messageText;
+
+  assert.equal(wrap("체크인: 12월 23일 오후 3시에 가능할까요?"), "체크인: 12월 23일 오후 3시에 가능할까요?");
+  assert.equal(wrap("체크아웃: 12월 25일 10시 괜찮나요?"), "체크아웃: 12월 25일 10시 괜찮나요?");
+  assert.equal(wrap("Check-in: Dec 23 around 3pm ok?"), "Check-in: Dec 23 around 3pm ok?");
+  assert.equal(wrap("예약 번호: HMABCD1234 로 예약했는데 변경 가능한가요?"), "예약 번호: HMABCD1234 로 예약했는데 변경 가능한가요?");
+  assert.equal(wrap("조식은 괜찮아요", "거절", "감사합니다"), "조식은 괜찮아요\n거절\n감사합니다");
+  assert.equal(wrap("Accept", "thanks"), "Accept\nthanks");
+  assert.equal(wrap("12월 23일 (수)", "체크인", "오후 3시쯤 갈게요."), "12월 23일 (수)\n체크인\n오후 3시쯤 갈게요.");
+
+  // 버튼 줄이 없는 변형에서는 라벨+날짜 줄("체크인: 2026년 10월 21일")과 해시태그 줄에서 끊는다.
+  const noButton = parseAirbnbMail({
+    subject,
+    from,
+    text: ["Airbnb", "#홍대입구역 #최대6인 예약(5월 11일~12일)", "", "유나", "예약자", "", "질문 있어요 답변 부탁드려요", "", "#서촌한옥", "체크인: 2026년 10월 21일", "본 메일은 발신 전용입니다."].join("\n"),
+  });
+  assert.equal(noButton.messageText, "질문 있어요 답변 부탁드려요");
+  const labelOnly = parseAirbnbMail({
+    subject,
+    from,
+    text: ["유나", "예약자", "", "질문 있어요", "", "체크인: 2026년 10월 21일", "체크아웃: 2026년 10월 23일", "예약 코드: HMABCD1234"].join("\n"),
+  });
+  assert.equal(labelOnly.messageText, "질문 있어요");
 });
