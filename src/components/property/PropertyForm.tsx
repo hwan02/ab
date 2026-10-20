@@ -6,7 +6,13 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { propertyFormSchema, getFieldErrors } from "@/lib/validations";
+import { looksLikeHashtagTitle } from "@/lib/airbnb/sync";
 import type { Property } from "@/types/database";
+
+/** 번역표에 없는 검증 메시지. 호스트 화면은 한국어라 여기서 바로 보여 준다. */
+const LOCAL_MESSAGES: Record<string, string> = {
+  "propertyForm.listingTitleRequired": "에어비앤비 리스팅 제목을 입력해주세요. 이 제목으로 알림 메일의 숙소를 찾습니다.",
+};
 
 /**
  * 숙소 등록/수정 폼.
@@ -102,7 +108,7 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
       const fieldErrors = getFieldErrors(result.error);
       const translated: Record<string, string> = {};
       for (const [key, msg] of Object.entries(fieldErrors)) {
-        translated[key] = t(msg as Parameters<typeof t>[0]);
+        translated[key] = LOCAL_MESSAGES[msg] ?? t(msg as Parameters<typeof t>[0]);
       }
       setErrors(translated);
       return;
@@ -160,16 +166,24 @@ function PropertyForm({ initialData, onSubmit, isLoading }: PropertyFormProps) {
 
       <div>
         <Input
-          label="에어비앤비 리스팅 제목"
+          label="에어비앤비 리스팅 제목 *"
           placeholder="#홍대입구역 #최대6인 #짐보관서비스 ... (에어비앤비에 올린 제목 그대로)"
           value={listingTitle}
           onChange={(e) => setListingTitle(e.target.value)}
           error={errors.airbnb_listing_title}
           disabled={isLoading}
         />
-        <p className="mt-1 text-xs text-gray-400">
-          에어비앤비 알림 메일에 적힌 숙소 제목과 맞춰 이 숙소의 메시지를 찾습니다. 에어비앤비 리스팅 제목을 복사해 붙여 주세요.
-        </p>
+        {listingTitle.trim() && !looksLikeHashtagTitle(listingTitle) ? (
+          <p className="mt-1 text-xs text-amber-600">
+            에어비앤비 리스팅 제목은 보통 &quot;#홍대입구역 #최대6인 …&quot; 처럼 해시태그로 시작합니다. 에어비앤비에 올린 제목을 그대로 붙여 넣었는지
+            확인해 주세요. 제목이 다르면 이 숙소의 메시지를 찾지 못합니다.
+          </p>
+        ) : (
+          <p className="mt-1 text-xs text-gray-400">
+            에어비앤비 알림 메일에 적힌 숙소 제목과 맞춰 이 숙소의 메시지를 찾습니다. 에어비앤비 리스팅 제목을 복사해 붙여 주세요. 숙소가
+            여러 개면 제목이 서로 달라야 합니다.
+          </p>
+        )}
       </div>
 
       <Input

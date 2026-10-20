@@ -3,7 +3,8 @@ import type { NearbyPlace } from "@/types/database";
 
 export const propertyFormSchema = z.object({
   name: z.string().trim().min(1, "propertyForm.nameRequired"),
-  airbnb_listing_title: z.string().trim().optional().default(""),
+  // 에어비앤비 알림 메일의 숙소 제목과 맞춰 메시지를 찾는 열쇠라 필수. 메시지 키는 번역표에 없어 폼에서 한국어로 직접 보여 준다.
+  airbnb_listing_title: z.string().trim().min(1, "propertyForm.listingTitleRequired"),
   address: z.string().trim().optional().default(""),
   wifi_ssid: z.string().trim().optional().default(""),
   wifi_password: z.string().trim().optional().default(""),
