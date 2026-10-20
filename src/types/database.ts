@@ -210,3 +210,37 @@ export interface CleaningGuide {
   display_order: number;
   created_at: string;
 }
+
+export type AirbnbMailKind =
+  | "message"
+  | "reservation_request"
+  | "reservation_confirmed"
+  | "reservation_cancelled"
+  | "review"
+  | "other";
+
+export type AirbnbInboundStatus = "new" | "drafted" | "replied" | "ignored";
+
+export interface AirbnbInboundMail {
+  id: string;
+  message_id: string;
+  received_at: string | null;
+  subject: string;
+  sender: string;
+  kind: AirbnbMailKind;
+  guest_name: string | null;
+  listing_name: string | null;
+  thread_url: string | null;
+  thread_id: string | null;
+  reservation_code: string | null;
+  message_text: string | null;
+  check_in: string | null;
+  check_out: string | null;
+  snippet: string | null;
+  property_id: string | null;
+  status: AirbnbInboundStatus;
+  draft_reply: string | null;
+  replied_at: string | null;
+  raw_text: string | null;
+  created_at: string;
+}

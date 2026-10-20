@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/airbnb/inbox/sync",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
