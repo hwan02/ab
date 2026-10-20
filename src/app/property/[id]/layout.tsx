@@ -16,11 +16,12 @@ export async function generateMetadata({
   const { id } = await params;
   const supabase = await createClient();
 
+  // 공개 뷰(properties_public): 비로그인도 읽을 수 있고 비밀번호·주소는 없다.
   const { data: property } = await supabase
-    .from("properties")
+    .from("properties_public")
     .select("name")
     .eq("id", id)
-    .single<Pick<Property, "name">>();
+    .maybeSingle<Pick<Property, "name">>();
 
   return {
     title: property?.name ?? "숙소 정보",
@@ -34,11 +35,13 @@ export default async function PropertyLayout({
   const { id } = await params;
   const supabase = await createClient();
 
+  // 공개 뷰(properties_public): properties 테이블은 RLS 로 호스트·등록 게스트만 보이므로
+  // 레이아웃(이름 등 공개 정보)은 뷰에서 읽는다.
   const { data: property } = await supabase
-    .from("properties")
-    .select("id, name, name_en, name_ja, name_zh, description, address, photos")
+    .from("properties_public")
+    .select("id, name, name_en, name_ja, name_zh")
     .eq("id", id)
-    .single<Pick<Property, "id" | "name" | "name_en" | "name_ja" | "name_zh" | "description" | "address" | "photos">>();
+    .maybeSingle<Pick<Property, "id" | "name" | "name_en" | "name_ja" | "name_zh">>();
 
   if (!property) {
     notFound();

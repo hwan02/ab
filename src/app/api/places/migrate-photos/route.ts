@@ -1,17 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+/**
+ * 숙소의 주변 장소 사진을 구글 Places API 에서 받아 Supabase Storage 로 옮긴다.
+ *
+ * POST /api/places/migrate-photos
+ *   인증: 로그인 세션이면서 관리자(NEXT_PUBLIC_ADMIN_EMAIL)만. 구글 API 비용이 드는 일괄 작업이라
+ *        호스트 개별 권한이 아니라 관리자로 제한한다.
+ *   body: { property_id: string }
+ *
+ * DB·스토리지 쓰기는 서비스 롤(createAdminClient)로 한다.
+ * 호출: src/app/host/property/[id]/nearby/page.tsx (same-origin fetch → 세션 쿠키가 함께 간다).
+ */
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://popostay.vercel.app";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 async function fetchGooglePhoto(photoRef: string): Promise<{ buffer: ArrayBuffer; contentType: string } | null> {
   // Use Places Photo REST API with referer header to bypass restriction
-  const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${GOOGLE_MAPS_API_KEY}`;
+  const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${encodeURIComponent(photoRef)}&key=${GOOGLE_MAPS_API_KEY}`;
 
   const res = await fetch(photoUrl, {
     redirect: "follow",
@@ -26,26 +38,55 @@ async function fetchGooglePhoto(photoRef: string): Promise<{ buffer: ArrayBuffer
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const { property_id } = await req.json();
+  // 1) 로그인 + 관리자
+  const session = await createClient();
+  const {
+    data: { user },
+  } = await session.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  if (!adminEmail || user.email !== adminEmail) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
-    if (!property_id) {
+  try {
+    let body: { property_id?: unknown } = {};
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "JSON body required" }, { status: 400 });
+    }
+    const propertyId = body.property_id;
+
+    if (!propertyId || typeof propertyId !== "string" || !UUID_RE.test(propertyId)) {
       return NextResponse.json({ error: "property_id required" }, { status: 400 });
     }
     if (!GOOGLE_MAPS_API_KEY) {
       return NextResponse.json({ error: "GOOGLE_MAPS_API_KEY not configured" }, { status: 500 });
     }
 
-    const key = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
-    if (!key || !SUPABASE_URL) {
+    let supabase: ReturnType<typeof createAdminClient>;
+    try {
+      supabase = createAdminClient();
+    } catch {
       return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
     }
-    const supabase = createClient(SUPABASE_URL, key);
+
+    const { data: property } = await supabase
+      .from("properties")
+      .select("id")
+      .eq("id", propertyId)
+      .maybeSingle<{ id: string }>();
+    if (!property) {
+      return NextResponse.json({ error: "Property not found" }, { status: 404 });
+    }
 
     const { data: places, error: fetchError } = await supabase
       .from("nearby_places")
       .select("id, name, photo_url, google_place_id")
-      .eq("property_id", property_id);
+      .eq("property_id", propertyId);
 
     if (fetchError) {
       return NextResponse.json({ error: `DB error: ${fetchError.message}` }, { status: 500 });

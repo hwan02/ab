@@ -11,19 +11,51 @@ import type { Property } from "@/types/database";
 
 interface PropertyInfoProps {
   property: Property;
+  /**
+   * 비공개 정보(와이파이·상세 주소)를 볼 수 있는 사용자인지(호스트 본인 또는 등록된 게스트).
+   * false 면 주소 카드는 숨기고 와이파이 카드는 안내문만 보여 준다. 기본값 true(기존 호출부 호환).
+   */
+  canViewPrivate?: boolean;
+  /** 안내문 분기용: 비로그인이면 로그인 안내, 로그인했지만 미등록이면 승인 안내. */
+  isLoggedIn?: boolean;
 }
 
-export default function PropertyInfo({ property }: PropertyInfoProps) {
+export default function PropertyInfo({
+  property,
+  canViewPrivate = true,
+  isLoggedIn = true,
+}: PropertyInfoProps) {
   const { t, locale } = useI18n();
   const [showWifiQR, setShowWifiQR] = useState(false);
   const qrRef = useRef<SVGSVGElement>(null);
-  const address = lp(property, "address", locale);
+  const address = canViewPrivate ? lp(property, "address", locale) : "";
   const checkinGuide = lp(property, "checkin_guide", locale);
   const checkoutGuide = lp(property, "checkout_guide", locale);
   const houseRules = lp(property, "house_rules", locale);
 
   return (
     <div className="space-y-4">
+      {/* WiFi / Address locked (not host, not a registered guest) */}
+      {!canViewPrivate && (
+        <Card className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50">
+              <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+              </svg>
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base font-semibold text-gray-900">
+                WiFi · {t("property.address")}
+              </h3>
+              <p className="mt-1 text-sm text-gray-600">
+                {isLoggedIn ? t("access.restrictedDesc") : t("common.loginRequired")}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Address */}
       {address && (
         <Card className="p-4">
@@ -40,8 +72,8 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
         </Card>
       )}
 
-      {/* WiFi Info */}
-      {(property.wifi_ssid || property.wifi_password) && (
+      {/* WiFi Info (only for host / registered guest; public rows carry no wifi columns) */}
+      {canViewPrivate && (property.wifi_ssid || property.wifi_password) && (
         <Card className="p-4">
           <div className="mb-3 flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">

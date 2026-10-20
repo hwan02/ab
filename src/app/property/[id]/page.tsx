@@ -7,18 +7,44 @@ import LocalizedPropertyDetails from "@/components/property/LocalizedPropertyDet
 import WeatherWidget from "@/components/property/WeatherWidget";
 import PropertyGuideSection from "@/components/property/PropertyGuideSection";
 import { T } from "@/components/i18n/T";
-import type { Property, PodongPhoto, PropertyGuide } from "@/types/database";
+import type { Property, PropertyGuide } from "@/types/database";
 
 interface PropertyPageProps {
   params: Promise<{ id: string }>;
 }
 
+/** properties_public 뷰에는 없는 비공개 컬럼. 호스트 본인·등록 게스트만 properties 테이블에서 읽는다. */
+type PrivatePropertyKey =
+  | "wifi_ssid"
+  | "wifi_password"
+  | "address"
+  | "address_en"
+  | "address_ja"
+  | "address_zh"
+  | "airbnb_listing_title"
+  | "auto_reply_mode";
+
+type PropertyPublic = Omit<Property, PrivatePropertyKey>;
+
+const EMPTY_PRIVATE: Pick<Property, PrivatePropertyKey> = {
+  wifi_ssid: null,
+  wifi_password: null,
+  address: null,
+  address_en: null,
+  address_ja: null,
+  address_zh: null,
+  airbnb_listing_title: null,
+  auto_reply_mode: "confirm",
+};
+
 export default async function PropertyPage({ params }: PropertyPageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const [propertyResult, podongResult, guidesResult] = await Promise.all([
-    supabase.from("properties").select("*").eq("id", id).single<Property>(),
+  const [publicResult, userResult, podongResult, guidesResult] = await Promise.all([
+    // 공개 뷰: 비밀번호·주소가 없는 컬럼만. 비로그인도 읽을 수 있다.
+    supabase.from("properties_public").select("*").eq("id", id).maybeSingle<PropertyPublic>(),
+    supabase.auth.getUser(),
     supabase
       .from("podong_photos")
       .select("id")
@@ -33,9 +59,26 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
       .returns<PropertyGuide[]>(),
   ]);
 
-  const property = propertyResult.data;
-  if (!property) {
+  const publicProperty = publicResult.data;
+  if (!publicProperty) {
     notFound();
+  }
+
+  // 비공개 정보: properties 테이블은 RLS 로 호스트 본인·체류 기간 안의 등록 게스트에게만 행이 보인다.
+  // 행이 안 보이면(비로그인, 미등록, 기간 만료) 공개 정보만으로 그린다.
+  const user = userResult.data.user;
+  let property: Property = { ...publicProperty, ...EMPTY_PRIVATE };
+  let canViewPrivate = false;
+  if (user) {
+    const { data: privateProperty } = await supabase
+      .from("properties")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle<Property>();
+    if (privateProperty) {
+      property = privateProperty;
+      canViewPrivate = true;
+    }
   }
 
   const hasPodongPhotos = (podongResult.data?.length ?? 0) > 0;
@@ -84,7 +127,11 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
         <h3 className="mb-3 text-base font-bold text-gray-900">
           <T k="property.guide" />
         </h3>
-        <PropertyInfo property={property} />
+        <PropertyInfo
+          property={property}
+          canViewPrivate={canViewPrivate}
+          isLoggedIn={!!user}
+        />
       </div>
 
       {/* Detailed Guides */}
