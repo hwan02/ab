@@ -86,6 +86,13 @@ async function fillMissingTranslations(source: string, current: Record<OtherLang
 
 const langNames = (langs: OtherLang[]) => langs.map((l) => ANSWER_LANG_LABELS[l]).join("·");
 
+/** PostgREST 의 "column X does not exist"(PGRST204) 오류이고, 그 컬럼이 columns 중 하나인지. */
+function isMissingColumnError(error: { code?: string; message?: string }, columns: string[]): boolean {
+  if (error.code !== "PGRST204") return false;
+  const msg = error.message ?? "";
+  return columns.some((c) => msg.includes(c));
+}
+
 const SAMPLE_RULES: { name: string; keywords: string[]; answer: string }[] = [
   {
     name: "와이파이 안내",
@@ -247,12 +254,21 @@ export default function RulesPage({ params }: { params: Promise<{ id: string }> 
       priority: Number(priority) || 0,
       updated_at: new Date().toISOString(),
     };
-    const { error } = editingId
-      ? await supabase.from("airbnb_reply_rules").update(payload).eq("id", editingId)
-      : await supabase.from("airbnb_reply_rules").insert(payload);
+    const save = (row: Partial<typeof payload>) =>
+      editingId ? supabase.from("airbnb_reply_rules").update(row).eq("id", editingId) : supabase.from("airbnb_reply_rules").insert(row);
+    let { error } = await save(payload);
+    // 배포 순서: 마이그레이션(20261023_reply_rules_i18n.sql)을 먼저 적용해야 answer_zh/answer_ja 컬럼이 있다.
+    // 아직 없는 DB(PGRST204: column does not exist)면 두 칸을 빼고 한 번 더 저장해 규칙 추가·수정 자체는 되게 한다.
+    let droppedZhJa = false;
+    if (error && isMissingColumnError(error, ["answer_zh", "answer_ja"])) {
+      const { answer_zh: _zh, answer_ja: _ja, ...legacy } = payload; // eslint-disable-line @typescript-eslint/no-unused-vars
+      ({ error } = await save(legacy));
+      droppedZhJa = !error;
+    }
     setSaving(false);
     if (error) return flash("저장 실패: " + error.message);
-    const note = failed.length > 0 ? ` ${langNames(failed)} 답변은 번역하지 못해 비워 뒀습니다.` : "";
+    let note = failed.length > 0 ? ` ${langNames(failed)} 답변은 번역하지 못해 비워 뒀습니다.` : "";
+    if (droppedZhJa) note += " DB 에 중국어·일본어 답변 칸이 아직 없어 그 두 답변은 저장하지 않았습니다(마이그레이션 적용 필요).";
     flash((editingId ? "규칙을 수정했습니다." : "규칙을 추가했습니다.") + note);
     resetForm();
     load();

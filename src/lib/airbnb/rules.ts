@@ -2,8 +2,10 @@
  * 키워드 자동응답 규칙: 매칭과 답변 렌더링. 순수 함수만 있어서 서버/클라이언트/테스트에서 같이 쓴다.
  *
  * 매칭: 메시지에서 번역 라벨("원문에서 자동 번역된 메시지:")을 뺀 뒤,
- *       - 라틴 문자 키워드("check in", "wifi")는 단어 경계로 맞춘다. "check in" 은 "check-in"/"checkin" 에 걸리고
- *         "checking" 에는 안 걸린다.
+ *       - 라틴 문자 키워드("check in", "wifi")는 단어 시작 경계로 맞추되, 각 단어 뒤에 흔한 활용 접미사
+ *         (s/es/ed/ing/er/ion/ation/al/ly, 끝자음 중복, 끝 e 탈락)는 허용한다. "check in" 은 "check-in"/"checkin"/
+ *         "checked in" 에 걸리고 "checking" 에는 안 걸린다. "bed" 는 "beds", "cancel" 은 "cancellation",
+ *         "arrive" 는 "arriving" 에 걸린다. 글자 사이 구분자(공백·하이픈 등)는 단어 안 1개, 단어 사이 3개까지만 본다.
  *       - 한글·한자 등 키워드는 소문자로 바꾸고 공백·문장부호를 없앤 뒤 부분 일치.
  *       - 한글 1글자 키워드("짐")는 앞뒤가 한글이 아닐 때만 걸린다. "아침" 의 "침" 같은 오탐을 막는다.
  *       여러 규칙이 걸리면 priority 가 높은 것, 같으면 더 많은 키워드가 걸린 것, 그래도 같으면 먼저 등록한 것.
@@ -82,14 +84,39 @@ function isLatinKeyword(keyword: string): boolean {
   return /^[A-Za-z0-9]+(?:[\s\-_·.,'’]+[A-Za-z0-9]+)*$/.test(keyword.trim());
 }
 
+/** 라틴 키워드 단어 사이에 올 수 있는 구분자(줄바꿈 포함). 최대 3개("check - in"). */
+const LATIN_SEP = "[\\s\\-_.·'’]";
+/** 단어 안 글자 사이에 올 수 있는 구분자(줄바꿈 제외). 최대 1개("wi-fi", "w i f i"). */
+const LATIN_INNER_SEP = "[ \\-_.·'’]";
+/** 단어 뒤에 허용하는 활용 접미사. 긴 것부터 둬야 백트래킹 없이 가장 긴 것이 먼저 잡힌다. */
+const LATIN_SUFFIX = "(?:ations|ation|ions|ion|ings|ing|ers|er|es|ed|ly|al|s)?";
+
 /**
- * 라틴 키워드용 정규식: 단어 경계 안에서 글자 사이 공백·문장부호를 무시한다.
- * "wifi" → wi-fi / wi fi 에 걸리고, "check in" → check-in / checkin 에 걸리되 "checking" 에는 안 걸린다.
+ * 라틴 키워드 한 단어("check", "arrive")의 정규식 조각.
+ *  - 글자 사이 구분자 1개 허용: "wifi" ↔ "wi-fi"
+ *  - 끝 e 는 생략 가능(arrive → arriving), 끝 자음은 중복 가능(cancel → cancellation, stop → stopped)
+ *  - 뒤에 접미사 허용(LATIN_SUFFIX). 숫자로 끝나는 단어("6011")에는 접미사를 붙이지 않는다.
+ */
+function latinWordPattern(word: string): string {
+  const chars = word.split("");
+  const last = chars[chars.length - 1];
+  if (!/[a-z]/.test(last)) return chars.join(`${LATIN_INNER_SEP}?`);
+  const head = chars.slice(0, -1).join(`${LATIN_INNER_SEP}?`);
+  const joiner = head ? `${LATIN_INNER_SEP}?` : "";
+  if (last === "e") return `${head}${joiner}e?${LATIN_SUFFIX}`;
+  const doubled = /[aeiou]/.test(last) ? "" : `${last}?`;
+  return `${head}${joiner}${last}${doubled}${LATIN_SUFFIX}`;
+}
+
+/**
+ * 라틴 키워드용 정규식: 단어 시작 경계(\b)에서 시작해 단어 끝 경계에서 끝난다.
+ * "wifi" → wi-fi 에 걸리고, "check in" → check-in / checkin / checked in 에 걸리되 "checking" 에는 안 걸린다.
+ * "bed" → beds, "cancel" → cancellation, "arrive" → arriving, "walk" → walking 처럼 활용형은 걸린다.
  */
 function latinKeywordRegex(keyword: string): RegExp | null {
-  const chars = keyword.toLowerCase().replace(/[^a-z0-9]/g, "").split("");
-  if (chars.length === 0) return null;
-  return new RegExp(`\\b${chars.join("[^a-z0-9]*")}\\b`);
+  const words = keyword.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  if (words.length === 0) return null;
+  return new RegExp(`\\b${words.map(latinWordPattern).join(`${LATIN_SEP}{0,3}`)}\\b`);
 }
 
 /** 한글 1글자 키워드: 앞뒤가 한글이 아닌 자리에 있을 때만 맞는 것으로 본다. */
@@ -235,14 +262,17 @@ export function protectVariables(text: string): { text: string; tokens: string[]
 }
 
 export function restoreVariables(translated: string, tokens: string[]): string | null {
-  let seen = 0;
+  const seen = new Set<number>();
+  let duplicated = false;
   const out = translated.replace(/⟦\s*(\d+)\s*⟧/g, (_, n: string) => {
     const idx = Number(n) - 1;
     if (idx < 0 || idx >= tokens.length) return "\u0000";
-    seen += 1;
+    if (seen.has(idx)) duplicated = true;
+    seen.add(idx);
     return tokens[idx];
   });
-  if (out.includes("\u0000") || /[⟦⟧]/.test(out) || seen !== tokens.length) return null;
+  // 번호가 빠지거나 중복되면(번역기가 자리표시를 떨어뜨리거나 복제한 경우) 변수가 유실된 것이므로 실패로 본다.
+  if (duplicated || out.includes("\u0000") || /[⟦⟧]/.test(out) || seen.size !== tokens.length) return null;
   return out;
 }
 

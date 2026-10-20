@@ -117,7 +117,7 @@ export const RULES: SeedRule[] = [
   },
   {
     name: "인원·침대",
-    keywords: ["인원", "몇 명", "몇명", "명까지", "침대", "bed", "people", "guests", "최대", "capacity", "어른", "아이들", "children", "kids"],
+    keywords: ["인원", "몇 명", "몇명", "명까지", "침대", "bed", "bedroom", "people", "guests", "최대", "capacity", "어른", "아이들", "children", "kids"],
     priority: 5,
     answer:
       "최대 6인까지 가능해요.\n침실 2개에 각각 퀸 침대 1개 + 슈퍼싱글 침대 1개가 있고, 거실에는 80인치 빔프로젝터와 6인 식탁이 있습니다 :)",
@@ -159,7 +159,7 @@ export const RULES: SeedRule[] = [
   },
   {
     name: "가격·할인·취소·환불 (확인 후 답변)",
-    keywords: ["할인", "가격", "비용", "요금", "취소", "환불", "discount", "price", "cheaper", "cancel", "refund"],
+    keywords: ["할인", "가격", "비용", "요금", "취소", "환불", "discount", "price", "cheaper", "cancel", "cancellation", "refund"],
     priority: -1,
     answer: "말씀 감사합니다 :) 가격·예약 관련 내용은 확인 후 바로 답변드릴게요!",
     answer_en: "Thanks for your message :) I'll check and get back to you shortly about pricing/booking.",

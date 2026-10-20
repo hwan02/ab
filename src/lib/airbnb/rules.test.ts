@@ -46,11 +46,18 @@ test("키워드 부분 일치로 규칙을 찾는다", () => {
 });
 
 test("여러 규칙이 걸리면 우선순위, 그다음 걸린 키워드 수로 고른다", () => {
-  const a = rule({ id: "a", keywords: ["짐 보관", "짐을"], priority: 0 });
+  // a 도 1개("짐 맡")는 걸린다. 같은 우선순위면 걸린 키워드 수가 많은 b(2개)가 이긴다.
+  const a = rule({ id: "a", keywords: ["짐 맡"], priority: 0 });
   const b = rule({ id: "b", keywords: ["체크인", "짐 맡"], priority: 0 });
   const c = rule({ id: "c", keywords: ["체크인"], priority: 5 });
-  assert.equal(matchRule("체크인 전에 짐 맡길 수 있나요", [a, b])?.rule.id, "b");
-  assert.equal(matchRule("체크인 전에 짐 맡길 수 있나요", [a, b, c])?.rule.id, "c");
+  const msg = "체크인 전에 짐 맡길 수 있나요";
+  assert.deepEqual(matchRule(msg, [a])?.matchedKeywords, ["짐 맡"]);
+  assert.equal(matchRule(msg, [a, b])?.rule.id, "b");
+  assert.equal(matchRule(msg, [b, a])?.rule.id, "b");
+  assert.equal(matchRule(msg, [a, b, c])?.rule.id, "c");
+  // 우선순위·키워드 수가 같으면 먼저 등록한 것
+  const a2 = rule({ id: "a2", keywords: ["짐 맡"], priority: 0 });
+  assert.equal(matchRule(msg, [a, a2])?.rule.id, "a");
 });
 
 test("비활성 규칙과 빈 키워드는 무시, 못 찾으면 null", () => {
@@ -76,11 +83,48 @@ test("라틴 키워드는 단어 경계로 맞춘다 (checking → check in 오�
   assert.equal(keywordMatches("Early checkin possible?", "check in"), true);
   assert.equal(keywordMatches("checkin?", "check-in"), true);
   assert.equal(keywordMatches("What's the wifi password", "wi-fi"), true);
-  assert.equal(keywordMatches("bedroom has two beds", "bed"), false);
+  assert.equal(keywordMatches("What's the wi-fi password", "wifi"), true);
   assert.equal(keywordMatches("Is there a bed for kids", "bed"), true);
   assert.equal(keywordMatches("wifi비밀번호", "wifi"), true);
+  assert.equal(keywordMatches("the bedroom is small", "bed"), false);
+  assert.equal(keywordMatches("vanilla ice cream", "van"), false);
+  assert.equal(keywordMatches("a van is fine", "van"), true);
+  assert.equal(keywordMatches("the room 6011", "6011"), true);
+  assert.equal(keywordMatches("room 60110", "6011"), false);
   const checkin = rule({ id: "checkin", keywords: ["check in"] });
   assert.equal(matchRule(TRANSLATED("가격을 확인 중이에요", "I'm checking the price"), [checkin]), null);
+  assert.equal(matchRule(TRANSLATED("체크인 중이에요", "We are checking in now"), [checkin])?.rule.id, "checkin");
+});
+
+test("라틴 키워드는 활용형·복수형에도 걸린다 (운영 DB 키워드 회귀 방지)", () => {
+  assert.equal(keywordMatches("How many beds are there?", "bed"), true);
+  assert.equal(keywordMatches("bedroom has two beds", "bed"), true);
+  assert.equal(keywordMatches("What is your cancellation policy", "cancel"), true);
+  assert.equal(keywordMatches("I cancelled my booking", "cancel"), true);
+  assert.equal(keywordMatches("We are arriving at 5pm", "arrive"), true);
+  assert.equal(keywordMatches("our arrival is at 5pm", "arrive"), true);
+  assert.equal(keywordMatches("Is it walking distance", "walk"), true);
+  assert.equal(keywordMatches("Can we bring dogs", "dog"), true);
+  assert.equal(keywordMatches("any discounts?", "discount"), true);
+  assert.equal(keywordMatches("checked in already", "check in"), true);
+  assert.equal(keywordMatches("checking in tomorrow", "check in"), true);
+  assert.equal(keywordMatches("late checkout possible?", "checkout"), true);
+  assert.equal(keywordMatches("late checkout possible?", "check out"), true);
+  assert.equal(keywordMatches("the prices are high", "price"), true);
+  assert.equal(keywordMatches("is parking available", "park the"), false);
+  assert.equal(keywordMatches("can I park the car", "park the"), true);
+  // 접미사는 활용형까지만: 전혀 다른 단어에는 안 걸린다
+  assert.equal(keywordMatches("I'm just checking the price", "check in"), false);
+  assert.equal(keywordMatches("checking", "check in"), false);
+});
+
+test("라틴 키워드 글자 사이 구분자는 단어 안 1개, 단어 사이 3개까지만 본다", () => {
+  assert.equal(keywordMatches("check - in", "check in"), true);
+  assert.equal(keywordMatches("c\nh\ne\nc\nk in", "check in"), false);
+  assert.equal(keywordMatches("w i f i", "wifi"), true);
+  assert.equal(keywordMatches("w  i  f  i", "wifi"), false);
+  assert.equal(keywordMatches("check\n\n\n\nin", "check in"), false);
+  assert.equal(keywordMatches("체크 check 인 in", "check in"), false);
 });
 
 test("번역 라벨 줄은 매칭 대상에서 뺀다 (메시지 → 라벨 오탐 방지)", () => {
@@ -146,6 +190,9 @@ test("protectVariables/restoreVariables: 변수 토큰을 자리표시로 바꿨
   assert.equal(restoreVariables("Hi ⟦1⟧, Wi-Fi: ⟦2⟧.", tokens), null);
   assert.equal(restoreVariables("Hi ⟦1⟧, ⟦2⟧ / ⟦9⟧.", tokens), null);
   assert.equal(restoreVariables("Hi ⟦1⟧, ⟦2⟧ / ⟦3", tokens), null);
+  // 한 자리표시가 중복되고 다른 하나가 빠지면(개수는 같아도) null
+  assert.equal(restoreVariables("⟦1⟧ ⟦1⟧ ⟦3⟧", tokens), null);
+  assert.equal(restoreVariables("⟦1⟧ ⟦1⟧", ["{게스트이름}", "{주소}"]), null);
   assert.equal(restoreVariables("no variables", []), "no variables");
 });
 
