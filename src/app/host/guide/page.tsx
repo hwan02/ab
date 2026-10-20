@@ -14,7 +14,7 @@ export default async function HostGuidePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=%2Fhost%2Fguide");
 
-  const cohostEmail = process.env.NEXT_PUBLIC_POPOTALK_COHOST_EMAIL ?? null;
+  const cohostEmail = process.env.NEXT_PUBLIC_POPOTALK_COHOST_EMAIL || "seunghwansuh@kakao.com";
 
   return (
     <div className="min-h-dvh bg-gray-50">
