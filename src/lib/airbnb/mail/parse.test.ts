@@ -181,3 +181,12 @@ test("응답 기한 리마인더, 사전 승인 권유, 문의 결정 요청, �
   assert.equal(parseAirbnbMail({ subject: "Helen님의 예약 문의에 대한 결정을 내려 알려주세요", from, text: "x" }).kind, "other");
   assert.equal(parseAirbnbMail({ subject: "예약 메시지가 전송되지 않았습니다", from: "에어비앤비 <automated@airbnb.com>", text: "x" }).kind, "other");
 });
+
+test("회신 실패 알림 메일은 other", () => {
+  const parsed = parseAirbnbMail({
+    subject: "회신을 전송하지 못했습니다.",
+    from: "에어비앤비 <automated@airbnb.com>",
+    text: "다음과 같은 이유로 회신을 전송하지 못했습니다. 회신 이메일 주소가 만료되었습니다 대화를 계속하려면 에어비앤비 웹사이트나 모바일 앱을 사용하세요.",
+  });
+  assert.equal(parsed.kind, "other");
+});

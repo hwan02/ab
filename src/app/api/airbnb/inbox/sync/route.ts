@@ -58,8 +58,20 @@ async function run(opts: RunOptions) {
     return NextResponse.json({ error: "IMAP fetch failed", detail: message }, { status: 502 });
   }
 
+  const supabase = createAdminClient();
+
+  // 메일 회신 실패 알림("회신을 전송하지 못했습니다"): 방금 보낸 답장을 되돌리고 Slack 에 알린다.
+  const failures = mails.filter((m) => REPLY_FAILED_RE.test(m.subject));
+  let replyFailures = 0;
+  if (!opts.dryRun) {
+    for (const f of failures) {
+      if (await handleReplyFailure(supabase, f)) replyFailures += 1;
+    }
+  }
+
   // 커뮤니티/마케팅 발신과 분류 불가(계정 활동, 대금 지급 등) 메일은 저장하지 않는다.
   const parsedRows = mails
+    .filter((m) => !REPLY_FAILED_RE.test(m.subject))
     .filter((m) => !/hostcommunity|marketing|newsletter/i.test(m.from))
     .map((m) => ({ mail: m, parsed: parseAirbnbMail(m) }))
     .filter((r) => r.parsed.isAirbnb && r.parsed.kind !== "other");
@@ -71,8 +83,6 @@ async function run(opts: RunOptions) {
       items: parsedRows.map(({ mail, parsed }) => ({ messageId: mail.messageId, subject: mail.subject, ...parsed })),
     });
   }
-
-  const supabase = createAdminClient();
 
   // 숙소 이름 → id 매핑 (이름 포함 매칭)
   const { data: properties } = await supabase.from("properties").select("id, name");
@@ -189,7 +199,74 @@ async function run(opts: RunOptions) {
 
   await Promise.all(newItems.map((item) => notifySlack(item.parsed, item.propertyName, drafts.get(item.id) ?? null)));
 
-  return NextResponse.json({ fetched: mails.length, airbnb: parsedRows.length, inserted, merged, drafted });
+  return NextResponse.json({ fetched: mails.length, airbnb: parsedRows.length, inserted, merged, drafted, replyFailures });
+}
+
+const REPLY_FAILED_RE = /회신을 전송하지 못했습니다|reply could not be delivered|could not deliver your reply/i;
+
+/**
+ * 에어비앤비의 회신 실패 알림을 처리한다. 실패 메일에는 어느 스레드인지 정보가 없으므로,
+ * 실패 메일 도착 전 2시간 안에 메일로 보낸 답장 중 가장 최근 것을 되돌린다.
+ * 같은 실패 메일을 두 번 처리하지 않도록 message_id 를 airbnb_reply_failures 대신 raw 행으로 기록한다.
+ */
+async function handleReplyFailure(
+  supabase: ReturnType<typeof createAdminClient>,
+  mail: { messageId: string; subject: string; text: string | null; date: Date | null; from: string }
+): Promise<boolean> {
+  // 이미 처리한 실패 메일인지 (message_id unique 로 거른다)
+  const { data: marker } = await supabase
+    .from("airbnb_inbound_mails")
+    .upsert(
+      {
+        message_id: mail.messageId,
+        received_at: mail.date?.toISOString() ?? null,
+        subject: mail.subject,
+        sender: mail.from,
+        kind: "other",
+        status: "ignored",
+        snippet: (mail.text ?? "").replace(/\s+/g, " ").slice(0, 300),
+      },
+      { onConflict: "message_id", ignoreDuplicates: true }
+    )
+    .select("id");
+  if (!marker || marker.length === 0) return false; // 이미 처리됨
+
+  const receivedAt = mail.date?.getTime() ?? Date.now();
+  const windowStart = new Date(receivedAt - 2 * 60 * 60 * 1000).toISOString();
+  const windowEnd = new Date(receivedAt + 5 * 60 * 1000).toISOString();
+
+  const { data: sent } = await supabase
+    .from("airbnb_inbound_mails")
+    .select("id, guest_name, sent_reply, sent_at")
+    .eq("status", "replied")
+    .not("sent_at", "is", null)
+    .gte("sent_at", windowStart)
+    .lte("sent_at", windowEnd)
+    .order("sent_at", { ascending: false })
+    .limit(1);
+
+  const reason = /만료/.test(mail.text ?? "") ? "회신 주소가 만료됨" : "에어비앤비가 회신을 거부함";
+  const target = sent?.[0] ?? null;
+
+  if (target) {
+    await supabase
+      .from("airbnb_inbound_mails")
+      .update({ status: "drafted", replied_at: null })
+      .eq("id", target.id);
+  }
+
+  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+  if (webhookUrl) {
+    const text =
+      `⚠️ 에어비앤비 메일 회신 실패 — ${reason}` +
+      (target
+        ? `\n*${target.guest_name ?? "게스트"}* 님에게 보낸 답장이 전달되지 않았습니다. 수신함에서 에어비앤비 링크로 직접 보내 주세요.\n>${(target.sent_reply ?? "").slice(0, 200)}`
+        : "\n어느 답장인지 특정하지 못했습니다. 최근 보낸 답장을 에어비앤비에서 확인해 주세요.");
+    await fetch(webhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) }).catch(
+      () => undefined
+    );
+  }
+  return true;
 }
 
 /** 같은 스레드의 같은 본문을 한 건으로 묶는 키. 본문이 없으면 묶지 않는다. */

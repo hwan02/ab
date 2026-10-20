@@ -144,7 +144,7 @@ function classify(subject: string, text: string, from: string): AirbnbMailKind {
 
   // 운영 알림(게스트가 쓴 메시지가 아님): 사전 승인 권유, 문의 결정 요청, 예약 메시지 전송 실패, 응답 기한 리마인더
   if (
-    /결정을 내려|사전 승인하실 수도|전송되지 않았습니다/.test(s) ||
+    /결정을 내려|사전 승인하실 수도|전송되지 않았습니다|회신을 전송하지/.test(s) ||
     /응답률도 높이세요|까지 [^\n]{1,40}님에게 응답하여/.test(head)
   ) {
     return "other";
