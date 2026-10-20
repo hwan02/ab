@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-noto-kr), var(--font-geist-sans), system-ui, sans-serif;
+  --font-brand: var(--font-jua), var(--font-noto-kr), sans-serif;
 }
 
 html, body {

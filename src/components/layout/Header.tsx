@@ -59,13 +59,14 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold text-rose-500">
+        <Link href="/" className="flex items-center gap-2 text-2xl text-rose-500" style={{ fontFamily: "var(--font-brand)" }}>
           <img src="/popo.png" alt="POPO" className="h-9 w-9 object-contain" />
           {isGuestRoute ? t("login.title") : PRODUCT_NAME}
         </Link>
 
         <div className="flex items-center gap-2">
-          {/* Global nav links */}
+          {/* Global nav links (게스트 안내 페이지에서만) */}
+          {isGuestRoute && (
           <nav className="hidden items-center gap-1 sm:flex">
             <Link
               href="/reviews"
@@ -80,6 +81,7 @@ export default function Header() {
               {t("nav.faq")}
             </Link>
           </nav>
+          )}
 
           {/* Language switcher (compact) — hidden on host routes */}
           {!isHostRoute && (
@@ -152,7 +154,8 @@ export default function Header() {
                     </div>
                   )}
 
-                  {/* Mobile nav links */}
+                  {/* Mobile nav links (게스트 안내 페이지에서만) */}
+                  {isGuestRoute && (
                   <div className="border-b border-gray-100 sm:hidden">
                     <Link
                       href="/reviews"
@@ -175,6 +178,7 @@ export default function Header() {
                       {t("nav.faq")}
                     </Link>
                   </div>
+                  )}
 
                   {/* 호스트 모드: 로그인한 사용자 전원에게 노출 */}
                   <Link
