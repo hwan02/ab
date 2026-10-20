@@ -47,6 +47,23 @@ export interface Property {
   created_at: string;
 }
 
+/** properties_public 뷰에는 없는 비공개 컬럼. 호스트 본인·등록 게스트만 properties 테이블(RLS)에서 읽는다. */
+export type PrivatePropertyKey =
+  | "wifi_ssid"
+  | "wifi_password"
+  | "address"
+  | "address_en"
+  | "address_ja"
+  | "address_zh"
+  | "airbnb_listing_title"
+  | "auto_reply_mode";
+
+/**
+ * properties_public 뷰 행(supabase/migrations/20261023_properties_public_columns.sql).
+ * 비로그인도 읽을 수 있다. 좌표는 소수점 2자리(약 1km)로 뭉개져 있다.
+ */
+export type PropertyPublic = Omit<Property, PrivatePropertyKey>;
+
 export interface PropertyGuest {
   id: string;
   property_id: string;

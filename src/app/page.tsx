@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import HomeHeader from "@/components/layout/HomeHeader";
 import HomeContent from "@/components/home/HomeContent";
 import LandingPage from "@/components/home/LandingPage";
-import type { Property, Profile } from "@/types/database";
+import type { PropertyPublic, Profile } from "@/types/database";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -19,16 +19,19 @@ export default async function HomePage() {
     return <LandingPage />;
   }
 
+  // 공개 뷰(properties_public): 와이파이·주소가 없는 컬럼만. properties 테이블은 RLS 로
+  // 호스트·등록 게스트에게만 보이므로 목록은 뷰에서 읽는다(클라이언트 컴포넌트로 넘어가는 행에도 비밀번호가 없다).
   const { data: allProperties } = await supabase
-    .from("properties")
+    .from("properties_public")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .returns<PropertyPublic[]>();
 
   if (!user) {
     return (
       <div className="min-h-dvh bg-gray-50">
         <HomeHeader userName={null} avatarUrl={null} isAdmin={false} />
-        <HomeContent isHost={false} properties={(allProperties as Property[]) ?? []} />
+        <HomeContent isHost={false} properties={allProperties ?? []} />
       </div>
     );
   }
@@ -51,7 +54,7 @@ export default async function HomePage() {
 
       <HomeContent
         isHost={isAdmin}
-        properties={(allProperties as Property[]) ?? []}
+        properties={allProperties ?? []}
       />
     </div>
   );
