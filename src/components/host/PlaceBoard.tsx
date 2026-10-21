@@ -29,6 +29,7 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
   const [filter, setFilter] = useState<Situation | "all">("all");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [newGroup, setNewGroup] = useState("");
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -184,6 +185,7 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
     if (!g) return;
     setNewGroup("");
     setGroups((prev) => [...prev, g]);
+    setActiveGroupId(g.id);
   };
 
   /** 처음 쓰는 숙소: 자동 분류(맛집·한식·아침·야식·카페·술집)대로 그룹을 만들고 상위 5곳씩 넣는다. */
@@ -212,6 +214,7 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
     if (!confirm(`"${g.name}" 그룹을 삭제할까요? 이 그룹의 자동응답 규칙도 함께 삭제됩니다.`)) return;
     setGroups((prev) => prev.filter((x) => x.id !== g.id));
     setItems((prev) => prev.filter((x) => x.group_id !== g.id));
+    setActiveGroupId(null);
     await supabase.from("food_groups").delete().eq("id", g.id);
   };
 
@@ -384,7 +387,36 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
               </div>
             )}
 
-            {groups.map((g) => {
+            {groups.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {groups.map((g) => {
+                  const active = (activeGroupId ?? groups[0].id) === g.id;
+                  const tabKey = `tab:${g.id}`;
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => setActiveGroupId(g.id)}
+                      onDragOver={(e) => allowDrop(e, tabKey)}
+                      onDragLeave={() => setDropTarget((t) => (t === tabKey ? null : t))}
+                      onDrop={(e) => {
+                        setActiveGroupId(g.id);
+                        onDrop(e, g.id, groupItems(g.id).length);
+                      }}
+                      className={cn(
+                        "rounded-full px-3 py-1 text-sm transition-colors",
+                        active ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200",
+                        dropTarget === tabKey && "ring-2 ring-rose-400"
+                      )}
+                    >
+                      {g.name}
+                      <span className="ml-1 text-xs opacity-60">{groupItems(g.id).length}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {groups.filter((g) => (activeGroupId ?? groups[0]?.id) === g.id).map((g) => {
               const list = groupItems(g.id);
               const preview = renderGroup(g, list, places, "ko", typeof window !== "undefined" ? window.location.origin : true);
               return (
