@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { uploadMainPhoto } from "@/lib/propertyPhoto";
 import { SITUATIONS, type FoodPlace, type Situation } from "@/lib/food/places";
 import { groupRule, renderGroup, reorder, type FoodGroup, type FoodGroupItem } from "@/lib/food/groups";
 
@@ -30,6 +31,60 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
   const [newGroup, setNewGroup] = useState("");
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [photoFor, setPhotoFor] = useState<Place | null>(null);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+
+  const pickPhoto = (p: Place) => {
+    setPhotoFor(p);
+    fileRef.current?.click();
+  };
+
+  /** 직접 올린 사진은 같은 가게의 모든 행(상황별)에 함께 넣는다. */
+  const onPhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    const target = photoFor;
+    if (!file || !target) return;
+    setUploadingId(target.id);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const url = user ? await uploadMainPhoto(supabase, user.id, file) : null;
+    if (!url) {
+      setUploadingId(null);
+      return flash("사진 업로드 실패");
+    }
+    const q = supabase.from("food_places").update({ photo_url: url }).eq("property_id", propertyId);
+    const { error } = target.google_place_id ? await q.eq("google_place_id", target.google_place_id) : await q.eq("id", target.id);
+    setUploadingId(null);
+    if (error) return flash("저장 실패: " + error.message);
+    setPlaces((prev) => prev.map((x) => ((target.google_place_id ? x.google_place_id === target.google_place_id : x.id === target.id) ? { ...x, photo_url: url } : x)));
+  };
+
+  const Thumb = ({ p, size }: { p: Place; size: "lg" | "sm" }) => (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        pickPhoto(p);
+      }}
+      title={p.photo_url ? "사진 바꾸기" : "사진 올리기"}
+      className={cn(
+        "group relative shrink-0 overflow-hidden",
+        size === "lg" ? "h-12 w-12 rounded-lg" : "h-8 w-8 rounded",
+        !p.photo_url && "border border-dashed border-gray-300 bg-gray-50"
+      )}
+    >
+      {p.photo_url ? (
+        <img src={p.photo_url} alt="" loading="lazy" draggable={false} className="h-full w-full object-cover" />
+      ) : (
+        <span className={cn("flex h-full w-full items-center justify-center text-gray-400", size === "lg" ? "text-lg" : "text-xs")}>+</span>
+      )}
+      {uploadingId === p.id && <span className="absolute inset-0 flex items-center justify-center bg-white/70 text-[10px] text-gray-500">…</span>}
+      {p.photo_url && <span className="absolute inset-0 hidden items-center justify-center bg-black/40 text-[10px] text-white group-hover:flex">바꾸기</span>}
+    </button>
+  );
 
   const flash = (m: string) => {
     setNotice(m);
@@ -211,6 +266,7 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
 
   return (
     <div>
+      <input ref={fileRef} type="file" accept="image/*" onChange={onPhotoFile} className="hidden" />
       <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
         {notice && <span className="mr-auto text-xs text-rose-600">{notice}</span>}
         <Button size="sm" variant={places.length ? "secondary" : "primary"} loading={collecting} onClick={collect}>
@@ -251,11 +307,7 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
                   onDragStart={(e) => onDragStart(e, { kind: "place", placeId: p.id })}
                   className="flex cursor-grab items-center gap-3 px-3 py-2 hover:bg-gray-50 active:cursor-grabbing"
                 >
-                  {p.photo_url ? (
-                    <img src={p.photo_url} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
-                  ) : (
-                    <div className="h-12 w-12 shrink-0 rounded-lg bg-gray-100" />
-                  )}
+                  <Thumb p={p} size="lg" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-gray-900">{p.name}</p>
                     <p className="truncate text-xs text-gray-400">
@@ -353,11 +405,7 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
                           className="flex cursor-grab items-center gap-2 rounded-lg bg-gray-50 px-2 py-1.5 active:cursor-grabbing"
                         >
                           <span className="w-4 shrink-0 text-center text-xs text-gray-400">{i + 1}</span>
-                          {p.photo_url ? (
-                            <img src={p.photo_url} alt="" loading="lazy" className="h-8 w-8 shrink-0 rounded object-cover" />
-                          ) : (
-                            <div className="h-8 w-8 shrink-0 rounded bg-gray-200" />
-                          )}
+                          <Thumb p={p} size="sm" />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm text-gray-900">{p.name}</p>
                             <input
