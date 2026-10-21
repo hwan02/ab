@@ -86,10 +86,9 @@ export async function collectFood(admin: SupabaseClient, propertyId: string, api
       collected_at: now,
     };
     if (have.has(`${r.situation}|${r.google_place_id}`)) {
-      if (!photoByPlace.has(r.google_place_id!) && r.photo_name) {
-        const url = await photoFor(r.google_place_id!, r.photo_name);
-        if (url) Object.assign(fresh, { photo_url: url });
-      }
+      // 같은 가게의 다른 상황 행에 이미 사진이 있으면 그 사진을 같이 쓴다(없으면 새로 받음).
+      const url = await photoFor(r.google_place_id!, r.photo_name);
+      if (url) Object.assign(fresh, { photo_url: url });
       await admin.from("food_places").update(fresh).eq("property_id", propertyId).eq("situation", r.situation).eq("google_place_id", r.google_place_id);
       updated += 1;
     } else {

@@ -125,6 +125,7 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
       const cur = byKey.get(key);
       if (cur) {
         if (!cur.tags.includes(p.situation)) cur.tags.push(p.situation);
+        if (!cur.photo_url && p.photo_url) cur.photo_url = p.photo_url;
       } else byKey.set(key, { ...p, tags: [p.situation] });
     }
     const q = query.trim().toLowerCase();
