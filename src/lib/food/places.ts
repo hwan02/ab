@@ -202,13 +202,27 @@ export function classify(
         rating_count: p.userRatingCount ?? null,
         hours_note: h.ko,
         hours_note_en: h.en,
-        maps_url: p.googleMapsUri ?? null,
+        maps_url: cleanMapsUrl(p.googleMapsUri),
         photo_name: p.photos?.[0]?.name ?? null,
         sort_order: i,
       });
     });
   }
   return out;
+}
+
+/** 구글 지도 링크에서 추적용 파라미터를 떼어 짧게: https://maps.google.com/?cid=123… */
+export function cleanMapsUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const cid = u.searchParams.get("cid");
+    if (cid) return `https://maps.google.com/?cid=${cid}`;
+    u.searchParams.delete("g_mp");
+    return u.toString();
+  } catch {
+    return url;
+  }
 }
 
 /** "연남동 히포 | Hippo Brunchhaus | 延南洞…" 처럼 여러 언어를 이어 붙인 이름은 첫 이름만. */
@@ -228,8 +242,8 @@ function dedupe(list: GPlace[]): GPlace[] {
 export const FOOD_LIST_SIZE = 5;
 
 /**
- * 한 상황의 목록을 답장 문장으로. links 가 문자열(사이트 주소)이면 짧은 지도 링크(<사이트>/m/<장소 id>)를,
- * true 면 구글 지도 주소를 줄 아래에 붙인다. 예약 확정 전 게스트에게는 링크를 넣지 않는다(false).
+ * 한 상황의 목록을 답장 문장으로. links=true 면 구글 지도 링크(추적 파라미터 제거)를 줄 아래에 붙인다.
+ * 예약 확정 전 게스트에게는 링크를 넣지 않는다(false). 문자열(사이트 주소)이면 <사이트>/m/<장소 id> 우회 링크.
  */
 export function renderFoodList(places: FoodPlace[], lang: Lang, size = FOOD_LIST_SIZE, links: boolean | string = false): string {
   const visible = places.filter((p) => !p.hidden).sort((a, b) => a.sort_order - b.sort_order).slice(0, size);
@@ -245,7 +259,7 @@ export function renderFoodList(places: FoodPlace[], lang: Lang, size = FOOD_LIST
       if (hours) parts.push(hours);
       if (p.note && ko) parts.push(p.note);
       const line = `${i + 1}. ${parts.join(" · ")}`;
-      const link = typeof links === "string" && links && p.id ? `${links.replace(/\/$/, "")}/m/${p.id}` : links === true ? p.maps_url : null;
+      const link = typeof links === "string" && links && p.id ? `${links.replace(/\/$/, "")}/m/${p.id}` : links === true ? cleanMapsUrl(p.maps_url) : null;
       return link ? `${line}\n   ${link}` : line;
     })
     .join("\n");

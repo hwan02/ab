@@ -117,3 +117,10 @@ test("renderFoodList: links 가 사이트 주소면 짧은 지도 링크", () =>
   const list = [fp({ id: "11111111-2222-3333-4444-555555555555", name: "A" })];
   assert.equal(renderFoodList(list, "ko", 5, "https://popotalk.vercel.app/"), "1. A · 도보 5분 · ★4.4 · 새벽 2시까지\n   https://popotalk.vercel.app/m/11111111-2222-3333-4444-555555555555");
 });
+
+test("cleanMapsUrl: cid 만 남겨 짧게", async () => {
+  const { cleanMapsUrl } = await import("./places.ts");
+  assert.equal(cleanMapsUrl("https://maps.google.com/?cid=11344157141254174701&g_mp=Cilnb29n"), "https://maps.google.com/?cid=11344157141254174701");
+  assert.equal(cleanMapsUrl(null), null);
+  assert.equal(renderFoodList([fp({ name: "A", maps_url: "https://maps.google.com/?cid=1&g_mp=x" })], "ko", 5, true), "1. A · 도보 5분 · ★4.4 · 새벽 2시까지\n   https://maps.google.com/?cid=1");
+});

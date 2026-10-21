@@ -418,7 +418,7 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
 
             {groups.filter((g) => (activeGroupId ?? groups[0]?.id) === g.id).map((g) => {
               const list = groupItems(g.id);
-              const preview = renderGroup(g, list, places, "ko", typeof window !== "undefined" ? window.location.origin : true);
+              const preview = renderGroup(g, list, places, "ko", true);
               return (
                 <div
                   key={g.id}

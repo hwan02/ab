@@ -68,9 +68,8 @@ export default function RuleTester({ propertyId, refreshKey = 0 }: { propertyId:
       address: property?.address,
     });
     // 실제 발송과 같은 규칙: 예약 확정 게스트에게만 링크(장소 지도·규칙 사진)를 붙인다.
-    const site = booked && typeof window !== "undefined" ? window.location.origin : false;
-    const withFood = fillGroupVariables(fillFoodVariables(text, food.filter((x) => !x.hidden), picked.answerLang, site), groups, groupItems, food, picked.answerLang, site);
-    const withLink = site ? withPhotoLink(withFood, m.rule, site, picked.answerLang) : withFood;
+    const withFood = fillGroupVariables(fillFoodVariables(text, food.filter((x) => !x.hidden), picked.answerLang, booked), groups, groupItems, food, picked.answerLang, booked);
+    const withLink = booked && typeof window !== "undefined" ? withPhotoLink(withFood, m.rule, window.location.origin, picked.answerLang) : withFood;
     return { matched: m.rule, text: withLink, detected, answerLang: picked.answerLang };
   }, [message, rules, property, guestName, food, groups, groupItems, booked]);
 
