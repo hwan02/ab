@@ -30,6 +30,8 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [linkInput, setLinkInput] = useState("");
+  const [adding, setAdding] = useState(false);
   const [newGroup, setNewGroup] = useState("");
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -147,6 +149,22 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
     setCollecting(false);
     if (!res.ok) return flash(json.error ?? "수집 실패");
     flash(`새로 ${json.added}곳, 갱신 ${json.updated}곳${json.photos ? `, 사진 ${json.photos}장` : ""}`);
+    setReloadKey((k) => k + 1);
+  };
+
+  /** 구글 지도 링크로 장소 추가. 지금 열린 그룹이 있으면 거기에도 넣는다. */
+  const addByLink = async () => {
+    const url = linkInput.trim();
+    if (!url) return;
+    setAdding(true);
+    const groupId = activeGroupId ?? groups[0]?.id ?? null;
+    const res = await fetch("/api/food/add", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ propertyId, url, groupId }) });
+    const json = await res.json().catch(() => ({}));
+    setAdding(false);
+    if (!res.ok) return flash(json.error ?? "추가 실패");
+    setLinkInput("");
+    const gName = groups.find((g) => g.id === groupId)?.name;
+    flash(json.existed ? `이미 있는 장소: ${json.name}${gName ? ` (${gName}에 넣음)` : ""}` : `추가됨: ${json.name}${gName ? ` → ${gName}` : ""}`);
     setReloadKey((k) => k + 1);
   };
 
@@ -290,6 +308,18 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
           {/* 수집된 장소 */}
           <section className="rounded-xl border border-gray-200 bg-white">
             <div className="space-y-2 border-b border-gray-100 p-3">
+              <div className="flex gap-1.5">
+                <input
+                  value={linkInput}
+                  onChange={(e) => setLinkInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addByLink()}
+                  placeholder="구글 지도 링크 붙여넣기로 장소 추가"
+                  className="h-8 min-w-0 flex-1 rounded-lg border border-gray-200 px-2.5 text-sm focus:border-rose-400 focus:outline-none"
+                />
+                <Button size="sm" variant="secondary" loading={adding} onClick={addByLink}>
+                  추가
+                </Button>
+              </div>
               <input
                 value={query}
                 onChange={(e) => {

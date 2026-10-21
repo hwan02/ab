@@ -60,20 +60,12 @@ export async function collectFood(admin: SupabaseClient, propertyId: string, api
   const photoFor = async (placeId: string, photoName: string | null): Promise<string | null> => {
     if (photoByPlace.has(placeId)) return photoByPlace.get(placeId)!;
     if (!photoName) return null;
-    try {
-      const img = await fetch(`https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=480&key=${apiKey}`);
-      if (!img.ok) return null;
-      const type = img.headers.get("content-type") ?? "image/jpeg";
-      const path = `food/${propertyId}/${placeId}.${type.includes("png") ? "png" : type.includes("webp") ? "webp" : "jpg"}`;
-      const { error: upErr } = await admin.storage.from("property-photos").upload(path, Buffer.from(await img.arrayBuffer()), { contentType: type, upsert: true });
-      if (upErr) return null;
+    const url = await savePlacePhoto(admin, apiKey, propertyId, placeId, photoName);
+    if (url) {
       photos += 1;
-      const url = admin.storage.from("property-photos").getPublicUrl(path).data.publicUrl;
       photoByPlace.set(placeId, url);
-      return url;
-    } catch {
-      return null;
     }
+    return url;
   };
   const have = new Set((existing ?? []).map((r) => `${r.situation}|${r.google_place_id}`));
   const now = new Date().toISOString();
@@ -107,4 +99,19 @@ export async function collectFood(admin: SupabaseClient, propertyId: string, api
     }
   }
   return { added, updated, photos };
+}
+
+/** 구글 장소 사진 1장(가로 480px)을 받아 스토리지에 저장하고 공개 URL 을 돌려준다. 실패하면 null. */
+export async function savePlacePhoto(admin: SupabaseClient, apiKey: string, propertyId: string, placeId: string, photoName: string): Promise<string | null> {
+  try {
+    const img = await fetch(`https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=480&key=${apiKey}`);
+    if (!img.ok) return null;
+    const type = img.headers.get("content-type") ?? "image/jpeg";
+    const path = `food/${propertyId}/${placeId}.${type.includes("png") ? "png" : type.includes("webp") ? "webp" : "jpg"}`;
+    const { error } = await admin.storage.from("property-photos").upload(path, Buffer.from(await img.arrayBuffer()), { contentType: type, upsert: true });
+    if (error) return null;
+    return admin.storage.from("property-photos").getPublicUrl(path).data.publicUrl;
+  } catch {
+    return null;
+  }
 }
