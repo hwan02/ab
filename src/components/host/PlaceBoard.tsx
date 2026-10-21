@@ -28,6 +28,7 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [filter, setFilter] = useState<Situation | "all">("all");
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
   const [newGroup, setNewGroup] = useState("");
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -131,6 +132,11 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
   }, [places, filter, query]);
 
   const placeById = useMemo(() => new Map(places.map((p) => [p.id, p])), [places]);
+
+  const PAGE_SIZE = 10;
+  const pageCount = Math.max(1, Math.ceil(pool.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount - 1);
+  const pagedPool = pool.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
 
   // ---------------------------------------------------------------- 수집
   const collect = async () => {
@@ -283,7 +289,10 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
             <div className="space-y-2 border-b border-gray-100 p-3">
               <input
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setPage(0);
+                }}
                 placeholder="장소 검색"
                 className="h-8 w-full rounded-lg border border-gray-200 px-2.5 text-sm focus:border-rose-400 focus:outline-none"
               />
@@ -291,7 +300,10 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
                 {[{ key: "all" as const, label: "전체" }, ...SITUATIONS].map((s) => (
                   <button
                     key={s.key}
-                    onClick={() => setFilter(s.key)}
+                    onClick={() => {
+                      setFilter(s.key);
+                      setPage(0);
+                    }}
                     className={cn("rounded-full px-2.5 py-0.5 text-xs", filter === s.key ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200")}
                   >
                     {s.label}
@@ -299,8 +311,8 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
                 ))}
               </div>
             </div>
-            <ul className="max-h-[70vh] divide-y divide-gray-50 overflow-y-auto">
-              {pool.map((p) => (
+            <ul className="divide-y divide-gray-50">
+              {pagedPool.map((p) => (
                 <li
                   key={p.id}
                   draggable
@@ -333,6 +345,19 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
               ))}
               {pool.length === 0 && <li className="px-3 py-6 text-center text-sm text-gray-400">없음</li>}
             </ul>
+            {pageCount > 1 && (
+              <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2 text-xs text-gray-500">
+                <button onClick={() => setPage(currentPage - 1)} disabled={currentPage === 0} className="rounded px-2 py-1 hover:bg-gray-100 disabled:opacity-30">
+                  이전
+                </button>
+                <span>
+                  {currentPage + 1} / {pageCount} · {pool.length}곳
+                </span>
+                <button onClick={() => setPage(currentPage + 1)} disabled={currentPage === pageCount - 1} className="rounded px-2 py-1 hover:bg-gray-100 disabled:opacity-30">
+                  다음
+                </button>
+              </div>
+            )}
           </section>
 
           {/* 그룹 */}
@@ -361,7 +386,7 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
 
             {groups.map((g) => {
               const list = groupItems(g.id);
-              const preview = renderGroup(g, list, places, "ko");
+              const preview = renderGroup(g, list, places, "ko", typeof window !== "undefined" ? window.location.origin : true);
               return (
                 <div
                   key={g.id}
@@ -433,6 +458,7 @@ export default function PlaceBoard({ propertyId }: { propertyId: string }) {
                     <details className="mt-2">
                       <summary className="cursor-pointer text-xs text-gray-400">게스트에게 나갈 문장</summary>
                       <p className="mt-1 whitespace-pre-wrap rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-700">{preview}</p>
+                      <p className="mt-1 text-[11px] text-gray-400">예약 확정 전 게스트에게는 에어비앤비가 링크를 막아 링크 없이 나갑니다.</p>
                     </details>
                   )}
                 </div>

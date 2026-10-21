@@ -131,39 +131,36 @@ export function isBreakfast(p: GPlace): boolean {
   return iv.some((x) => x.open <= 9 * 60 && x.open >= 5 * 60);
 }
 
-const fmtKo = (min: number) => {
-  const nextDay = min >= 1440;
-  const t = min % 1440;
-  const h = Math.floor(t / 60);
-  const m = t % 60;
-  const mm = m ? ` ${m}분` : "";
-  if (h === 0 && m === 0) return "밤 12시";
-  if (h < 5) return `새벽 ${h === 0 ? 12 : h}시${mm}`;
-  if (h < 12) return `${nextDay ? "다음날 " : ""}아침 ${h}시${mm}`;
-  if (h === 12) return `낮 12시${mm}`;
-  if (h < 18) return `오후 ${h - 12}시${mm}`;
-  if (h < 21) return `저녁 ${h - 12}시${mm}`;
-  return `밤 ${h - 12}시${mm}`;
-};
-const fmtEn = (min: number) => {
-  const h = Math.floor((min % 1440) / 60);
-  const m = min % 60;
-  const ap = h < 12 ? "am" : "pm";
-  const hh = h % 12 === 0 ? 12 : h % 12;
-  return `${hh}${m ? `:${String(m).padStart(2, "0")}` : ""}${ap}`;
+const hhmm = (min: number, isClose: boolean) => {
+  const t = isClose && min % 1440 === 0 ? 1440 : min % 1440;
+  return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
 };
 
-/** 상황에 맞는 영업시간 한 줄. 야식은 가장 늦은 마감, 아침은 가장 이른 오픈. */
-export function hoursNote(p: GPlace, situation: Situation): { ko: string | null; en: string | null } {
+/**
+ * 영업시간 한 줄: "17:00-02:00". 요일마다 다르면 가장 많은 요일의 시간대를 쓴다. 24시간 영업은 "24시간".
+ * (상황 인자는 예전 호출 호환용)
+ */
+export function hoursNote(p: GPlace, _situation?: Situation): { ko: string | null; en: string | null } {
   const iv = intervals(p);
   if (iv === "24h") return { ko: "24시간", en: "Open 24h" };
   if (!iv || iv.length === 0) return { ko: null, en: null };
-  if (situation === "breakfast") {
-    const open = Math.min(...iv.map((x) => x.open));
-    return { ko: `${fmtKo(open)} 오픈`, en: `Opens ${fmtEn(open)}` };
+  // 같은 요일의 여러 구간(브레이크 타임)은 첫 오픈~마지막 마감으로 합친다.
+  const periods = p.regularOpeningHours?.periods ?? [];
+  const byDay = new Map<number, { open: number; close: number }>();
+  periods.forEach((x, k) => {
+    const seg = iv[k];
+    if (!seg || !x.close) return;
+    const cur = byDay.get(x.open.day);
+    byDay.set(x.open.day, cur ? { open: Math.min(cur.open, seg.open), close: Math.max(cur.close, seg.close) } : seg);
+  });
+  const days = byDay.size ? [...byDay.values()] : iv;
+  const counts = new Map<string, number>();
+  for (const x of days) {
+    const key = `${hhmm(x.open, false)}-${hhmm(x.close, true)}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
   }
-  const close = Math.max(...iv.map((x) => x.close));
-  return { ko: `${fmtKo(close)}까지`, en: `Until ${fmtEn(close)}` };
+  const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  return { ko: best, en: best };
 }
 
 /**
@@ -228,8 +225,11 @@ function dedupe(list: GPlace[]): GPlace[] {
 
 export const FOOD_LIST_SIZE = 5;
 
-/** 한 상황의 목록을 답장 문장으로. 지도 링크는 links=true(예약 확정 게스트)일 때만. */
-export function renderFoodList(places: FoodPlace[], lang: Lang, size = FOOD_LIST_SIZE, links = false): string {
+/**
+ * 한 상황의 목록을 답장 문장으로. links 가 문자열(사이트 주소)이면 짧은 지도 링크(<사이트>/m/<장소 id>)를,
+ * true 면 구글 지도 주소를 줄 아래에 붙인다. 예약 확정 전 게스트에게는 링크를 넣지 않는다(false).
+ */
+export function renderFoodList(places: FoodPlace[], lang: Lang, size = FOOD_LIST_SIZE, links: boolean | string = false): string {
   const visible = places.filter((p) => !p.hidden).sort((a, b) => a.sort_order - b.sort_order).slice(0, size);
   if (visible.length === 0) return "";
   const ko = lang === "ko";
@@ -243,13 +243,14 @@ export function renderFoodList(places: FoodPlace[], lang: Lang, size = FOOD_LIST
       if (hours) parts.push(hours);
       if (p.note && ko) parts.push(p.note);
       const line = `${i + 1}. ${parts.join(" · ")}`;
-      return links && p.maps_url ? `${line}\n   ${p.maps_url}` : line;
+      const link = typeof links === "string" && links && p.id ? `${links.replace(/\/$/, "")}/m/${p.id}` : links === true ? p.maps_url : null;
+      return link ? `${line}\n   ${link}` : line;
     })
     .join("\n");
 }
 
 /** 답변 안의 {맛집:상황} 을 목록으로 바꾼다. 해당 상황 목록이 비어 있으면 그 변수만 지운다. */
-export function fillFoodVariables(text: string, places: FoodPlace[], lang: Lang, links = false): string {
+export function fillFoodVariables(text: string, places: FoodPlace[], lang: Lang, links: boolean | string = false): string {
   return text
     .replace(FOOD_TOKEN_RE, (_m, label: string) => {
       const key = situationByLabel(label);

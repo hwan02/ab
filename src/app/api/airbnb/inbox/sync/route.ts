@@ -405,7 +405,7 @@ async function applyRules(supabase: Admin, mailId: string, properties: PropertyR
     const booked = !(await inquiryThread(supabase, mail));
     if (hasFoodVariable(text)) {
       const { data: food } = await supabase.from("food_places").select("*").eq("property_id", property.id).eq("hidden", false);
-      text = fillFoodVariables(text, (food ?? []) as FoodPlace[], picked.answerLang, booked);
+      text = fillFoodVariables(text, (food ?? []) as FoodPlace[], picked.answerLang, booked ? appBaseUrl() ?? true : false);
     }
     if (hasGroupVariable(text)) {
       const [{ data: g }, { data: f }] = await Promise.all([
@@ -414,7 +414,7 @@ async function applyRules(supabase: Admin, mailId: string, properties: PropertyR
       ]);
       const gids = ((g ?? []) as FoodGroup[]).map((x) => x.id);
       const { data: it } = gids.length ? await supabase.from("food_group_items").select("*").in("group_id", gids) : { data: [] };
-      text = fillGroupVariables(text, (g ?? []) as FoodGroup[], (it ?? []) as FoodGroupItem[], (f ?? []) as FoodPlace[], picked.answerLang, booked);
+      text = fillGroupVariables(text, (g ?? []) as FoodGroup[], (it ?? []) as FoodGroupItem[], (f ?? []) as FoodPlace[], picked.answerLang, booked ? appBaseUrl() ?? true : false);
     }
     if (rule.photo_url && booked) {
       text = withPhotoLink(text, rule, appBaseUrl(), picked.answerLang);

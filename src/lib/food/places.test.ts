@@ -24,18 +24,21 @@ test("영업시간: 자정 넘는 마감은 야식, 9시 이전 오픈은 아침
   assert.equal(isBreakfast(day), false);
   assert.equal(isLateNight(allday), true);
   assert.equal(isBreakfast(allday), true);
-  assert.deepEqual(hoursNote(night, "latenight"), { ko: "새벽 2시까지", en: "Until 2am" });
-  assert.deepEqual(hoursNote(morning, "breakfast"), { ko: "아침 7시 오픈", en: "Opens 7am" });
+  assert.deepEqual(hoursNote(night, "latenight"), { ko: "18:00-02:00", en: "18:00-02:00" });
+  assert.deepEqual(hoursNote(morning, "breakfast"), { ko: "07:00-15:00", en: "07:00-15:00" });
   assert.deepEqual(hoursNote(allday, "latenight"), { ko: "24시간", en: "Open 24h" });
 });
 
-test("시간 표기: 자정·새벽·다음날 아침·저녁", () => {
-  const closeAt = (openDay: number, closeDay: number, h: number, m = 0) => place("x", { regularOpeningHours: { periods: [{ open: pt(openDay, 17), close: pt(closeDay, h, m) }] } });
-  assert.equal(hoursNote(closeAt(1, 2, 0), "latenight").ko, "밤 12시까지");
-  assert.equal(hoursNote(closeAt(1, 2, 2), "latenight").ko, "새벽 2시까지");
-  assert.equal(hoursNote(closeAt(1, 2, 10), "latenight").ko, "다음날 아침 10시까지");
-  assert.equal(hoursNote(closeAt(1, 1, 19), "best").ko, "저녁 7시까지");
-  assert.equal(hoursNote(closeAt(1, 1, 22, 30), "best").ko, "밤 10시 30분까지");
+test("시간 표기: 오픈-마감, 자정은 24:00, 요일별로 다르면 가장 흔한 시간대", () => {
+  const p = (periods: { open: ReturnType<typeof pt>; close?: ReturnType<typeof pt> }[]) => place("x", { regularOpeningHours: { periods } });
+  assert.equal(hoursNote(p([{ open: pt(1, 17), close: pt(2, 0) }])).ko, "17:00-24:00");
+  assert.equal(hoursNote(p([{ open: pt(1, 11, 30), close: pt(1, 22, 30) }])).ko, "11:30-22:30");
+  assert.equal(
+    hoursNote(p([{ open: pt(1, 11), close: pt(1, 21) }, { open: pt(2, 11), close: pt(2, 21) }, { open: pt(6, 10), close: pt(6, 23) }])).ko,
+    "11:00-21:00"
+  );
+  // 브레이크 타임: 12-15, 17-24 → 12:00-24:00
+  assert.equal(hoursNote(p([{ open: pt(1, 12), close: pt(1, 15) }, { open: pt(1, 17), close: pt(2, 0) }])).ko, "12:00-24:00");
 });
 
 test("cleanName 은 '|' 로 이은 다국어 이름에서 첫 이름만", async () => {
@@ -107,4 +110,9 @@ test("renderFoodList/fillFoodVariables: links=true 면 지도 링크를 줄 아�
   assert.equal(renderFoodList(list, "ko", 5, true), "1. A · 도보 5분 · ★4.4 · 새벽 2시까지\n   https://maps.google.com/a");
   assert.match(fillFoodVariables("{맛집:야식}", list, "ko", true), /maps\.google\.com\/a/);
   assert.doesNotMatch(fillFoodVariables("{맛집:야식}", list, "ko"), /https?:/);
+});
+
+test("renderFoodList: links 가 사이트 주소면 짧은 지도 링크", () => {
+  const list = [fp({ id: "11111111-2222-3333-4444-555555555555", name: "A" })];
+  assert.equal(renderFoodList(list, "ko", 5, "https://popotalk.vercel.app/"), "1. A · 도보 5분 · ★4.4 · 새벽 2시까지\n   https://popotalk.vercel.app/m/11111111-2222-3333-4444-555555555555");
 });

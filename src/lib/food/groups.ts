@@ -34,7 +34,7 @@ export function hasGroupVariable(text: string): boolean {
 }
 
 /** 그룹 하나를 답장 문장으로: 문구(있으면) + 번호 목록. 항목 메모가 있으면 장소 메모 대신 쓴다. */
-export function renderGroup(group: FoodGroup, items: FoodGroupItem[], places: FoodPlace[], lang: Lang, links = false): string {
+export function renderGroup(group: FoodGroup, items: FoodGroupItem[], places: FoodPlace[], lang: Lang, links: boolean | string = false): string {
   const byId = new Map(places.map((p) => [p.id, p]));
   const list = items
     .filter((it) => it.group_id === group.id)
@@ -56,7 +56,7 @@ export function fillGroupVariables(
   items: FoodGroupItem[],
   places: FoodPlace[],
   lang: Lang,
-  links = false
+  links: boolean | string = false
 ): string {
   return text
     .replace(GROUP_TOKEN_RE, (_m, name: string) => {
