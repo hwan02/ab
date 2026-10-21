@@ -156,7 +156,9 @@ export function hoursNote(p: GPlace, _situation?: Situation): { ko: string | nul
   const days = byDay.size ? [...byDay.values()] : iv;
   const counts = new Map<string, number>();
   for (const x of days) {
-    const key = `${hhmm(x.open, false)}-${hhmm(x.close, true)}`;
+    // 다음날 아침 6시 이후까지 하는 곳은 "익일"을 붙여 헷갈리지 않게 (예: 11:00-익일 10:00)
+    const nextDay = x.close > 1440 && x.close - 1440 >= 6 * 60;
+    const key = `${hhmm(x.open, false)}-${nextDay ? "익일 " : ""}${hhmm(x.close, true)}`;
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];

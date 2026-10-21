@@ -37,6 +37,7 @@ test("시간 표기: 오픈-마감, 자정은 24:00, 요일별로 다르면 가�
     hoursNote(p([{ open: pt(1, 11), close: pt(1, 21) }, { open: pt(2, 11), close: pt(2, 21) }, { open: pt(6, 10), close: pt(6, 23) }])).ko,
     "11:00-21:00"
   );
+  assert.equal(hoursNote(p([{ open: pt(1, 11), close: pt(2, 10) }])).ko, "11:00-익일 10:00");
   // 브레이크 타임: 12-15, 17-24 → 12:00-24:00
   assert.equal(hoursNote(p([{ open: pt(1, 12), close: pt(1, 15) }, { open: pt(1, 17), close: pt(2, 0) }])).ko, "12:00-24:00");
 });
