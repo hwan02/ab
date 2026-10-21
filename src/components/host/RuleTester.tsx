@@ -24,6 +24,7 @@ export default function RuleTester({ propertyId, refreshKey = 0 }: { propertyId:
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [guestName, setGuestName] = useState("민지");
+  const [booked, setBooked] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,19 +67,41 @@ export default function RuleTester({ propertyId, refreshKey = 0 }: { propertyId:
       wifiPassword: property?.wifi_password,
       address: property?.address,
     });
-    const withFood = fillGroupVariables(fillFoodVariables(text, food.filter((x) => !x.hidden), picked.answerLang), groups, groupItems, food, picked.answerLang);
-    const withLink = withPhotoLink(withFood, m.rule, typeof window !== "undefined" ? window.location.origin : null, picked.answerLang);
+    // 실제 발송과 같은 규칙: 예약 확정 게스트에게만 링크(장소 지도·규칙 사진)를 붙인다.
+    const site = booked && typeof window !== "undefined" ? window.location.origin : false;
+    const withFood = fillGroupVariables(fillFoodVariables(text, food.filter((x) => !x.hidden), picked.answerLang, site), groups, groupItems, food, picked.answerLang, site);
+    const withLink = site ? withPhotoLink(withFood, m.rule, site, picked.answerLang) : withFood;
     return { matched: m.rule, text: withLink, detected, answerLang: picked.answerLang };
-  }, [message, rules, property, guestName, food, groups, groupItems]);
+  }, [message, rules, property, guestName, food, groups, groupItems, booked]);
 
   if (loading) return <div className="p-8 text-sm text-gray-500">불러오는 중...</div>;
 
   return (
     <div>
 
-      <div className="mb-3 max-w-xs">
-        <Input label="게스트 이름" value={guestName} onChange={(e) => setGuestName(e.target.value)} />
+      <div className="mb-3 flex flex-wrap items-end gap-3">
+        <div className="w-48">
+          <Input label="게스트 이름" value={guestName} onChange={(e) => setGuestName(e.target.value)} />
+        </div>
+        <div className="flex gap-1 rounded-lg bg-gray-100 p-1" role="radiogroup" aria-label="게스트 상태">
+          {[
+            { v: true, label: "예약 확정" },
+            { v: false, label: "예약 전 문의" },
+          ].map((o) => (
+            <button
+              key={o.label}
+              type="button"
+              role="radio"
+              aria-checked={booked === o.v}
+              onClick={() => setBooked(o.v)}
+              className={cn("rounded-md px-3 py-1.5 text-sm font-medium", booked === o.v ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900")}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
       </div>
+      {!booked && <p className="mb-2 text-xs text-gray-400">예약 전 게스트에게는 에어비앤비가 링크를 막아 링크 없이 나갑니다.</p>}
       <Textarea label="게스트 메시지" placeholder="예) 혹시 와이파이 비밀번호가 뭔가요?" value={message} onChange={(e) => setMessage(e.target.value)} rows={3} />
 
       {result && (
